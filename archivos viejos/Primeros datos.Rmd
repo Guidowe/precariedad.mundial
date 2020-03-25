@@ -1,7 +1,5 @@
 ---
 title: "Usa y Arg 2019"
-author: "Guido Weksler"
-date: "18 de marzo de 2020"
 output:
   html_notebook:
     toc: yes
@@ -16,7 +14,7 @@ knitr::opts_chunk$set(fig.width = 10)
 
 ```
 
-```{r}
+```{r,message=FALSE}
 library(ipumsr)
 library(eph)
 library(ggthemes)
@@ -24,6 +22,8 @@ library(ggalt)
 library(tidyverse)
 library(kableExtra)
 library(formattable)
+library(openxlsx)
+library(Weighted.Desc.Stat)
 # Funcion de redondeo para presentación (queda como character)
 formato_porc <- function(numero, dec = 1){
   format(round(numero, digits = dec), nsmall = dec, decimal.mark = ",")
@@ -44,30 +44,47 @@ Dado que la compatibilidad entre clasificadores de ocupación no es tán directa
 
 <br>
 
-```{r levanto bases}
-###USA##
-cps_ddi_file <- "data/cps_00002.xml"
-cps_data_file <- "data/cps_00002.dat"
-cps_ddi <- read_ipums_ddi(cps_ddi_file) # Contains metadata, nice to have as separate object
-Base_USA <- ipumsr::read_ipums_micro(ddi = cps_ddi_file,
-                                 data_file =  cps_data_file) %>% 
-    filter(ASECFLAG ==1)
+```{r levanto bases,message=FALSE}
+###Estados Unidos####
+ocup_usa <- read.xlsx("data/Codigos Ocup USA.xlsx")
+ramas_usa <- read.xlsx("data/Codigos Ocup USA.xlsx",sheet = 2)
+
+cps_ddi_file <- "../bases/cps_00004.xml"
+cps_ddi_file_mas_variables <- "../bases/cps_00004.xml"
+cps_data_file <- "../bases/cps_00004.dat"
+
+cps_ddi <- read_ipums_ddi(cps_ddi_file) 
+cps_ddi_mas_variables <- read_ipums_ddi(cps_ddi_file_mas_variables) #
+
+# Base_USA <- ipumsr::read_ipums_micro(ddi = cps_ddi_file,
+#                                  data_file =  cps_data_file) %>%
+#     filter(ASECFLAG ==1,YEAR == 2019)
+# saveRDS(Base_USA,"../bases/Base_USA2019.RDS")
+Base_USA<- readRDS("../bases/Base_USA2019.RDS")
+
 listado.variables <- cps_ddi[["var_info"]]
+listado.variables.completa <- cps_ddi_mas_variables[["var_info"]]
+Variables_categorias_Usa<- unnest(listado.variables,val_labels)
 
 ####Lineas para ver descripción y categorias de las variables####
 estadousa <- ipums_val_labels(cps_ddi, var = "CLASSWLY")
 listado.variables$var_desc[listado.variables$var_name=="FIRMSIZE"]
 
 ###EPH##
-Bases_eph <- eph::get_microdata(year = 2019,trimester = 1)
+Bases_eph <- readRDS("../bases/eph2019.RDS")
+# Bases_eph <- eph::get_microdata(year = 2019,trimester = 1)
+
 ```
 #Clasificacion
 - USA:    
       - Tamaños de empresa: 1 a 9, 10 a 49, más de 50. (La pregunta está hecha a nivel empresa, no establecimiento)      
-      - Nivel educativo: Menor a secundaria, secundaria, terciario o más 
+      - Nivel educativo: Menor a secundaria, secundaria, terciario o más       
+      - Filtros: Ocupados privados sin servicio doméstico (filtrado por rama)
+
 - Argentina:           
       - Tamaños de empresa: 1 a 10, 11 a 40, más de 40. (Recuperos asignados al grupo más cercano)   
-      - Nivel educativo: Menor a secundaria, secundaria, terciario o más   
+      - Nivel educativo: Menor a secundaria, secundaria, terciario o más
+      - Filtros: Ocupados privados sin servicio doméstico (filtrado por rama)
 
 ```{r clasifico}
 ####USA####
@@ -85,8 +102,9 @@ Base_USA.c <- Base_USA %>%
           Categoria =  case_when(CLASSWLY %in% 10:19 ~ "Patrones y CP",
                            CLASSWLY  %in% 20:28 ~ "Asalariados",
                            CLASSWLY == 29 ~ "TFSR",
-                           CLASSWLY == 99 ~ "Ns/Nr"))
-
+                           CLASSWLY == 99 ~ "Ns/Nr"),
+         precario.part = case_when(FULLPART == 2 & WHYPTLY %in% c(1,3,4) ~"Precario",
+                                   TRUE ~ "Resto"))
 ####ARGENTINA####
 Base_EPH.c <- Bases_eph %>%
   eph::organize_ocupations() %>% 
@@ -136,7 +154,9 @@ Base_EPH.c <- Bases_eph %>%
                            CAT_OCUP == 2 ~ "TCP",
                            CAT_OCUP == 3 ~ "Asalariados",
                            CAT_OCUP == 4 ~ "TFSR",
-                           CAT_OCUP == 9 ~ "Ns/Nr"))
+                           CAT_OCUP == 9 ~ "Ns/Nr"),
+             precario.part = case_when(ESTADO == 1 & INTENSI == 1 ~"Precario",
+                                   TRUE ~ "Resto"))
 ```
 
 #Inserción s/ niveles educativos 
@@ -177,28 +197,41 @@ insercion.niveles.usa <- Base_USA.c %>%
 
 insercion.niveles.usa  
 ```
-###Lectura
+##Lectura
 2 datos importantes: En USA la PEA con menos que secundaria es muy pequeña. La desocupación crece parejo a menor nivel educativo, mientras que en argentina hay una diferencia muy notoria entre el que tiene educación superior completa y el resto. 
 
 ```{r filtros}
 eph.ocup.privados <- Base_EPH.c %>% 
-  filter(!(PP04B_COD %in% c(83:84,8300:8403)),ESTADO == 1) %>% 
+  filter(!(PP04B_COD %in% c(83:84,8300:8403)),
+         sector_actividad!= "Serv Domestico",
+         ESTADO == 1) %>% 
   mutate(Pais = "ARG") %>% 
   rename(IOP = P21,PONDERA_SALARIOS = PONDIIO)
 
+Emp.rama.USA <- calculate_tabulates(Base_USA.c,"INDLY",weights = "ASECWTH") %>% 
+  left_join(ramas_usa %>% mutate(INDLY = factor(IND)))
+
 usa.ocup.privados <- Base_USA.c %>% 
-  filter(EMPSTAT %in%  1:12)%>% 
+  filter(INDLY <9370,#sin Sector publico
+         INDLY <9290,#sin Sector publico ni S. doméstico 
+         EMPSTAT %in%  1:12)%>% 
   mutate(Pais = "USA",
          PONDERA_SALARIOS = ASECWT,
-         IOP = INCWAGE/12)%>% 
+         IOP = INCWAGE/12,
+         IOP2 = EARNWEEK*4)%>% 
   rename(PONDERA = ASECWT)
 
-base.unica <- bind_rows(eph.ocup.privados %>% select(Pais,IOP,PONDERA,PONDERA_SALARIOS,grupos.nivel.ed,grupos.tamanio,Categoria),
-          usa.ocup.privados %>% select(Pais,IOP,PONDERA,PONDERA_SALARIOS,grupos.nivel.ed,grupos.tamanio,Categoria))
+variables_comunes <- 
+  c("Pais","IOP","PONDERA","PONDERA_SALARIOS",
+    "grupos.nivel.ed","grupos.tamanio","Categoria",
+    "precario.part")
 
+
+base.unica <- bind_rows(eph.ocup.privados %>% select(variables_comunes),
+            usa.ocup.privados %>% select(variables_comunes))
 ```
 #Tamaños empresas 
-Más allá de la diferencia en la clasificación de tamaños de establecimientos, acá se puede ver la diferencia en la cantidad de personas que se ocupan en empresas de distintos tamaños entre ambos países. Argentina,  el 57% del empleo es en pequeñas, en USA,  más del 67% en grandes 
+Más allá de la diferencia en la clasificación de tamaños de establecimientos, acá se puede ver la diferencia en la cantidad de personas que se ocupan en empresas de distintos tamaños entre ambos países. Argentina,  el 57% del empleo es en pequeñas, en USA,  más del 66% en grandes 
 ```{r}
 base.unica %>% 
   group_by(grupos.tamanio,Pais) %>% 
@@ -211,15 +244,23 @@ base.unica %>%
  
 ```
 
-#Participacion de los 9 grupos en el empleo total  
+#9 grupos
+##Participación en el empleo total  
+
 ```{r }
 distrib.grupos<- base.unica %>% 
   filter(grupos.tamanio != "Ns/Nr") %>% 
   group_by(grupos.nivel.ed,grupos.tamanio,Pais) %>% 
-  summarise(casos=n(),
-            casos.pond = sum(PONDERA,na.rm = TRUE)) %>% 
+  summarise(ocupados=n(),
+            ocupados.pond = sum(PONDERA,na.rm = TRUE),
+            asalariados.pond = sum(PONDERA[Categoria=="Asalariados"]),
+            tasa.asalarizacion = asalariados.pond/ocupados.pond,
+            subocup.horaria = sum(PONDERA[precario.part=="Precario"]),
+            subocup.horaria.asal = sum(PONDERA[precario.part=="Precario" &
+                                             Categoria=="Asalariados"]) 
+            ) %>% 
   group_by(Pais) %>% 
-  mutate(Distrib = formato_porc(casos.pond/sum(casos.pond)*100)) 
+  mutate(Distrib = formato_porc(ocupados.pond/sum(ocupados.pond)*100)) 
 
 # grafico.distrib <- ggplot(distrib.grupos,aes(x = Pais,
 #                             y = Distrib,
@@ -243,13 +284,13 @@ kable(tabla.composicion.empleo, align = "r") %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "center") %>%
   add_header_above(c(" " = 2, "Participacion en el empleo" = 2))
 ```
-#Tasa de asalarización
+##Tasa de asalarización
 Un dato que no me parece menor es remarcar que en ambos países en las empresas de menor tamaño hay un alto % de trabajo no asalariado. Mientras que dentro del estrato de capitales pequeños en USA claramente la asalarización crece a menor nivel educativo, en Argentina la población c/ secundario incompleto tiene una baja tasa de asalarización (mucho Cuenta-propismo refugio)
 ```{r}
 tasas.asalarizacion <- base.unica %>% 
     filter(grupos.nivel.ed != "Ns/Nr",grupos.tamanio != "Ns/Nr") %>% 
   group_by(grupos.nivel.ed,grupos.tamanio,Pais) %>% 
-  summarise(tasa.asalarizacion = sum(PONDERA[Categoria=="Asalariados"])/sum(PONDERA)) %>% 
+  summarise() %>% 
   pivot_wider(names_from = Pais,values_from = tasa.asalarizacion) %>% 
   arrange(grupos.tamanio)
 
@@ -260,7 +301,8 @@ kable(tasas.asalarizacion, align = "r") %>%
 
 ```
 
-#Escalera Salarial
+##Escalera Salarial
+###Niveles educativos y tamaños
 El gráfico que se muestra acá no tiene la transformación de los salarios a PPP, por eso las comparaciones que se pueden hacer son a nivel nacional. No obstante se pueden comparar el nivel de las penalidades en uno y otro país. Más allá del valor absoluto puse una referencia al % que representa cada dato respecto al salario promedio en las empresas grandes p/ un mismo nivel educativo
 
 El primero es para el total del empleo, el segundo es solo para asalariados
@@ -271,7 +313,10 @@ ingreso.promedio <- base.unica %>%
   summarise(casos = n(),
             casos.pond = sum(PONDERA_SALARIOS),
             salario.mensual.prom = weighted.mean(IOP,PONDERA_SALARIOS),
-            salario.mensual.mediana = median(IOP)) %>% 
+            coef.variacion = w.cv(IOP,PONDERA_SALARIOS),
+            salario.mensual.mediana = median(IOP),
+            suboc.horaria = sum(PONDERA[precario.part=="Precario"],na.rm = T)/
+                          sum(PONDERA,na.rm = T)) %>% 
   arrange(Pais,salario.mensual.prom) %>% 
   group_by(Pais,grupos.nivel.ed) %>% 
   mutate(Penalidad.tamanio = salario.mensual.prom/salario.mensual.prom[grupos.tamanio=="Grande"])%>% 
@@ -304,7 +349,10 @@ salario.promedio <- base.unica %>%
   summarise(casos = n(),
             casos.pond = sum(PONDERA_SALARIOS),
             salario.mensual.prom = weighted.mean(IOP,PONDERA_SALARIOS),
-            salario.mensual.mediana = median(IOP)) %>% 
+            coef.variacion = w.cv(IOP,PONDERA_SALARIOS),
+            salario.mensual.mediana = median(IOP),
+            suboc.horaria = sum(PONDERA[precario.part=="Precario"],na.rm = T)/
+                          sum(PONDERA,na.rm = T)) %>% 
   arrange(Pais,salario.mensual.prom) %>% 
   group_by(Pais,grupos.nivel.ed) %>% 
   mutate(Penalidad.tamanio = salario.mensual.prom/salario.mensual.prom[grupos.tamanio=="Grande"])%>% 
@@ -327,5 +375,42 @@ ggplot(salario.promedio, aes(x = str_wrap (grupos.nivel.ed,10),
   scale_y_continuous()+
   facet_wrap(~Pais,scales = "free_y")
 ```
-Es interesante ver que en USA lo que estratifica principalmente es el nivel de formación, y luego ahí hay una diferencia entre empresas. En Argentina ese efecto no es tan claro (en el sentido de que una persona con sec completa en empresa grande gana en promedio más que uno con sup. completa en peq y mediana). Además en todos los niveles educativos el "castigo" por emplearte en un capital pequeño es mayor en Argentina que en USA. 
+Es interesante ver que en USA lo que estratifica principalmente es el nivel de formación, y luego ahí hay una diferencia entre empresas. En Argentina ese efecto no es tan claro (en el sentido de que una persona con sec completa en empresa grande gana en promedio más que uno con sup. completa en peq y mediana). Además en todos los niveles educativos el "castigo" por emplearte en un capital pequeño es mayor en Argentina que en USA.        
+
+###Calificaciones y tamaños
+En cuanto a calificaciones por ahora solo pude ver lo de argentina, dado que el clasificador del a CPS no permite delimitar ocupaciones según calificación fácilmente.
+Estuve investigando y habría que hacer dos *crosswalks*, uno para transformar las ocupaciones a los códigos del SOC (Clasif. utilizado en censos de USA) y otro para transformarlas a ISCO (Europa)     
+
+Lo que se puede ver para los datos de argentina es que el corte por calificación p/ asalariados da una escalerita muy similar a la de los niveles educativos propuestos.
+```{r}
+salario.promedio.calif <- eph.ocup.privados %>% 
+  filter(grupos.calif != "Ns/Nr",grupos.tamanio != "Ns/Nr",
+         Categoria == "Asalariados",Pais == "ARG") %>% 
+  group_by(grupos.calif,grupos.tamanio,Pais) %>% 
+  summarise(casos = n(),
+            casos.pond = sum(PONDERA_SALARIOS),
+            salario.mensual.prom = weighted.mean(IOP,PONDERA_SALARIOS),
+            salario.mensual.mediana = median(IOP)) %>% 
+  arrange(Pais,salario.mensual.prom) %>% 
+  group_by(Pais,grupos.calif) %>% 
+  mutate(Penalidad.tamanio = salario.mensual.prom/salario.mensual.prom[grupos.tamanio=="Grande"])%>% 
+  group_by(Pais,grupos.tamanio) %>% 
+  mutate(Penalidad.calif = salario.mensual.prom/salario.mensual.prom[grupos.calif=="Alta"])
+
+ggplot(salario.promedio.calif, aes(x = grupos.calif, 
+               y = salario.mensual.prom,
+               label = scales::percent(Penalidad.tamanio,accuracy = 1),
+               group = grupos.tamanio,
+               fill = grupos.tamanio)) + 
+  theme_minimal()+
+  labs(title = "Salarios en moneda nacional y penalidad por tamaño de empresa, según calificación del puesto",
+       subtitle = "Total Asalariados según grupo ",
+       y = "Salario en moneda nacional")+
+  theme()+
+  geom_col(position = "dodge")+
+  geom_text(position=position_dodge(width=1),size = 4)+
+  scale_y_continuous()
+```
+##Precariedad
+En cuanto a calidad del vínculo en USA no hay información como la que buscabamos en esta encuesta (raro). De las 3 alternativas que propusimos solo se puede construir la de full o part time, y hay asociada una pregunta de porqué en caso de part time. No me metí a construir eso x ahora.
 
