@@ -1,16 +1,20 @@
 library(dplyr)
+library(beepr)
 
 Carpeta <- "F:/LFS/"                                                                              # Carpeta con bases originales
 CarpetaRdos <- "C:/Users/facun/Documents/Investigación/1. LFS 2020/Resultados/"                   # Carpeta de resultados
 CarpetaBasesUnificadas <- "C:/Users/facun/Documents/Investigación/1. LFS 2020/BasesUnificadas/"   # Carpeta con bases por país unificadas para todos los años
 
-countries <- c("FR", "UK", "DE", "GR", "IT")
+
+### Tener en cuenta que DE2018 tiene problema para variable TAMA
+
+countries <- c("ES", "FR", "UK", "DE", "GR", "IT")
 #countries <- c("FR", "UK")
 
 variables <- c("YEAR", "COEFF", "WSTATOR", "SEX", "AGE", "COUNTRYB", "SEEKWORK", "AVAILBLE", "STAPRO", "NACE1D", "SIZEFIRM", "ISCO1D", "ISCO2D", 
                "ISCO3D", "IS881D", "YSTARTWK", "MSTARTWK", "EXIST2J", "FTPT", "FTPTREAS", "TEMP", "TEMPREAS", "WISHMORE", "HWACTUAL", "HATLEV1D", 
                "COUNTRYB", "DEGURBA", "ILOSTAT", "INCDECIL")
-ano <- 2014
+ano <- 2018
 
 i <- 1
 
@@ -29,9 +33,9 @@ while (i < length(countries) + 1) {
     
     }
   
-Base <- rbind.data.frame(`FR`, `UK`, `DE`, `GR`, `IT`)
+Base <- rbind.data.frame(`ES`, `FR`, `UK`, `DE`, `GR`, `IT`)
 
-remove(`FR`, `UK`, `DE`, `GR`, `IT`)
+remove(`ES`, `FR`, `UK`, `DE`, `GR`, `IT`)
   
   
 Base <- Base         %>%
@@ -81,10 +85,30 @@ Base <- Base         %>%
                       #2. Media
                       ISCO1D %in% c(400, 500, 600, 700, 800) | IS881D  %in% c(400, 500, 600, 700, 800) ~ 2, 
                       #3. Alta
-                      ISCO1D == 900                          | IS881D == 900                           ~ 3, 
+                      ISCO1D %in% c(100, 200, 300)           | IS881D  %in% c(100, 200, 300)           ~ 3, 
                       TRUE                                                                             ~ 0))
 
 
 saveRDS(Base, paste0(CarpetaBasesUnificadas, "SeleccionPaises.", ano, ".Rda"))
+
+beep()
+
+
+### PARCHE: agrego a mano DE2017 por problema en la variable Tamaño
+
+DE2017 <- read.csv(paste0(Carpeta, "DE2017_y", ".csv"))
+
+# Correrle la generación de variables de más arriba
+
+DE2017 <- DE2017                              %>% 
+  select(one_of(variables))                   %>%
+  mutate(COUNTRY="DE")
+
+Base <- Base %>%
+  filter(COUNTRY!="DE")
+
+Base <- rbind.data.frame(`Base`, `DE2017`)
+
+remove(DE2017)
   
   
