@@ -4,7 +4,6 @@
   
   
   
-  ## ----message=FALSE,cache.comments=FALSE------------------------------------------------------------
   library(ipumsr)
   library(eph)
   library(ggthemes)
@@ -28,27 +27,40 @@
   }
   
   
-  ## ----message=FALSE,cache.comments=FALSE------------------------------------------------------------
   ###Estados Unidos####
   ocup_usa <- read.xlsx("data/Codigos Ocup USA.xlsx")
   ramas_usa <- read.xlsx("data/Codigos Ocup USA.xlsx",sheet = 2)
   
   cps_ddi_file <- "../bases/cps_00004.xml"
-  cps_ddi_file_mas_variables <- "../bases/cps_00004.xml"
   cps_data_file <- "../bases/cps_00004.dat"
   
   cps_ddi <- read_ipums_ddi(cps_ddi_file) 
-  cps_ddi_mas_variables <- read_ipums_ddi(cps_ddi_file_mas_variables) #
   
   # Base_USA <- ipumsr::read_ipums_micro(ddi = cps_ddi_file,
   #                                  data_file =  cps_data_file) %>%
   #     filter(ASECFLAG ==1,YEAR == 2018)
-  # saveRDS(Base_USA,"../bases/Base_USA2019.RDS")
-  #Base_USA<- readRDS("../bases/Base_USA2019.RDS")
+  # saveRDS(Base_USA,"../bases/Base_USA2018.RDS")
+  Base_USA<- readRDS("../bases/Base_USA2018.RDS")
   
-  listado.variables <- cps_ddi[["var_info"]]
-  listado.variables.completa <- cps_ddi_mas_variables[["var_info"]]
-  Variables_categorias_Usa<- unnest(listado.variables,val_labels)
+  listado.variables.USA <- cps_ddi[["var_info"]]
+  variables.categorias.USA<- unnest(listado.variables,val_labels)
+  
+  Variables.USA <- c("FIRMSIZE","EDUC","LABFORCE","EMPSTAT",
+                     "CLASSWKR","CLASSWLY",
+                     "WKSTAT","FULLPART",
+                     "WHYPTLY","WHYPTLWK",
+                     "IND","INDLY",
+                     "OCC","OCCLY",
+                     "EARNWEEK","PENSION",
+                     "INCWAGE","INCBUS","INCLONGJ","SRCEARN",
+                     "INCTOT","EARNWEEK",
+                     "ASECWT","EARNWT") 
+    
+  var.cat.utilizadas.USA <- variables.categorias.USA %>% 
+    filter(var_name %in% Variables.USA)
+  
+  var.utilizadas.USA <- listado.variables %>% 
+    filter(var_name %in% Variables.USA)
   
   ####Lineas para ver descripción y categorias de las variables####
   estadousa <- ipums_val_labels(cps_ddi, var = "WHYPTLY")
@@ -79,9 +91,18 @@
                              CLASSWLY  %in% 20:28 ~ "Asalariados",
                              CLASSWLY == 29 ~ "TFSR",
                              CLASSWLY == 99 ~ "Ns/Nr"),
+           pension = case_when(PENSION %in% 1:2 ~ "No",
+                               PENSION %in% 3 ~ "Si",
+                               PENSION %in% 0 ~ "NIU"),
            precario.part = case_when(FULLPART == 2 & WHYPTLY %in% c(1,3,4)~"Precario",
                                      TRUE ~ "Resto"))
-
+table(Base_USA.c$FIRMSIZE)
+  
+  Ingresos  <- Base_USA.c %>% 
+    select(FIRMSIZE,EMPSTAT,WORKLY,OCC,OCCLY,INCWAGE,INCBUS,INCTOT,ASECWT,ELIGORG,EARNWEEK,EARNWT) %>% 
+    filter(EARNWEEK>0,EARNWEEK!=9999.99,ELIGORG==1) %>% 
+    filter(WORKLY == 2)
+  
     ####ARGENTINA####
   Base_EPH.c <- bases_bind %>%
     eph::organize_ocupations() %>% 
@@ -105,6 +126,9 @@
                   PP04C %in% 9:12 |(PP04C %in% 99 & PP04C99 == 3)~ "Grande",
                   PP04C %in% 99 & PP04C99 == 9 ~ "Ns/Nr"),
         levels = c("Pequeño","Mediano","Grande","Ns/Nr")),
+      descuento_jubil = case_when(PP07H == 1 ~ "Si",
+                                  PP07H == 2 ~ "No",
+                                  PP07H == 0 ~ "0"),
       sector_actividad = 
         case_when(
           PP04B_COD %in% c(1,0101:0300) ~ "Agricultura",
@@ -191,16 +215,18 @@
            PONDERA = ASECWT,
            TRIMESTRE = 1)
   
-hist(usa.ocup.privados$INCWAGE)  
+
   
+
   variables_comunes <- 
     c("ANO4","TRIMESTRE","Pais","IOP","PONDERA","PONDERA_SALARIOS",
       "grupos.nivel.ed","grupos.tamanio","Categoria",
       "precario.part")
   
   
-  base.unica <- bind_rows(eph.ocup.privados %>% select(variables_comunes),
-              usa.ocup.privados %>% select(variables_comunes)) %>% 
+  base.unica <- bind_rows(
+    eph.ocup.privados %>% select(variables_comunes,descuento_jubil),
+    usa.ocup.privados %>% select(variables_comunes,pension)) %>% 
     rownames_to_column(var = "Id") %>% 
     filter(grupos.tamanio != "Ns/Nr",!is.na(grupos.tamanio),
            grupos.nivel.ed != "Ns/Nr",!is.na(grupos.tamanio))
@@ -211,59 +237,102 @@ Decil <- base.unica %>%
   filter( IOP>0) %>% 
   mutate(IOP_d = IOP+runif(nrow(.),min = -.01,max =.01)) %>% 
   group_by(Pais,ANO4,TRIMESTRE) %>% 
-  mutate(Decil.ocup = statar::xtile(IOP_d,n=10,w = PONDERA_SALARIOS)) %>%
+  mutate(Decil = statar::xtile(IOP_d,n=10,w = PONDERA_SALARIOS)) %>%
   group_by(Pais,ANO4,TRIMESTRE,Categoria) %>% 
   mutate(Decil.cat = statar::xtile(IOP_d,n=10,w = PONDERA_SALARIOS)) %>%
   ungroup() %>% 
-  select(Id,Decil.ocup,Decil.cat)
+  select(Id,Decil,Decil.cat)
   
-  ## --------------------------------------------------------------------------------------------------
-  distrib.grupos<- base.unica %>% 
+#########OCUPADOS#############################################
+  perfiles.ocupados <- base.unica %>% 
     filter(grupos.tamanio != "Ns/Nr",grupos.nivel.ed != "Ns/Nr") %>% 
     left_join(Decil) %>% 
     group_by(grupos.nivel.ed,grupos.tamanio,Pais,ANO4,TRIMESTRE) %>% 
-    summarise(ocupados=n(),
-              ocupados.pond = sum(PONDERA,na.rm = TRUE),
-              asalariados.pond = sum(PONDERA[Categoria=="Asalariados"]),
-              tasa.asalarizacion = asalariados.pond/ocupados.pond,
-              subocup.horaria.ocup = sum(PONDERA[precario.part=="Precario"]),
-              subocup.horaria.asal = sum(PONDERA[precario.part=="Precario" &
-                                                   Categoria=="Asalariados"]),
-              ingreso.mensual.prom = weighted.mean(IOP[IOP>0],PONDERA_SALARIOS[IOP>0]),
+    summarise(casos.muestrales=n(),
+              total = sum(PONDERA,na.rm = TRUE),
+              asalariados = sum(PONDERA[Categoria=="Asalariados"]),
+              tasa.asalarizacion = asalariados/total,
+              subocup.horaria = sum(PONDERA[precario.part=="Precario"]),
+              tasa.subocup.horaria = subocup.horaria/total*100,
+              s_desc_jubilat =sum(PONDERA[descuento_jubil=="No"],na.rm = T),
+              c_desc_jubilat =sum(PONDERA[descuento_jubil=="Si"],na.rm = T),
+              s_pension =sum(PONDERA[pension=="No"],na.rm = T),
+              c_pension =sum(PONDERA[pension=="Si"],na.rm = T),
+              tasa.s.desc.jubil = s_desc_jubilat/(c_desc_jubilat+s_desc_jubilat),
+              tasa.s.pension = s_pension/(c_pension+s_pension),
+              ingreso.mensual.prom = weighted.mean(IOP[IOP>0],
+                                                   PONDERA_SALARIOS[IOP>0]),
               ingreso.mensual.mediana = median(IOP[IOP>0]),
-              ingreso.coef.variacion = w.cv(IOP[IOP>0],PONDERA_SALARIOS[IOP>0]),
-              salario.mensual.prom = weighted.mean(
-                IOP[Categoria=="Asalariados"& IOP>0],
-                PONDERA_SALARIOS[Categoria=="Asalariados"& IOP>0]),
-              salario.mensual.mediana = median(IOP[Categoria=="Asalariados"& IOP>0]),
-              salario.coef.variacion = w.cv(
-                IOP[Categoria=="Asalariados"& IOP>0],
-                PONDERA_SALARIOS[Categoria=="Asalariados"& IOP>0]),
-              decil.promedio = weighted.mean(Decil.ocup,PONDERA_SALARIOS,na.rm = T),
-              decil.promedio.asal = weighted.mean(Decil.ocup[Categoria == "Asalariados"],
-                                                  PONDERA_SALARIOS[Categoria == "Asalariados"],na.rm = T)) %>% 
+              ingreso.coef.variacion = w.cv(IOP[IOP>0],
+                                            PONDERA_SALARIOS[IOP>0]),
+              decil.promedio = weighted.mean(Decil,PONDERA_SALARIOS,na.rm = T)) %>% 
     group_by(Pais,ANO4,TRIMESTRE) %>% 
-    mutate(Particip_emp = ocupados.pond/sum(ocupados.pond)*100,
-           Particip_emp_asalariad = asalariados.pond/sum(asalariados.pond)*100,
-           tasa.subocup.horaria.ocup = subocup.horaria.ocup/ocupados.pond*100,
-           tasa.subocup.horaria.asal = subocup.horaria.asal/asalariados.pond*100) %>% 
+    mutate(Particip_emp = total/sum(total)*100) %>% 
     ungroup()
 
-Ver <- base.unica %>% filter(IOP %in% c(-9,0,9,99,999,9999,99999,999999,9999999))  
+#Ver <- base.unica %>% filter(IOP %in% c(-9,0,9,99,999,9999,99999,999999,9999999))  
 
-    indicadores.todos <- distrib.grupos %>% 
+    indicadores.anuales.ocupados <- perfiles.ocupados %>% 
     group_by(grupos.nivel.ed,grupos.tamanio,Pais,ANO4) %>% 
     summarise_all(mean, na.rm = TRUE) %>% 
     select(-TRIMESTRE) %>% 
     group_by(Pais,grupos.nivel.ed) %>% 
-    mutate(Penalidad.salario.tamanio = salario.mensual.prom/
-             salario.mensual.prom[grupos.tamanio=="Grande"],
-           Penalidad.ingreso.tamanio = ingreso.mensual.prom/
+    mutate(Penalidad.ingreso.tamanio = ingreso.mensual.prom/
              ingreso.mensual.prom[grupos.tamanio=="Grande"])%>% 
     group_by(Pais,grupos.tamanio) %>% 
-    mutate(Penalidad.salario.educacion = salario.mensual.prom/salario.mensual.prom[grupos.nivel.ed=="Superior Completo"],
-           Penalidad.ingreso.educacion = ingreso.mensual.prom/ingreso.mensual.prom[grupos.nivel.ed=="Superior Completo"]) %>% 
+    mutate(Penalidad.ingreso.educacion = ingreso.mensual.prom/ingreso.mensual.prom[grupos.nivel.ed=="Superior Completo"]) %>% 
       arrange(ANO4,Pais,grupos.tamanio)
 
-write.xlsx(x = indicadores.todos,file = "Resultados/Arg_USA_2018.xlsx")  
+#########Asalariados#############################################
+    perfiles.asalariados <- base.unica %>% 
+      filter(Categoria =="Asalariados") %>% 
+      filter(grupos.tamanio != "Ns/Nr",grupos.nivel.ed != "Ns/Nr") %>% 
+      left_join(Decil) %>% 
+      group_by(grupos.nivel.ed,grupos.tamanio,Pais,ANO4,TRIMESTRE) %>% 
+      summarise(casos.muestrales=n(),
+                total = sum(PONDERA,na.rm = TRUE),
+                asalariados = sum(PONDERA[Categoria=="Asalariados"]),
+                tasa.asalarizacion = asalariados/total,
+                subocup.horaria = sum(PONDERA[precario.part=="Precario"]),
+                tasa.subocup.horaria = subocup.horaria/total*100,
+                s_desc_jubilat =sum(PONDERA[descuento_jubil=="No"],na.rm = T),
+                c_desc_jubilat =sum(PONDERA[descuento_jubil=="Si"],na.rm = T),
+                s_pension =sum(PONDERA[pension=="No"],na.rm = T),
+                c_pension =sum(PONDERA[pension=="Si"],na.rm = T),
+                tasa.s.desc.jubil = s_desc_jubilat/(c_desc_jubilat+s_desc_jubilat),
+                tasa.s.pension = s_pension/(c_pension+s_pension),
+                ingreso.mensual.prom = weighted.mean(IOP[IOP>0],
+                                                     PONDERA_SALARIOS[IOP>0]),
+                ingreso.mensual.mediana = median(IOP[IOP>0]),
+                ingreso.coef.variacion = w.cv(IOP[IOP>0],
+                                              PONDERA_SALARIOS[IOP>0]),
+                decil.promedio = weighted.mean(Decil.cat,PONDERA_SALARIOS,na.rm = T)) %>% 
+      group_by(Pais,ANO4,TRIMESTRE) %>% 
+      mutate(Particip_emp = total/sum(total)*100) %>% 
+      ungroup()
+    
+    #Ver <- base.unica %>% filter(IOP %in% c(-9,0,9,99,999,9999,99999,999999,9999999))  
+    
+    indicadores.anuales.asalariados <- perfiles.ocupados %>% 
+      group_by(grupos.nivel.ed,grupos.tamanio,Pais,ANO4) %>% 
+      summarise_all(mean, na.rm = TRUE) %>% 
+      select(-TRIMESTRE) %>% 
+      group_by(Pais,grupos.nivel.ed) %>% 
+      mutate(Penalidad.ingreso.tamanio = ingreso.mensual.prom/
+               ingreso.mensual.prom[grupos.tamanio=="Grande"])%>% 
+      group_by(Pais,grupos.tamanio) %>% 
+      mutate(Penalidad.ingreso.educacion = ingreso.mensual.prom/ingreso.mensual.prom[grupos.nivel.ed=="Superior Completo"]) %>% 
+      arrange(ANO4,Pais,grupos.tamanio)
+    
+    
+        
+    
+    
+write.xlsx(x = list("Ocupados" = indicadores.anuales.ocupados,
+                    "Asalariados" = indicadores.anuales.asalariados),
+           file = "Resultados/Arg_USA_2018.xlsx")  
+write.xlsx(x = list("Definicion" = var.utilizadas.USA, 
+                    "Definic y categorias"=var.cat.utilizadas.USA,
+                    "Variables disponibles"=listado.variables.USA),
+           file = "Resultados/listado.variables.xlsx")  
   
