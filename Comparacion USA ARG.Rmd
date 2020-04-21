@@ -9,12 +9,12 @@ output:
     toc: yes
 ---
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE,warning = FALSE,message = FALSE)
 knitr::opts_chunk$set(fig.width = 10)
 
 ```
 
-```{r,message=FALSE}
+```{r,message=FALSE,cache.comments=FALSE}
 library(ipumsr)
 library(eph)
 library(ggthemes)
@@ -36,15 +36,15 @@ formato_pesos <- function(numero, dec = 2){
 formato_cantidad <- function(numero, dec = 0){
   format(round(numero, digits = dec), nsmall = dec, big.mark = ".", decimal.mark = ",")
 }
-
 ```
+
 #Introducción
 Como primer ejercicio tomé las bases de 2019 de USA (Marzo) y ARG (1er trim) para hacer la comparación entre los grupos propuestos. Son las que tenía más a mano, una vez que definamos un poco más como seguir lo estiro para el resto de los años. Además me parece bueno hacer la comparación puntual entre países en un momento del tiempo y luego extenderlo.          
 Dado que la compatibilidad entre clasificadores de ocupación no es tán directa, la variable ligada a la subjetividad productiva de los trabajadores será el nivel educativo. Igualmente para argentina muestro unos datos de calificaciones.
 
 <br>
 
-```{r levanto bases,message=FALSE}
+```{r,message=FALSE,cache.comments=FALSE}
 ###Estados Unidos####
 ocup_usa <- read.xlsx("data/Codigos Ocup USA.xlsx")
 ramas_usa <- read.xlsx("data/Codigos Ocup USA.xlsx",sheet = 2)
@@ -68,7 +68,7 @@ Variables_categorias_Usa<- unnest(listado.variables,val_labels)
 
 ####Lineas para ver descripción y categorias de las variables####
 estadousa <- ipums_val_labels(cps_ddi, var = "CLASSWLY")
-listado.variables$var_desc[listado.variables$var_name=="FIRMSIZE"]
+#listado.variables$var_desc[listado.variables$var_name=="FIRMSIZE"]
 
 ###EPH##
 Bases_eph <- readRDS("../bases/eph2019.RDS")
@@ -103,7 +103,7 @@ Base_USA.c <- Base_USA %>%
                            CLASSWLY  %in% 20:28 ~ "Asalariados",
                            CLASSWLY == 29 ~ "TFSR",
                            CLASSWLY == 99 ~ "Ns/Nr"),
-         precario.part = case_when(FULLPART == 2 & WHYPTLY %in% c(1,3,4) ~"Precario",
+         precario.part = case_when(FULLPART == 2 & WHYPTLY %in% c(1,3,4)~"Precario",
                                    TRUE ~ "Resto"))
 ####ARGENTINA####
 Base_EPH.c <- Bases_eph %>%
@@ -244,8 +244,7 @@ base.unica %>%
  
 ```
 
-#9 grupos
-##Participación en el empleo total  
+#Caracterización 9 grupos
 
 ```{r }
 distrib.grupos<- base.unica %>% 
@@ -254,13 +253,16 @@ distrib.grupos<- base.unica %>%
   summarise(ocupados=n(),
             ocupados.pond = sum(PONDERA,na.rm = TRUE),
             asalariados.pond = sum(PONDERA[Categoria=="Asalariados"]),
-            tasa.asalarizacion = asalariados.pond/ocupados.pond,
+            tasa.asalarizacion = formato_porc(asalariados.pond/ocupados.pond*100),
             subocup.horaria = sum(PONDERA[precario.part=="Precario"]),
             subocup.horaria.asal = sum(PONDERA[precario.part=="Precario" &
                                              Categoria=="Asalariados"]) 
             ) %>% 
   group_by(Pais) %>% 
-  mutate(Distrib = formato_porc(ocupados.pond/sum(ocupados.pond)*100)) 
+  mutate(Particip_emp = formato_porc(ocupados.pond/sum(ocupados.pond)*100),
+         Particip_emp_asalariad = formato_porc(asalariados.pond/sum(asalariados.pond)*100),
+         tasa.subocup.horaria = formato_porc(subocup.horaria/ocupados.pond*100),
+         tasa.subocup.horaria.asal = formato_porc(subocup.horaria.asal/asalariados.pond*100)) 
 
 # grafico.distrib <- ggplot(distrib.grupos,aes(x = Pais,
 #                             y = Distrib,
@@ -275,17 +277,42 @@ distrib.grupos<- base.unica %>%
 #   theme(axis.ticks = element_line(color = "white"),
 #         axis.text.x = element_text(angle= 90))
 
-tabla.composicion.empleo <- distrib.grupos %>% 
-  select(grupos.tamanio,grupos.nivel.ed,Pais,Distrib) %>% 
-  pivot_wider(names_from = Pais,values_from = Distrib) %>% 
+tabla.caracterizacion.1 <- distrib.grupos %>% 
+  select(grupos.tamanio,grupos.nivel.ed,Pais,
+         ocupados.pond,Particip_emp,tasa.asalarizacion) %>% 
+  pivot_wider(names_from = Pais,values_from = c(ocupados.pond,Particip_emp,tasa.asalarizacion)) %>%  
   arrange(grupos.tamanio)
+  
+tabla.caracterizacion.2 <- distrib.grupos %>% 
+  select(grupos.tamanio,grupos.nivel.ed,Pais,
+         asalariados.pond,Particip_emp_asalariad,tasa.subocup.horaria.asal) %>% 
+  pivot_wider(names_from = Pais,values_from = c(asalariados.pond,Particip_emp_asalariad,tasa.subocup.horaria.asal)) %>%  
+  arrange(grupos.tamanio)  
 
-kable(tabla.composicion.empleo, align = "r") %>%
-  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "center") %>%
-  add_header_above(c(" " = 2, "Participacion en el empleo" = 2))
+names(tabla.caracterizacion.1)[3:ncol(tabla.caracterizacion.1)] <- c("ARG","USA")
+names(tabla.caracterizacion.2)[3:ncol(tabla.caracterizacion.2)] <- c("ARG","USA")
 ```
-##Tasa de asalarización
+##Tomando a todos los ocupados
+```{r}
+kable(tabla.caracterizacion.1, align = "r") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "center") %>%
+  add_header_above(c(" " = 2,
+                     "Total Ocupados" = 2,
+                     "Participación (% ocupados)" = 2,
+                     "Tasa de asalarización" = 2))
+```
 Un dato que no me parece menor es remarcar que en ambos países en las empresas de menor tamaño hay un alto % de trabajo no asalariado. Mientras que dentro del estrato de capitales pequeños en USA claramente la asalarización crece a menor nivel educativo, en Argentina la población c/ secundario incompleto tiene una baja tasa de asalarización (mucho Cuenta-propismo refugio)
+
+##Sólo a asalariados
+Todos los valores que aparecen acá son sólo para asalariados
+```{r}
+kable(tabla.caracterizacion.2, align = "r") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "center") %>%
+  add_header_above(c(" " = 2,
+                     "Total Asalariados" = 2,
+                     "Participación" = 2,
+                     "Tasa de subocup. horaria" = 2))
+```
 
 ##Escalera Salarial
 ###Niveles educativos y tamaños
@@ -397,6 +424,4 @@ ggplot(salario.promedio.calif, aes(x = grupos.calif,
   geom_text(position=position_dodge(width=1),size = 4)+
   scale_y_continuous()
 ```
-##Precariedad
-En cuanto a calidad del vínculo en USA no hay información como la que buscabamos en esta encuesta (raro). De las 3 alternativas que propusimos solo se puede construir la de full o part time, y hay asociada una pregunta de porqué en caso de part time. No me metí a construir eso x ahora.
 
