@@ -43,7 +43,7 @@
   Base_USA<- readRDS("../bases/Base_USA2018.RDS")
   
   listado.variables.USA <- cps_ddi[["var_info"]]
-  variables.categorias.USA<- unnest(listado.variables,val_labels)
+  variables.categorias.USA<- unnest(listado.variables.USA,val_labels)
   
   Variables.USA <- c("FIRMSIZE","EDUC","LABFORCE","EMPSTAT",
                      "CLASSWKR","CLASSWLY",
@@ -328,11 +328,11 @@ Decil <- base.unica %>%
         
     
     
-write.xlsx(x = list("Ocupados" = indicadores.anuales.ocupados,
-                    "Asalariados" = indicadores.anuales.asalariados),
-           file = "Resultados/Arg_USA_2018.xlsx")  
-write.xlsx(x = list("Definicion" = var.utilizadas.USA, 
-                    "Definic y categorias"=var.cat.utilizadas.USA,
-                    "Variables disponibles"=listado.variables.USA),
-           file = "Resultados/listado.variables.xlsx")  
-  
+# write.xlsx(x = list("Ocupados" = indicadores.anuales.ocupados,
+#                     "Asalariados" = indicadores.anuales.asalariados),
+#            file = "Resultados/Arg_USA_2018.xlsx")  
+# write.xlsx(x = list("Definicion" = var.utilizadas.USA, 
+#                     "Definic y categorias"=var.cat.utilizadas.USA,
+#                     "Variables disponibles"=listado.variables.USA),
+#            file = "Resultados/listado.variables.xlsx")  
+#   
