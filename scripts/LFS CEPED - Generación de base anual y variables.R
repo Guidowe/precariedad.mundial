@@ -2,113 +2,170 @@ library(dplyr)
 library(beepr)
 
 Carpeta <- "F:/LFS/"                                                                              # Carpeta con bases originales
-CarpetaRdos <- "C:/Users/facun/Documents/Investigación/1. LFS 2020/Resultados/"                   # Carpeta de resultados
-CarpetaBasesUnificadas <- "C:/Users/facun/Documents/Investigación/1. LFS 2020/BasesUnificadas/"   # Carpeta con bases por país unificadas para todos los años
+CarpetaBasesUnificadas <- "F:/LFS/BasesUnificadas/"                                
 
+                         ##########   GENERACION BASE UNIFICADA PARA SELECCION DE PAISES 2018    ##########
 
-### Tener en cuenta que DE2018 tiene problema para variable TAMA
-
-countries <- c("ES", "FR", "UK", "DE", "GR", "IT")
-#countries <- c("FR", "UK")
-
-variables <- c("YEAR", "COEFF", "WSTATOR", "SEX", "AGE", "COUNTRYB", "SEEKWORK", "AVAILBLE", "STAPRO", "NACE1D", "SIZEFIRM", "ISCO1D", "ISCO2D", 
-               "ISCO3D", "IS881D", "YSTARTWK", "MSTARTWK", "EXIST2J", "FTPT", "FTPTREAS", "TEMP", "TEMPREAS", "WISHMORE", "HWACTUAL", "HATLEV1D", 
-               "COUNTRYB", "DEGURBA", "ILOSTAT", "INCDECIL")
-ano <- 2018
-
+countries <- c("ES2018", "FR2018", "UK2018", "DE2018", "GR2018", "IT2018", "PT2018", "DK2018", "SE2018", "BG2018", "RO2018")
+variables <- c("YEAR", "COEFF", "WSTATOR", "SEX", "AGE", "COUNTRYB", "SEEKWORK", "AVAILBLE", "STAPRO", "NACE1D", 
+               "SIZEFIRM", "ISCO1D", "ISCO2D", "ISCO3D", "IS881D", "YSTARTWK", "MSTARTWK", "EXIST2J", "FTPT", 
+               "FTPTREAS", "TEMP", "TEMPREAS", "WISHMORE", "HWACTUAL", "HAT11LEV", "HAT97LEV", "HATLEV1D", "COUNTRYB", 
+               "DEGURBA", "ILOSTAT", "INCDECIL", "EXISTPR", "NACEPR2D", "NACE11PR2D", "ISCOPR3D")
 i <- 1
-
 while (i < length(countries) + 1) {
-  
-    Base <- read.csv(paste0(Carpeta, countries[i], ano, "_y", ".csv"))
-    
-    Base <- Base                               %>% 
+    Base <- read.csv(paste0(Carpeta, countries[i], "_y", ".csv"))
+      Base <- Base                             %>% 
       select(one_of(variables))                %>%
-      filter(YEAR== ano)                       %>%
       mutate(COUNTRY= countries[i])            
-    
     assign(paste0(countries[i]), Base)
-    
-    i <- i+1
-    
-    }
+    i <- i+1}
   
-Base <- rbind.data.frame(`ES`, `FR`, `UK`, `DE`, `GR`, `IT`)
-
-remove(`ES`, `FR`, `UK`, `DE`, `GR`, `IT`)
-  
+Base <- rbind.data.frame(ES2018, FR2018, UK2018, DE2018, GR2018, IT2018, PT2018, DK2018, SE2018, BG2018, RO2018)
+remove(ES2018, FR2018, UK2018, DE2018, GR2018, IT2018, PT2018, DK2018, SE2018, BG2018, RO2018)
   
 Base <- Base         %>%
   mutate(
     #Ponderador
     WEIGHT=COEFF*1000, 
-    
     #Condicion de actividad
-    COND= case_when(# 1. Ocupado (ILOSTAT 1. Employed, 4. Compulsory military service)
-                    ILOSTAT==1 | ILOSTAT==4     ~ 1,
+    COND= factor(case_when(# 1. Ocupado (ILOSTAT 1. Employed, 4. Compulsory military service)
+                    ILOSTAT==1 | ILOSTAT==4     ~ "Ocupado",
                     # 2. Desocupados que encontraron trabajo y estan disponibles para trabajar "inmediatamente" (en 2 semanas)
-                    ILOSTAT==2                  ~ 2,
+                    ILOSTAT==2                  ~ "Desocupado",
                     # 3. Inactivos (3.Inactive, 9. Persons less than 15 years old)
-                    ILOSTAT==3 | ILOSTAT==9     ~ 3,
-                    TRUE                        ~ 0),
-    
-    #Precariedad
-    PRECA= case_when(#1. Part-time job and Person could not find a full-time job
-                    FTPT==2 & FTPTREAS==5       ~ 1, 
-                    #1. Person has temporary job/work contract of limited duration and person could not find a permanent job
-                    TEMP==2 & TEMPREAS==2       ~ 1,
-                    #1. Person Wish to work usually more than the current number of hours +  HWACTUAL < 35: la persona trabaja menos de 35 horas semanales
-                    WISHMORE==1 & HWACTUAL < 35 ~ 1,
-                    TRUE                        ~ 0),
-    
+                    ILOSTAT==3 | ILOSTAT==9     ~ "Inactivo",
+                    TRUE                        ~ "Ns/Nc"),
+                 levels= c("Ocupado", "Desocupado", "Inactivo", "Ns/Nc")),
+    #Precariedad por trabajo part-time
+    PRECAPT= case_when(FTPT==2 & FTPTREAS==5       ~ 1,
+                       TRUE                        ~ 0),
+    #Precariedad por contrato de tiempo limitado
+    PRECATEMP= case_when(TEMP==2 & TEMPREAS==2       ~ 1,
+                         TRUE                        ~ 0),
+    #Precariedad por querer trabajar mas horas
+    PRECAHORA= case_when(WISHMORE==1 & HWACTUAL < 35 ~ 1,
+                         TRUE                        ~ 0),
+    PRECACOUNT= PRECAPT + PRECATEMP + PRECAHORA,
     #Tamaño establecimiento
-    TAMA= case_when( #1. 10 o menos
-                    SIZEFIRM==10 | SIZEFIRM==14 ~ 1,
+    TAMA= factor(case_when( #1. 10 o menos
+                    SIZEFIRM==10 | SIZEFIRM==14 ~ "Pequeño",
                     #2. 11 a 49
-                    SIZEFIRM==11 | SIZEFIRM==12 ~ 2,
+                    SIZEFIRM==11 | SIZEFIRM==12 ~ "Mediano",
                     #3. Mas de 50
-                    SIZEFIRM==13                ~ 3,
-                    TRUE                        ~ 0),
-    
+                    SIZEFIRM==13                ~ "Grande",
+                    TRUE                        ~ "Ns/Nc"),
+                 levels= c("Pequeño", "Mediano", "Grande", "Ns/Nc")),
     #Educación
-    EDUC= case_when(#1. Baja
-                    HATLEV1D=="L"     ~ 1, 
+    EDUC= factor(case_when(#1. Baja                                 
+                    HAT11LEV %in% 100:299 | HAT97LEV %in% 10:29   ~ "Menor a Secundaria", 
                     #1. Media
-                    HATLEV1D=="M"     ~ 2,
+                    HAT11LEV %in% 300:599 | HAT97LEV %in% 30:59   ~ "Secundaria Completa",
                     #1. Alta
-                    HATLEV1D=="H"     ~ 3, 
-                    TRUE              ~ 0),
-    
+                    HAT11LEV %in% 600:899 | HAT97LEV %in% 60:89   ~ "Superior Completo", 
+                        TRUE              ~ "Ns/Nc"),
+                 levels= c("Menor a Secundaria", "Secundaria Completa", "Superior Completo", "Ns/Nc")),
     #Calificación del puesto
-    CALIF= case_when( #1. Baja
-                      ISCO1D == 900                          | IS881D == 900                           ~ 1,
+    CALIF= factor(case_when( #1. Baja
+                      ISCO1D == 900                          | IS881D == 900                           ~ "Baja",
                       #2. Media
-                      ISCO1D %in% c(400, 500, 600, 700, 800) | IS881D  %in% c(400, 500, 600, 700, 800) ~ 2, 
+                      ISCO1D %in% c(400, 500, 600, 700, 800) | IS881D  %in% c(400, 500, 600, 700, 800) ~ "Media", 
                       #3. Alta
-                      ISCO1D %in% c(100, 200, 300)           | IS881D  %in% c(100, 200, 300)           ~ 3, 
-                      TRUE                                                                             ~ 0))
+                      ISCO1D %in% c(100, 200, 300)           | IS881D  %in% c(100, 200, 300)           ~ "Alta", 
+                      TRUE                                                                             ~  "Ns/Nc"), 
+                  levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
+    #Calificacion del puesto en trabajo anterior
+    CALIFANT= factor(case_when( #1. Baja
+                      ISCOPR3D %in% 900:998                    ~ "Baja",
+                      #2. Media
+                      ISCOPR3D %in% 400:899                    ~ "Media", 
+                      #3. Alta
+                      ISCOPR3D %in% c(11:39, 100:399)          ~ "Alta", 
+                      TRUE                                     ~  "Ns/Nc"), 
+      levels= c("Baja", "Media", "Alta", "Ns/Nc")))
 
-
-saveRDS(Base, paste0(CarpetaBasesUnificadas, "SeleccionPaises.", ano, ".Rda"))
+saveRDS(Base, paste0(CarpetaBasesUnificadas, "SeleccionPaises2018.Rda"))
 
 beep()
 
 
-### PARCHE: agrego a mano DE2017 por problema en la variable Tamaño
+              ##########   GENERACION BASES UNIFICADAS POR PAIS 2008-2018    ##########
 
-DE2017 <- read.csv(paste0(Carpeta, "DE2017_y", ".csv"))
+countries <- c("ES", "FR", "UK", "DE", "GR", "IT", "PT", "DK", "SE", "BG", "RO")
 
-# Correrle la generación de variables de más arriba
 
-DE2017 <- DE2017                              %>% 
-  select(one_of(variables))                   %>%
-  mutate(COUNTRY="DE")
-
-Base <- Base %>%
-  filter(COUNTRY!="DE")
-
-Base <- rbind.data.frame(`Base`, `DE2017`)
-
-remove(DE2017)
+i <- 1
+while (i < length(countries) + 1) {
+  for (val in 2008:2018) {
+  Base <- read.csv(paste0(Carpeta, countries[i], val, "_y", ".csv"))
+  Base <- Base                               %>% 
+    select(one_of(variables))                %>%
+    mutate(COUNTRY= countries[i])   
+  assign(paste0(val), Base)}
   
+  Base <- rbind.data.frame(`2008`, `2009`, `2010`, `2011`, `2012`, `2013`, `2014`, `2015`, `2016`, `2017`, `2018`)
+  remove(`2008`, `2009`, `2010`, `2011`, `2012`, `2013`, `2014`, `2015`, `2016`, `2017`, `2018`)
   
+  Base <- Base         %>%
+    mutate(
+      #Ponderador
+      WEIGHT=COEFF*1000, 
+      #Condicion de actividad
+      COND= factor(case_when(# 1. Ocupado (ILOSTAT 1. Employed, 4. Compulsory military service)
+        ILOSTAT==1 | ILOSTAT==4     ~ "Ocupado",
+        # 2. Desocupados que encontraron trabajo y estan disponibles para trabajar "inmediatamente" (en 2 semanas)
+        ILOSTAT==2                  ~ "Desocupado",
+        # 3. Inactivos (3.Inactive, 9. Persons less than 15 years old)
+        ILOSTAT==3 | ILOSTAT==9     ~ "Inactivo",
+        TRUE                        ~ "Ns/Nc"),
+        levels= c("Ocupado", "Desocupado", "Inactivo", "Ns/Nc")),
+      #Precariedad por trabajo part-time
+      PRECAPT= case_when(FTPT==2 & FTPTREAS==5       ~ 1,
+                         TRUE                        ~ 0),
+      #Precariedad por contrato de tiempo limitado
+      PRECATEMP= case_when(TEMP==2 & TEMPREAS==2       ~ 1,
+                           TRUE                        ~ 0),
+      #Precariedad por querer trabajar mas horas
+      PRECAHORA= case_when(WISHMORE==1 & HWACTUAL < 35 ~ 1,
+                           TRUE                        ~ 0),
+      PRECACOUNT= PRECAPT + PRECATEMP + PRECAHORA,
+      #Tamaño establecimiento
+      TAMA= factor(case_when( #1. 10 o menos
+        SIZEFIRM==10 | SIZEFIRM==14 ~ "Pequeño",
+        #2. 11 a 49
+        SIZEFIRM==11 | SIZEFIRM==12 ~ "Mediano",
+        #3. Mas de 50
+        SIZEFIRM==13                ~ "Grande",
+        TRUE                        ~ "Ns/Nc"),
+        levels= c("Pequeño", "Mediano", "Grande", "Ns/Nc")),
+      #Educación
+      EDUC= factor(case_when(#1. Baja                                 
+        HAT11LEV %in% 100:299 | HAT97LEV %in% 10:29   ~ "Menor a Secundaria", 
+        #1. Media
+        HAT11LEV %in% 300:599 | HAT97LEV %in% 30:59   ~ "Secundaria Completa",
+        #1. Alta
+        HAT11LEV %in% 600:899 | HAT97LEV %in% 60:89   ~ "Superior Completo", 
+        TRUE              ~ "Ns/Nc"),
+        levels= c("Menor a Secundaria", "Secundaria Completa", "Superior Completo", "Ns/Nc")),
+      #Calificación del puesto
+      CALIF= factor(case_when( #1. Baja
+        ISCO1D == 900                          | IS881D == 900                           ~ "Baja",
+        #2. Media
+        ISCO1D %in% c(400, 500, 600, 700, 800) | IS881D  %in% c(400, 500, 600, 700, 800) ~ "Media", 
+        #3. Alta
+        ISCO1D %in% c(100, 200, 300)           | IS881D  %in% c(100, 200, 300)           ~ "Alta", 
+        TRUE                                                                             ~  "Ns/Nc"), 
+        levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
+      CALIFANT= factor(case_when( #1. Baja
+        ISCOPR3D %in% 900:998                    ~ "Baja",
+        #2. Media
+        ISCOPR3D %in% 400:899                    ~ "Media", 
+        #3. Alta
+        ISCOPR3D %in% c(11:39, 100:399)          ~ "Alta", 
+        TRUE                                     ~  "Ns/Nc"), 
+        levels= c("Baja", "Media", "Alta", "Ns/Nc")))
+  
+  saveRDS(Base, paste0(CarpetaBasesUnificadas, countries[i], "2008-2018.Rda"))
+  i <- i+1
+}
+
+beep()
