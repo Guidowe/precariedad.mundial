@@ -22,14 +22,17 @@ asal.Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 15.5.xlsx",
                                  sheet = "Asalariados.nivel.ed") %>% 
   mutate(ANO4 = as.numeric(ANO4))
 
+desoc.Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 15.5.xlsx",
+                                      sheet = "Desocup.Calif") 
+
 
 
 
 
 Calificacion.todos <- indicadores.anuales.ocupados.calif %>% 
-  select(grupos.calif,grupos.tamanio,Particip_emp,Pais,ANO4) %>% 
+  select(grupos.calif,grupos.tamanio,Particip_emp,Pais,ANO4,everything()) %>% 
   bind_rows(Calificacion.europa %>% 
-  select(grupos.calif,grupos.tamanio,Particip_emp,Pais,ANO4)) %>% 
+  select(grupos.calif,grupos.tamanio,Particip_emp,Pais,ANO4,everything())) %>% 
   arrange(desc(grupos.tamanio),grupos.calif)
   
 Educacion.todos <- indicadores.anuales.ocupados.nivel.ed %>% 
@@ -83,6 +86,8 @@ ggplot(salarios.prod,
 
 ggsave("Resultados/productividad_salarios.png",scale = 2)
 
+
+
 ####Distrib.Calificaciones#####
 calif.graf<- Calificacion.todos %>% 
   mutate(tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
@@ -112,14 +117,14 @@ calif.graf %>%
         legend.direction = "vertical",
         axis.title = element_blank(),
         axis.text.x = element_text(angle = 45),
-        panel.spacing = unit(1,"cm"),
+        #panel.spacing = unit(1,"cm"),
         panel.grid.major.y = element_line(colour = "grey"),
         panel.grid.minor.y = element_line(colour = "grey30"),
         panel.grid.minor.x = element_line(colour = "grey"),
         panel.grid.major.x = element_line(colour = "grey"))+
   scale_fill_manual(values = paleta)
 
-ggsave("Resultados/grupos_calificacion_tamanio.png",scale = 2)
+ggsave("Resultados/grupos_calificacion_tamanio.png",width = 10,height = 8)
 
 
 ####Distrib.Educacion#####
@@ -245,10 +250,57 @@ Particip.calif %>%
 
 ggsave("Resultados/particip_calif.png",scale = 2)
 
+####Desocupados por calificacion#####
+desocup.arg <- desocup.calif.ant.arg %>% 
+  group_by(ANO4, grupos.calif = grupos.calif.desocup) %>% 
+  summarise(Pais = "ARG",
+            particip.desocup = mean(distribucion)) 
+
+desocup.usa <- desocup.calif.ant.usa %>% 
+  mutate(Pais = "USA") %>% 
+  select(-desocupados) %>% 
+  rename(ANO4 =YEAR,particip.desocup = distribucion)
+
+A <- desoc.Calificacion.europa
+
+desocup.calif <- desocup.arg %>% 
+  bind_rows(desocup.usa)%>%
+  left_join(Particip.calif) %>% 
+  pivot_longer(cols = c(4,5),names_to = "distrib",values_to = "Valor") %>% 
+  mutate(grupos.calif = factor(grupos.calif,
+                               levels = c("Baja","Media","Alta"))) 
+  
+
+desocup.calif %>% 
+  filter(ANO4 == 2018|Pais %in% c("DE","ES")) %>%  
+ggplot(.,
+       aes(x=distrib,
+           y=Valor,
+           label = scales::percent(Valor),
+           fill = grupos.calif,
+           group = grupos.calif))+
+  geom_col(position = "stack")+
+  geom_text(position = position_stack(vjust = .5),size=2.5)+
+  labs(title = "Distribución de desocupados con empleo anterior y participación en el empleo según calificación")+
+  theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        axis.title = element_blank(),
+        axis.text.x = element_text(),
+        panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_fill_manual(values = paleta3) +
+  facet_wrap(~Pais)
+
+
+ggsave("Resultados/productividad_salarios.png",scale = 2)
 
 ####Deciles#####
 ingresos.todos <- bind_rows(ingresos.eph.asalariados.calif,
-                            ingresos.eph.asalariados.calif,
+                            ingresos.asec.asalariados.calif,
                             asal.Calificacion.europa %>% 
                               rename(decil.m.promedio = PromedioDecil))%>% 
   mutate(tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
@@ -268,6 +320,7 @@ ingresos.todos <- bind_rows(ingresos.eph.asalariados.calif,
 ingresos.todos %>% 
   filter((ANO4 == 2018 & !(Pais %in% c("DE","ES")))|
           ANO4 == 2017 & Pais %in% c("DE","ES")) %>% 
+  filter(Pais != "SE") %>% 
   ggplot(.,
          aes(x = tamanio.calif, y = decil.m.promedio,
              fill = tamanio.calif,group = tamanio.calif,
@@ -289,6 +342,32 @@ ingresos.todos %>%
   scale_fill_manual(values = paleta)+
   facet_wrap(~Pais)
 
+ggsave("Resultados/deciles.png",scale = 3)
+#####Part Time Involuntario#####
+calif.graf %>% 
+  filter((ANO4 == 2018 & !(Pais %in% c("DE","ES")))|
+           ANO4 == 2017 & Pais %in% c("DE","ES")) %>% 
+  ggplot(.,
+         aes(x = tamanio.calif, y = tasa.part.invol,
+             fill = tamanio.calif,group = tamanio.calif,
+             label = scales::percent(tasa.part.invol))) +
+  geom_col(position = "dodge")+
+  geom_text(position = position_dodge(),size=2.5)+
+  labs(title = "Tasa de part time involuntario según grupos. Año 2018")+
+  theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        axis.title = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_fill_manual(values = paleta)+
+  scale_y_continuous(labels = scales::percent)+
+  facet_wrap(~Pais)
 
 
 ####PRUEBA DE CLUSTERING#####
