@@ -205,9 +205,9 @@ Base_EPH.cat <- bases_bind %>%
       levels = c("Menor a Secundaria","Secundaria Completa","Superior Completo")),
     grupos.tamanio = factor(
       case_when(PP04C %in% 1:6  |(PP04C %in% 99 & PP04C99 == 1)~ "Pequeño",
-                PP04C %in% 7:8  |(PP04C %in% 99 & PP04C99 == 2)~ "Mediano",
+                PP04C %in% 7:8  ~ "Mediano",
                 PP04C %in% 9:12 |(PP04C %in% 99 & PP04C99 == 3)~ "Grande",
-                PP04C %in% 99 & PP04C99 == 9 ~ "Ns/Nr"),
+                PP04C %in% 99 & PP04C99 %in% c(2,9) ~ "Ns/Nr"),
       levels = c("Pequeño","Mediano","Grande","Ns/Nr")),
     descuento_jubil = case_when(PP07H == 1 ~ "Si",
                                 PP07H == 2 ~ "No",
@@ -308,6 +308,34 @@ base.unica <- bind_rows(
   usa.ocup.privados %>% select(variables_comunes,pension)) %>% 
   rownames_to_column(var = "Id") %>% 
   filter(grupos.tamanio != "Ns/Nr",!is.na(grupos.tamanio))
+####Cruce Educacion calificacion####
+calificacion.educacion <- base.unica %>% 
+  filter(grupos.calif != "Ns/Nr",!is.na(grupos.calif)) %>% 
+  group_by(grupos.nivel.ed,grupos.calif,Pais,ANO4,TRIMESTRE) %>% 
+  summarise(total = sum(PONDERA,na.rm = TRUE))
+
+calificacion.educacion.anual <- calificacion.educacion %>% 
+  group_by(grupos.nivel.ed,grupos.calif,Pais,ANO4) %>% 
+  summarise_all(mean, na.rm = TRUE) %>% 
+  select(-TRIMESTRE) %>% 
+  arrange(ANO4,Pais,grupos.calif) %>% 
+  group_by(grupos.nivel.ed,Pais,ANO4) %>% 
+  mutate(Porcentaje = total/sum(total))
+
+
+cruces.educ.calif.abs <- calificacion.educacion.anual %>% 
+  select(-Porcentaje) %>% 
+  pivot_wider(names_from = grupos.calif,values_from = total)
+
+cruces.educ.calif.perc <- calificacion.educacion.anual %>% 
+  select(-total) %>% 
+  pivot_wider(names_from = grupos.calif,values_from = Porcentaje)
+
+###RESULTADOS caract####
+write.xlsx(x = list("Insercion NIVEL ED ARG" = insercion.niveles.arg,
+                    "Insercion NIVEL ED USA" = insercion.niveles.usa,
+                    "Educ calif absolutos" = cruces.educ.calif.abs),
+           file = "Resultados/Educacion y Calificacion.xlsx")  
 
 ####Perfiles (Sin ingresos)####
 
