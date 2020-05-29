@@ -1,6 +1,26 @@
 
 
-Base <- readRDS("F:/LFS/BasesUnificadas/SeleccionPaises2018.Rda")
+
+### PROMEDIO DE CADA DECIL
+
+SES <- readRDS("F:/SES/BaseUnificada.Rda")  
+
+PromedioDeciles <- SES                                                   %>%
+  group_by(PAIS, decil)                                                  %>%
+  summarise('Promedio' = weighted.mean(SALARIODB, WEIGHT, na.rm = TRUE)) %>%
+  filter(!is.na(decil))                                                  %>% 
+  spread(PAIS, Promedio)                                                 %>% 
+  select(-decil)
+
+PromedioHorarioDeciles <- SES                                                   %>%
+  group_by(PAIS, decilhorario)                                                  %>%
+  summarise('Promedio' = weighted.mean(SALARIOHORARIODB, WEIGHT, na.rm = TRUE)) %>%
+  filter(!is.na(decilhorario))                                                  %>% 
+  spread(PAIS, Promedio)                                                        %>% 
+  select(-decilhorario)
+
+
+Base <- readRDS("F:/LFS/BasesUnificadas/SeleccionPaises2014.Rda")
 
 BaseImputada <- data.frame()
 
@@ -24,7 +44,7 @@ Basep <- Base %>%
   filter(pais==countries[i])
 
 Basep <- Basep  %>%
-  mutate(salario= case_when(
+  mutate(salarioNAC= case_when(
                             INCDECIL==1  ~ PromedioDeciles[[1,i]],
                             INCDECIL==2  ~ PromedioDeciles[[2,i]],
                             INCDECIL==3  ~ PromedioDeciles[[3,i]],
@@ -37,7 +57,7 @@ Basep <- Basep  %>%
                             INCDECIL==10 ~ PromedioDeciles[[10,i]]))
 
 Basep <- Basep  %>%
-  mutate(salariohorario= case_when(
+  mutate(salariohorarioNAC= case_when(
     INCDECIL==1  ~ PromedioHorarioDeciles[[1,i]],
     INCDECIL==2  ~ PromedioHorarioDeciles[[2,i]],
     INCDECIL==3  ~ PromedioHorarioDeciles[[3,i]],
@@ -55,9 +75,34 @@ i <- i + 1
 
 }
 
+
+### PASO A PPP
+
 GR <- Base %>% filter(pais=="GR")
 SE <- Base %>% filter(pais=="SE")
 
 BaseImputada <- bind_rows(BaseImputada, GR, SE)
 
-saveRDS(BaseImputada, "F:/LFS/BasesUnificadas/SeleccionPaises2018.Rda")
+BaseImputada <- BaseImputada %>%
+  mutate('salario'= case_when( COUNTRY=="ES" ~ salarioNAC/0.738510185, 
+                             COUNTRY=="FR" ~ salarioNAC/0.832556816    ,
+                             COUNTRY=="IT" ~ salarioNAC/0.853587053    ,
+                             COUNTRY=="PT" ~ salarioNAC/0.687558871    ,
+                             COUNTRY=="UK" ~ salarioNAC/0.656065473    ,
+                             COUNTRY=="RO" ~ salarioNAC/1.217568971    ,
+                             COUNTRY=="SE" ~ salarioNAC/8.447913694    ,
+                             COUNTRY=="DE" ~ salarioNAC/0.834523744    ,
+                             COUNTRY=="DK" ~ salarioNAC/8.552694151    ,
+                             COUNTRY=="BG"  ~ 0), 
+         'salariohorario'= case_when( COUNTRY=="ES" ~ salariohorarioNAC/0.738510185, 
+                                    COUNTRY=="FR" ~ salariohorarioNAC/0.832556816    ,
+                                    COUNTRY=="IT" ~ salariohorarioNAC/0.853587053    ,
+                                    COUNTRY=="PT" ~ salariohorarioNAC/0.687558871    ,
+                                    COUNTRY=="UK" ~ salariohorarioNAC/0.656065473    ,
+                                    COUNTRY=="RO" ~ salariohorarioNAC/1.217568971    ,
+                                    COUNTRY=="SE" ~ salariohorarioNAC/8.447913694    ,
+                                    COUNTRY=="DE" ~ salariohorarioNAC/0.834523744    ,
+                                    COUNTRY=="DK" ~ salariohorarioNAC/8.552694151    ,
+                                    COUNTRY=="BG"  ~ 0)) 
+
+saveRDS(BaseImputada, "F:/LFS/BasesUnificadas/SeleccionPaises2014.Rda")
