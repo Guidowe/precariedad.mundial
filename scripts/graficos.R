@@ -3,31 +3,47 @@ library(openxlsx)
 library(tidyverse)
 library(ggrepel)
 library(ggthemes)
+library(cluster)
 #####Carga de datos#####
 #Salarios y productividad#
-Salarios <- read.xlsx("data/Prod y Salarios.xlsx",sheet = 1)
+Paises <- read.xlsx("data/Prod y Salarios.xlsx",sheet = "Paises")
+Salarios <- read.xlsx("data/Prod y Salarios.xlsx",sheet = 1) %>% 
+  rename(nombre.pais = X1,
+         COD.OCDE = LOCATION)
 Productividad <- read.xlsx("data/Prod y Salarios.xlsx",
-                           sheet = 2,startRow = 2)
+                           sheet = 2,startRow = 2) %>% 
+  rename(COD.OCDE = LOCATION, name = label.x)
 
-##Arg y USA#
+PPA <- read.xlsx("data/Prod y Salarios.xlsx",
+                           sheet = 3) %>% 
+  rename(ANO4 = Coeficientes) %>% 
+  pivot_longer(cols = 2:ncol(.),
+               names_to = "COD.OCDE",
+               values_to = "PPA") %>% 
+  left_join(Paises)
+
+
+#Procesamiento de Encuestas#
+#Argentina y USA#
 load("Resultados/ARG_USA.RDATA")
 ##Europa#
-Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 15.5.xlsx",
+Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 19.5.xlsx",
                                  sheet = "Ocupados.calif") %>% 
   mutate(ANO4 = as.numeric(ANO4))
-Educacion.europa <- read.xlsx("Resultados/RestultadosLFS 15.5.xlsx",
+Educacion.europa <- read.xlsx("Resultados/RestultadosLFS 19.5.xlsx",
                               sheet = "Ocupados.nivel.ed")%>% 
   mutate(ANO4 = as.numeric(ANO4))
-asal.Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 15.5.xlsx",
+asal.Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 19.5.xlsx",
                                  sheet = "Asalariados.nivel.ed") %>% 
   mutate(ANO4 = as.numeric(ANO4))
 
-desoc.Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 15.5.xlsx",
+desoc.Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 19.5.xlsx",
                                       sheet = "Desocup.Calif") 
 
 
 
 
+#Unificacion de Paises####
 
 Calificacion.todos <- indicadores.anuales.ocupados.calif %>% 
   select(grupos.calif,grupos.tamanio,Particip_emp,Pais,ANO4,everything()) %>% 
@@ -40,6 +56,31 @@ Educacion.todos <- indicadores.anuales.ocupados.nivel.ed %>%
   bind_rows(Educacion.europa %>% 
             select(grupos.nivel.ed,grupos.tamanio,Particip_emp,Pais,ANO4)) %>% 
   arrange(grupos.tamanio,grupos.nivel.ed)
+
+
+ingresos.todos <- asal.Calificacion.europa  %>%
+  select(grupos.calif,grupos.tamanio,Pais,ANO4,
+         ingreso.mensual.prom = Salario.prom,
+         decil.m.promedio = PromedioDecil) %>% 
+  bind_rows(ingresos.asec.asalariados.calif,
+            ingresos.eph.asalariados.calif) %>% 
+  mutate(ANO4 = case_when(Pais == "USA" ~ ANO4-1,
+                          TRUE~ANO4)) %>%
+  rename(COD.ENCUESTAS = Pais) %>% 
+  left_join(PPA) %>% 
+  mutate(ingreso.mensual.ppa = ingreso.mensual.prom/PPA) %>% 
+  mutate(tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
+         tamanio.calif = factor(tamanio.calif,
+                                levels = 
+                                  c("Pequeño - Baja",
+                                    "Pequeño - Media",
+                                    "Pequeño - Alta",
+                                    "Mediano - Baja",
+                                    "Mediano - Media", 
+                                    "Mediano - Alta",
+                                    "Grande - Baja",
+                                    "Grande - Media",
+                                    "Grande - Alta")))
 
 
 
@@ -67,7 +108,7 @@ salarios.prod <- Salarios %>%
 ggplot(salarios.prod,
        aes(x=`2018`,
            y=`Prod.relativa.a.EEUU.-.TOTAL`,
-           label = X1,
+           label = nombre.pais,
            color = Color))+
   geom_point()+
   geom_text_repel()+  
@@ -299,28 +340,10 @@ ggplot(.,
 ggsave("Resultados/productividad_salarios.png",scale = 2)
 
 ####Deciles#####
-ingresos.todos <- bind_rows(ingresos.eph.asalariados.calif,
-                            ingresos.asec.asalariados.calif,
-                            asal.Calificacion.europa %>% 
-                              rename(decil.m.promedio = PromedioDecil))%>% 
-  mutate(tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
-         tamanio.calif = factor(tamanio.calif,
-                                levels = 
-                                  c("Pequeño - Baja",
-                                    "Pequeño - Media",
-                                    "Pequeño - Alta",
-                                    "Mediano - Baja",
-                                    "Mediano - Media", 
-                                    "Mediano - Alta",
-                                    "Grande - Baja",
-                                    "Grande - Media",
-                                    "Grande - Alta")))
-
-
 ingresos.todos %>% 
-  filter((ANO4 == 2018 & !(Pais %in% c("DE","ES")))|
-          ANO4 == 2017 & Pais %in% c("DE","ES")) %>% 
-  filter(Pais != "SE") %>% 
+  filter((ANO4 == 2018 & !(COD.ENCUESTAS %in% c("DE","ES")))|
+          ANO4 == 2017 & COD.ENCUESTAS %in% c("DE","ES")) %>% 
+  filter(COD.ENCUESTAS != "SE") %>% 
   ggplot(.,
          aes(x = tamanio.calif, y = decil.m.promedio,
              fill = tamanio.calif,group = tamanio.calif,
@@ -340,9 +363,67 @@ ingresos.todos %>%
         panel.grid.minor.x = element_line(colour = "grey"),
         panel.grid.major.x = element_line(colour = "grey"))+
   scale_fill_manual(values = paleta)+
-  facet_wrap(~Pais)
+  facet_wrap(~COD.ENCUESTAS)
 
 ggsave("Resultados/deciles.png",scale = 3)
+
+########Salarios###########
+ingresos.todos %>% 
+  filter((ANO4 == 2018 & !(COD.ENCUESTAS %in% c("DE","ES")))|
+           ANO4 == 2017 & COD.ENCUESTAS %in% c("DE","ES")) %>% 
+  filter(COD.ENCUESTAS != "SE") %>% 
+  ggplot(.,
+         aes(x = COD.ENCUESTAS, y = ingreso.mensual.ppa,
+             fill = tamanio.calif,group = tamanio.calif,
+             label = round(ingreso.mensual.ppa,2))) +
+  geom_col(position = "dodge")+
+  #geom_text(position = position_dodge(),size=2.5,angle = 90)+
+  labs(title = "Ingreso promedio en PPA según perfiles. Año 2018")+
+  theme_tufte()+
+  theme(legend.position = "none",
+        legend.direction = "vertical",
+        axis.title = element_blank(),
+        axis.text.x = element_text(angle = 90),
+        axis.ticks.x = element_blank(),
+        panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_fill_manual(values = paleta)+
+  facet_wrap(~tamanio.calif)
+
+ggsave("Resultados/salariosPPA.png",scale = 2)
+
+
+ingresos.todos %>% 
+  filter((ANO4 == 2018 & !(COD.ENCUESTAS %in% c("DE","ES")))|
+           ANO4 == 2017 & COD.ENCUESTAS %in% c("DE","ES")) %>% 
+  filter(COD.ENCUESTAS != "SE") %>% 
+  ggplot(.,
+         aes(x = tamanio.calif, y = ingreso.mensual.prom,
+             fill = tamanio.calif,group = tamanio.calif,
+             label = round(ingreso.mensual.ppa,2))) +
+  geom_col(position = "dodge")+
+  #geom_text(position = position_dodge(),size=2.5,angle = 90)+
+  labs(title = "Ingreso promedio en moneda nacional según perfiles. Año 2018")+
+  theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        axis.title = element_blank(),
+        #axis.text.x = element_text(angle = 90),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_fill_manual(values = paleta)+
+  facet_wrap(~COD.ENCUESTAS,scales = "free_y")
+
+ggsave("Resultados/salarios_moneda_nac.png",scale = 2)
+
 #####Part Time Involuntario#####
 calif.graf %>% 
   filter((ANO4 == 2018 & !(Pais %in% c("DE","ES")))|
@@ -369,53 +450,115 @@ calif.graf %>%
   scale_y_continuous(labels = scales::percent)+
   facet_wrap(~Pais)
 
+###Evolucion PT. Invol####
+calif.graf %>% 
+  filter(Pais != "SE") %>% 
+  ggplot(.,
+         aes(x = as.character(ANO4), y = tasa.part.invol,
+             color = tamanio.calif,group = tamanio.calif,
+             label = round(tasa.part.invol,2))) +
+  geom_line(size = 1)+
+  geom_point(size = 1.2)+
+  #geom_text(position = position_dodge(),size=2.5,angle = 90)+
+  labs(title = "Evolución de la tasa de part time involuntario")+
+  theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        axis.title = element_blank(),
+        legend.title = element_blank(),
+        axis.text.x = element_text(angle = 90),
+        axis.ticks.x = element_blank(),
+        panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_color_manual(values = paleta)+
+  facet_wrap(~Pais,scales = "free_y")
+
+ggsave("Resultados/evol_part_time.png",scale = 2)
+
+
+
+
 
 ####PRUEBA DE CLUSTERING#####
-set.seed(101)
-indic.clusters <- EPH.ingresos.deciles %>%
-  filter(grupos.tamanio != "Ns/Nr",grupos.calif  %in% c("Alta","Media","Baja")) %>% 
-  filter(TRIMESTRE == 4,ANO4 == 2018) %>% 
-  arrange(grupos.tamanio,grupos.calif) %>% 
-  mutate(tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
-         tamanio.calif = factor(tamanio.calif,
-                                levels = unique(tamanio.calif))) %>% 
-  ungroup() %>% 
-  mutate(ingreso.mensual.escalado = scale(ingreso.mensual),
-         horas.trabajadas.escaladas=scale(PP3E_TOT)) %>% 
-  filter(!is.na(horas.trabajadas.escaladas))
+#  set.seed(101)
+# indic.clusters <- EPH.ingresos.deciles %>%
+#   filter(grupos.tamanio != "Ns/Nr",grupos.calif  %in% c("Alta","Media","Baja")) %>%
+#   filter(TRIMESTRE == 4,ANO4 == 2018) %>%
+#   arrange(grupos.tamanio,grupos.calif) %>%
+#   mutate(tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
+#          tamanio.calif = factor(tamanio.calif,
+#                                 levels = unique(tamanio.calif))) %>%
+#   ungroup() %>%
+#   mutate(ingreso.mensual.escalado = scale(ingreso.mensual),
+#          horas.trabajadas.escaladas=scale(PP3E_TOT)) %>%
+#   filter(!is.na(horas.trabajadas.escaladas))
+# 
+# 
+# 
+# sector_clusters.norm <- kmeans(
+#   x = indic.clusters[, c("ingreso.mensual.escalado",
+#                          "horas.trabajadas.escaladas")],
+#   centers = 3, nstart = 50)
+# 
+# indic.clusters <- indic.clusters %>%
+#   ungroup() %>%
+#   mutate(cluster_norm = sector_clusters.norm$cluster,
+#          cluster_norm = as.factor(cluster_norm))
+# 
+# options(scipen = 999)
+# cluster.graf <- ggplot(indic.clusters,
+#                        aes(x=ingreso.mensual,
+#                            y=PP3E_TOT,
+#                            shape = cluster_norm,
+#                            color = tamanio.calif))+
+#   geom_point(size = 2)+
+#   labs(title = "Clasificación de clusers según ingreso y horas trabajadas. 4t 2018",
+#        x = "Ingreso Ocup ppal",
+#        y = "Horas trabajadas" )+
+#   theme_tufte()+
+#   theme(panel.spacing = unit(1,"cm"),
+#         legend.position = "left",
+#         panel.grid.minor.x = element_line(colour = "grey"),
+#         panel.grid.minor.y= element_line(colour = "grey"),
+#         panel.grid.major.x = element_line(colour = "grey30"),
+#         panel.grid.major.y = element_line(colour = "grey30"),
+#         text = element_text(size = 15))+
+#   scale_fill_grey()+
+#   scale_x_continuous(limits = c(0,100000))+
+#   scale_color_manual(values = paleta)
 
-sector_clusters.norm <- kmeans(
-  x = indic.clusters[, c("ingreso.mensual.escalado",
-                         "horas.trabajadas.escaladas")],
-  centers = 3, nstart = 50)
+# ggsave("Resultados/clustering.png",plot = cluster.graf,scale = 2)
 
-indic.clusters <- indic.clusters %>%
-  ungroup() %>% 
-  mutate(cluster_norm = sector_clusters.norm$cluster,
-         cluster_norm = as.factor(cluster_norm))
+###Prueba 2###
 
-options(scipen = 999)
-cluster.graf <- ggplot(indic.clusters,
-                       aes(x=ingreso.mensual,
-                           y=PP3E_TOT,
-                           shape = cluster_norm,
-                           color = tamanio.calif))+
-  geom_point(size = 2)+
-  labs(title = "Clasificación de clusers según ingreso y horas trabajadas. 4t 2018",
-       x = "Ingreso Ocup ppal",
-       y = "Horas trabajadas" )+
-  theme_tufte()+
-  theme(panel.spacing = unit(1,"cm"),
-        legend.position = "left",
-        panel.grid.minor.x = element_line(colour = "grey"),
-        panel.grid.minor.y= element_line(colour = "grey"),
-        panel.grid.major.x = element_line(colour = "grey30"),
-        panel.grid.major.y = element_line(colour = "grey30"),
-        text = element_text(size = 15))+
-  scale_fill_grey()+
-  scale_x_continuous(limits = c(0,100000))+
-  scale_color_manual(values = paleta)
-
-ggsave("Resultados/clustering.png",plot = cluster.graf,scale = 2)
-
-
+#' matrix <- as.matrix(indic.clusters %>% filter(PP07H %in% 1:2) %>% 
+#'   select(ingreso.mensual,PP3E_TOT,PP07H)) 
+#' 
+#' gower_dist <- daisy(matrix, metric = "gower")
+#' 
+#' gower_mat <- as.matrix(gower_dist)
+#' 
+#' #' Print most dissimilar cases
+#' df[which(gower_mat == max(gower_mat[gower_mat != max(gower_mat)]), arr.ind = TRUE)[1, ], ]
+#' 
+#' sil_width <- c(NA)
+#' for(i in 2:8){  
+#'   pam_fit <- pam(gower_dist, diss = TRUE, k = i)  
+#'   sil_width[i] <- pam_fit$silinfo$avg.width  
+#' }
+#' 
+#' plot(1:8, sil_width,
+#'       xlab = "Number of clusters",
+#'       ylab = "Silhouette Width")
+#' lines(1:8, sil_width)
+#' names(EPH.ingresos.deciles)
+#' k <- 5
+#' pam_fit <- pam(gower_dist, diss = TRUE, k)
+#' pam_results <- as.data.frame(matrix) %>%
+#'   mutate(cluster = pam_fit$clustering) %>%
+#'   group_by(cluster) %>%
+#'   do(the_summary = summary(.))
+#' pam_results$the_summary
