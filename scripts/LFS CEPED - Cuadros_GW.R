@@ -205,10 +205,10 @@ write.xlsx(as.data.frame(PTFTPromedioDecilesCalif), paste0(CarpetaRdos, "Restult
 countries <- c("ES", "FR", "UK", "DE", "GR", "IT", "PT", "DK", "BG", "RO")
 i <- 1
 
-# OcupadosCalif_bind <- data.frame()
-# OcupadosEduc_bind <- data.frame()
-# AsalaCalif_bind <- data.frame()
-# AsalaEduc_bind <- data.frame()
+OcupadosCalif_bind <- data.frame()
+OcupadosEduc_bind <- data.frame()
+AsalaCalif_bind <- data.frame()
+AsalaEduc_bind <- data.frame()
 
 while (i < length(countries) + 1) {
 
@@ -324,19 +324,19 @@ while (i < length(countries) + 1) {
   AsalaEduc <-  AsalaEduc[,c(4, 1, 2, 3, 5, 13, 6:12)]
   
   #Lo guardo en Excel
-  write.xlsx(as.data.frame(OcupadosCalif), paste0(CarpetaRdos, countries[i], ".xlsx"), sheetName = "Ocupados.calif", append = TRUE, row.names = FALSE)
-  write.xlsx(as.data.frame(OcupadosEduc), paste0(CarpetaRdos, countries[i], ".xlsx"), sheetName = "Ocupados.nivel.ed", append = TRUE, row.names = FALSE)
-  write.xlsx(as.data.frame(AsalaCalif), paste0(CarpetaRdos, countries[i], ".xlsx"), sheetName = "Asalariados.nivel.ed", append = TRUE, row.names = FALSE)
-  write.xlsx(as.data.frame(AsalaEduc), paste0(CarpetaRdos, countries[i], ".xlsx"), sheetName = "Asalariados.calif", append = TRUE, row.names = FALSE)
+  # write.xlsx(as.data.frame(OcupadosCalif), paste0(CarpetaRdos, countries[i], ".xlsx"), sheetName = "Ocupados.calif", append = TRUE, row.names = FALSE)
+  # write.xlsx(as.data.frame(OcupadosEduc), paste0(CarpetaRdos, countries[i], ".xlsx"), sheetName = "Ocupados.nivel.ed", append = TRUE, row.names = FALSE)
+  # write.xlsx(as.data.frame(AsalaCalif), paste0(CarpetaRdos, countries[i], ".xlsx"), sheetName = "Asalariados.nivel.ed", append = TRUE, row.names = FALSE)
+  # write.xlsx(as.data.frame(AsalaEduc), paste0(CarpetaRdos, countries[i], ".xlsx"), sheetName = "Asalariados.calif", append = TRUE, row.names = FALSE)
   
-# OcupadosCalif_bind <-   bind_rows(OcupadosCalif,OcupadosCalif_bind)
-# OcupadosEduc_bind <-    bind_rows(OcupadosEduc,OcupadosEduc_bind)
-# AsalaCalif_bind <-    bind_rows(AsalaCalif,AsalaCalif_bind)
-# AsalaEduc_bind <-    bind_rows(AsalaEduc,AsalaEduc_bind)  
+OcupadosCalif_bind <-   bind_rows(OcupadosCalif,OcupadosCalif_bind)
+OcupadosEduc_bind <-    bind_rows(OcupadosEduc,OcupadosEduc_bind)
+AsalaCalif_bind <-    bind_rows(AsalaCalif,AsalaCalif_bind)
+AsalaEduc_bind <-    bind_rows(AsalaEduc,AsalaEduc_bind)
   
   i <- i+1
 }
   
 save(OcupadosCalif_bind,OcupadosEduc_bind,
      AsalaCalif_bind,AsalaEduc_bind,
-     file = "Resultados/EUROPA.RDATA")
+     file = paste0(CarpetaRdos,"EUROPA.RDATA"))
