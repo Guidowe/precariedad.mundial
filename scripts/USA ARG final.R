@@ -59,6 +59,7 @@ Variables0814  <- c("CODUSU","NRO_HOGAR","COMPONENTE","ANO4","TRIMESTRE" ,"AGLOM
                       "PP04A", "PP04B_COD","PP07H","P21","PONDERA","PP04D_COD","PP04B_CAES","PP04C",
                       "PP07A","PP05B2_ANO","PP04B3_ANO","PP07E","NIVEL_ED","DECOCUR",
                       "PP11D_COD","PP04C","PP04C99","PP03G","PP3E_TOT")
+
 bases_bind <- bind_rows(
 Base_ARG0814 %>% select(Variables0814),
 Base_ARG1719 %>% select(Variables1719)) %>% 
@@ -89,7 +90,7 @@ gc()
                      "OINCWAGE","WKSWORK1","UHRSWORKLY",
                      "ASECWT","EARNWT","ASECFLAG") 
 
- 
+ table(Base_USA$UHRSWORKLY)
 ####Crosswalk USA#####
   
 cross.census.a.soc <- ocup_usa %>% 
@@ -181,37 +182,44 @@ Chequeo.todo.joya <- Base_Usa_sampleada %>%
 Base_USA.cat <- Base_Usa_sampleada %>% 
   mutate(
     grupos.calif = factor(subjetividad,levels = c("Baja","Media","Alta")),
-    grupos.tamanio = factor(case_when(FIRMSIZE==1~"Pequeño",
-                                           FIRMSIZE %in% 2:4~"Mediano",
-                                           FIRMSIZE %in% 5:9~"Grande",
-                                           FIRMSIZE %in% 0 ~ "Ns/Nr"),
-                                 levels = c("Pequeño","Mediano","Grande","Ns/Nr")),
-         grupos.nivel.ed = factor(case_when(EDUC %in% 2:72~ "Menor a Secundaria",
-                                            EDUC %in% 73:110~ "Secundaria Completa",
-                                            EDUC %in% 111:125~ "Superior Completo",
-                                            TRUE ~ "Ns/Nr"),
-                                  c("Menor a Secundaria","Secundaria Completa","Superior Completo")),
-         Categoria =  case_when(CLASSWLY %in% 10:19 ~ "Patrones y CP",
-                                   CLASSWLY  %in% 20:28 ~ "Asalariados",
-                                   CLASSWLY == 29 ~ "TFSR",
-                                   CLASSWLY == 99 ~ "Ns/Nr"),
+    grupos.tamanio = factor(case_when(
+      FIRMSIZE==1~"Pequeño",
+      FIRMSIZE %in% 2:4~"Mediano",
+      FIRMSIZE %in% 5:9~"Grande",
+      FIRMSIZE %in% 0 ~ "Ns/Nr"),
+      levels = c("Pequeño","Mediano","Grande","Ns/Nr")),
+    grupos.nivel.ed = factor(case_when(
+      EDUC %in% 2:72~ "Menor a Secundaria",
+      EDUC %in% 73:110~ "Secundaria Completa",
+      EDUC %in% 111:125~ "Superior Completo",
+      TRUE ~ "Ns/Nr"),
+      c("Menor a Secundaria","Secundaria Completa","Superior Completo")),
+    Categoria =  case_when(
+      CLASSWLY %in% 10:19 ~ "Patrones y CP",
+      CLASSWLY  %in% 20:28 ~ "Asalariados",
+      CLASSWLY == 29 ~ "TFSR",
+      CLASSWLY == 99 ~ "Ns/Nr"),
          # Categoria =  case_when(CLASSWKR %in% 10:19 ~ "Patrones y CP",
          #                        CLASSWKR  %in% 20:28 ~ "Asalariados",
          #                        CLASSWKR == 29 ~ "TFSR",
          #                        CLASSWKR == 99 ~ "Ns/Nr"),
-         pension = case_when(PENSION %in% 1:2 ~ "No",
-                             PENSION %in% 3 ~ "Si",
-                             PENSION %in% 0 ~ "NIU"),
+    pension = case_when(
+      PENSION %in% 1:2 ~ "No",
+      PENSION %in% 3 ~ "Si",
+      PENSION %in% 0 ~ "NIU"),
          # part.time.inv = case_when(WKSTAT  %in%  20:42 &
          #                             WHYPTLWK %in% c(10:40,
          #                                             52,60,17:81,
          #                                             4)~"Involunt",
          #                           TRUE ~ "Resto"),
-         part.time.inv = case_when(FULLPART == 2 & WHYPTLY %in% c(1,3,4)~"Part Involunt",
-                                   FULLPART == 2 & WHYPTLY %in% c(2)~"Part Volunt",
-                                   FULLPART == 1 ~"Full Time",
-                                      TRUE ~ "Otros"))
-
+    part.time.inv = case_when(
+      FULLPART == 2 & WHYPTLY %in% c(1,3,4)~"Part Involunt",
+      FULLPART == 2 & WHYPTLY %in% c(2)~"Part Volunt",
+      FULLPART == 1 ~"Full Time",
+      TRUE ~ "Otros"),
+    sobreocup = case_when(UHRSWORKLY %in%  46:99~"Si",
+                          UHRSWORKLY %in%  1:45~"No"))
+table(Base_EPH.cat$sobreocup)
 ####ARG categorias####
 Base_EPH.cat <- bases_bind %>%
   eph::organize_cno() %>% 
@@ -257,9 +265,9 @@ Base_EPH.cat <- bases_bind %>%
     part.time.inv = case_when(ESTADO == 1 & PP3E_TOT < 35 & PP03G == 1 ~ "Part Involunt",
                               ESTADO == 1 & PP3E_TOT < 35 & PP03G == 2 ~"Part Volunt",
                               ESTADO == 1 & PP3E_TOT >= 35  ~"Full Time",
-                              TRUE ~ "Otros"))
-
-
+                              TRUE ~ "Otros"),
+    sobreocup = case_when(PP3E_TOT >=  46 & PP3E_TOT <=168 ~"Si",
+                          PP3E_TOT >=  1 & PP3E_TOT <=45  ~ "No"))
 ##ARG insercion ----
 insercion.niveles.arg.trim <- Base_EPH.cat %>% 
   group_by(ANO4,TRIMESTRE,grupos.nivel.ed) %>% 
@@ -308,7 +316,6 @@ desocup.calif.ant.usa <- Base_USA.cat %>%
   mutate(distribucion = desocupados/sum(desocupados))
 
 
-organize_caes()
 ##Filtros ARG##### 
 eph.ocup.privados <- Base_EPH.cat %>% 
   filter(!(ANO4 %in% 2011:2020 & PP04B_COD %in% c(83:84,8300:8499,#Adm Publica
@@ -335,7 +342,7 @@ usa.ocup.privados <- Base_USA.cat %>%
 ##Base unificada (No ingresos)####
 variables_comunes <- 
   c("ANO4","TRIMESTRE","Pais","grupos.nivel.ed","grupos.tamanio",
-    "Categoria","grupos.calif","PONDERA","part.time.inv")
+    "Categoria","grupos.calif","PONDERA","part.time.inv","sobreocup")
 
 base.unica <- bind_rows(
   eph.ocup.privados %>% select(variables_comunes,descuento_jubil),
@@ -386,9 +393,12 @@ perfiles.ocupados.nivel.ed <- base.unica %>%
             tasa.asalarizacion = asalariados/total,
             part.involun = sum(PONDERA[part.time.inv=="Part Involunt"]),
             part.volunt = sum(PONDERA[part.time.inv=="Part Volunt"]),
+            sobreocupados = sum(PONDERA[sobreocup=="Si"],na.rm = TRUE),
+            no.sobreocupados = sum(PONDERA[sobreocup=="No"],na.rm = TRUE),
             full.time = sum(PONDERA[part.time.inv=="Full Time"]),
             resto = sum(PONDERA[part.time.inv=="Otros"]),
             tasa.part.invol = part.involun/(part.volunt+part.involun+full.time),
+            tasa.sobreocup = sobreocupados/(sobreocupados+no.sobreocupados),
             s_desc_jubilat =sum(PONDERA[descuento_jubil=="No"],na.rm = T),
             c_desc_jubilat =sum(PONDERA[descuento_jubil=="Si"],na.rm = T),
             s_pension =sum(PONDERA[pension=="No"],na.rm = T),
@@ -426,9 +436,12 @@ perfiles.ocupados.calif <- base.unica %>%
             tasa.asalarizacion = asalariados/total,
             part.involun = sum(PONDERA[part.time.inv=="Part Involunt"]),
             part.volunt = sum(PONDERA[part.time.inv=="Part Volunt"]),
+            sobreocupados = sum(PONDERA[sobreocup=="Si"],na.rm = TRUE),
+            no.sobreocupados = sum(PONDERA[sobreocup=="No"],na.rm = TRUE),
             full.time = sum(PONDERA[part.time.inv=="Full Time"]),
             resto = sum(PONDERA[part.time.inv=="Otros"]),
             tasa.part.invol = part.involun/(part.volunt+part.involun+full.time),
+            tasa.sobreocup = sobreocupados/(sobreocupados+no.sobreocupados),
             s_desc_jubilat =sum(PONDERA[descuento_jubil=="No"],na.rm = T),
             c_desc_jubilat =sum(PONDERA[descuento_jubil=="Si"],na.rm = T),
             s_pension =sum(PONDERA[pension=="No"],na.rm = T),
@@ -468,9 +481,12 @@ perfiles.asalariados.nivel.ed <- base.unica %>%
             tasa.asalarizacion = asalariados/total,
             part.involun = sum(PONDERA[part.time.inv=="Part Involunt"]),
             part.volunt = sum(PONDERA[part.time.inv=="Part Volunt"]),
+            sobreocupados = sum(PONDERA[sobreocup=="Si"],na.rm = TRUE),
+            no.sobreocupados = sum(PONDERA[sobreocup=="No"],na.rm = TRUE),
             full.time = sum(PONDERA[part.time.inv=="Full Time"]),
             resto = sum(PONDERA[part.time.inv=="Otros"]),
             tasa.part.invol = part.involun/(part.volunt+part.involun+full.time),
+            tasa.sobreocup = sobreocupados/(sobreocupados+no.sobreocupados),
             s_desc_jubilat =sum(PONDERA[descuento_jubil=="No"],na.rm = T),
             c_desc_jubilat =sum(PONDERA[descuento_jubil=="Si"],na.rm = T),
             s_pension =sum(PONDERA[pension=="No"],na.rm = T),
@@ -509,9 +525,12 @@ perfiles.asalariados.calif <- base.unica %>%
             tasa.asalarizacion = asalariados/total,
             part.involun = sum(PONDERA[part.time.inv=="Part Involunt"]),
             part.volunt = sum(PONDERA[part.time.inv=="Part Volunt"]),
+            sobreocupados = sum(PONDERA[sobreocup=="Si"],na.rm = TRUE),
+            no.sobreocupados = sum(PONDERA[sobreocup=="No"],na.rm = TRUE),
             full.time = sum(PONDERA[part.time.inv=="Full Time"]),
             resto = sum(PONDERA[part.time.inv=="Otros"]),
             tasa.part.invol = part.involun/(part.volunt+part.involun+full.time),
+            tasa.sobreocup = sobreocupados/(sobreocupados+no.sobreocupados),
             s_desc_jubilat =sum(PONDERA[descuento_jubil=="No"],na.rm = T),
             c_desc_jubilat =sum(PONDERA[descuento_jubil=="Si"],na.rm = T),
             s_pension =sum(PONDERA[pension=="No"],na.rm = T),

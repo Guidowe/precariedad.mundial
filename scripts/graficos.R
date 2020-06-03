@@ -27,19 +27,20 @@ PPA <- read.xlsx("data/Prod y Salarios.xlsx",
 #Argentina y USA#
 load("Resultados/ARG_USA.RDATA")
 ##Europa#
-Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 19.5.xlsx",
+Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 29.5.xlsx",
                                  sheet = "Ocupados.calif") %>% 
   mutate(ANO4 = as.numeric(ANO4))
-Educacion.europa <- read.xlsx("Resultados/RestultadosLFS 19.5.xlsx",
+Educacion.europa <- read.xlsx("Resultados/RestultadosLFS 29.5.xlsx",
                               sheet = "Ocupados.nivel.ed")%>% 
   mutate(ANO4 = as.numeric(ANO4))
-asal.Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 19.5.xlsx",
+asal.Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 29.5.xlsx",
                                  sheet = "Asalariados.nivel.ed") %>% 
   mutate(ANO4 = as.numeric(ANO4))
 
-desoc.Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 19.5.xlsx",
+desoc.Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 29.5.xlsx",
                                       sheet = "Desocup.Calif") 
 
+##Europa Paises#
 
 
 
@@ -83,7 +84,7 @@ ingresos.todos <- asal.Calificacion.europa  %>%
                                     "Grande - Alta")))
 
 
-
+########PALETA#####
 azul <- colorspace::diverge_hcl(n = 12,h = c(255,330),
                                 l = c(40,90))[c(4,2,1)]
 verde <- colorspace::diverge_hcl(n = 12,h = c(130,43),
@@ -238,7 +239,7 @@ Particip.nivel <- Educacion.todos %>%
   summarise(Particip_emp = sum(Particip_emp))
 
 Particip.nivel %>% 
-  filter(ANO4 == 2018|Pais %in% c("DE","ES")) %>% 
+  filter(ANO4 == 2014|Pais %in% c("DE","ES")) %>% 
   ggplot(.,
          aes(x = Pais, y = Particip_emp,
              fill = grupos.nivel.ed,group = grupos.nivel.ed,
@@ -302,18 +303,27 @@ desocup.usa <- desocup.calif.ant.usa %>%
   select(-desocupados) %>% 
   rename(ANO4 =YEAR,particip.desocup = distribucion)
 
-A <- desoc.Calificacion.europa
+desocup.europa <- desoc.Calificacion.europa %>% 
+  select(ANO4,
+         Pais,
+         grupos.calif = CALIF,
+         particip.desocup = Por.Desocup,
+         Particip_emp = Por.Ocup) 
 
 desocup.calif <- desocup.arg %>% 
   bind_rows(desocup.usa)%>%
   left_join(Particip.calif) %>% 
+  bind_rows(desocup.europa)%>% 
+  mutate(Brecha = Particip_emp - particip.desocup) %>% 
   pivot_longer(cols = c(4,5),names_to = "distrib",values_to = "Valor") %>% 
   mutate(grupos.calif = factor(grupos.calif,
-                               levels = c("Baja","Media","Alta"))) 
+                               levels = c("Baja","Media","Alta")),
+         distrib = factor(distrib,
+                          levels = c("Particip_emp","particip.desocup"))) 
   
 
 desocup.calif %>% 
-  filter(ANO4 == 2018|Pais %in% c("DE","ES")) %>%  
+  filter(ANO4 == 2014|Pais == "ES") %>%  
 ggplot(.,
        aes(x=distrib,
            y=Valor,
@@ -322,7 +332,8 @@ ggplot(.,
            group = grupos.calif))+
   geom_col(position = "stack")+
   geom_text(position = position_stack(vjust = .5),size=2.5)+
-  labs(title = "Distribución de desocupados con empleo anterior y participación en el empleo según calificación")+
+  labs(title = "Distribución de desocupados con empleo anterior y participación en el empleo según calificación",
+       subtitle = "Año 2014")+
   theme_tufte()+
   theme(legend.position = "left",
         legend.direction = "vertical",
@@ -334,10 +345,10 @@ ggplot(.,
         panel.grid.minor.x = element_line(colour = "grey"),
         panel.grid.major.x = element_line(colour = "grey"))+
   scale_fill_manual(values = paleta3) +
-  facet_wrap(~Pais)
+  facet_wrap(~Pais,scales = "free_x")
 
 
-ggsave("Resultados/productividad_salarios.png",scale = 2)
+ggsave("Resultados/desocupacion anterior.png",scale = 2)
 
 ####Deciles#####
 ingresos.todos %>% 
@@ -368,9 +379,9 @@ ingresos.todos %>%
 ggsave("Resultados/deciles.png",scale = 3)
 
 ########Salarios###########
-ingresos.todos %>% 
-  filter((ANO4 == 2018 & !(COD.ENCUESTAS %in% c("DE","ES")))|
-           ANO4 == 2017 & COD.ENCUESTAS %in% c("DE","ES")) %>% 
+asingresos.todos %>% 
+  filter((ANO4 == 2014 & !(COD.ENCUESTAS %in% c("ES")))|
+           COD.ENCUESTAS %in% c("ES")) %>% 
   filter(COD.ENCUESTAS != "SE") %>% 
   ggplot(.,
          aes(x = COD.ENCUESTAS, y = ingreso.mensual.ppa,
@@ -378,7 +389,7 @@ ingresos.todos %>%
              label = round(ingreso.mensual.ppa,2))) +
   geom_col(position = "dodge")+
   #geom_text(position = position_dodge(),size=2.5,angle = 90)+
-  labs(title = "Ingreso promedio en PPA según perfiles. Año 2018")+
+  labs(title = "Ingreso promedio en PPA según perfiles. Año 2014")+
   theme_tufte()+
   theme(legend.position = "none",
         legend.direction = "vertical",
