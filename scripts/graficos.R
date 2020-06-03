@@ -14,6 +14,14 @@ Productividad <- read.xlsx("data/Prod y Salarios.xlsx",
                            sheet = 2,startRow = 2) %>% 
   rename(COD.OCDE = LOCATION, name = label.x)
 
+
+PPA_WB <- read.csv("data/PPA.csv") %>% 
+  filter(Classification.Code == "PPPGlob",Series.Code == 9020000) %>% 
+  pivot_longer(cols = 7:ncol(.),
+               names_to = "Año",
+               values_to = "Valor")  
+  
+
 PPA <- read.xlsx("data/Prod y Salarios.xlsx",
                            sheet = 3) %>% 
   rename(ANO4 = Coeficientes) %>% 
