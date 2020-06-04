@@ -398,37 +398,38 @@ perfiles.ocupados.calif <- base.unica %>%
   filter(grupos.tamanio != "Ns/Nr",grupos.calif %in% c("Alta","Media","Baja")) %>% 
   group_by(grupos.calif,grupos.tamanio,Pais,ANO4,TRIMESTRE) %>% 
   summarise(casos.muestrales=n(),
-            total = sum(PONDERA,na.rm = TRUE),
+            total.ocupados = sum(PONDERA,na.rm = TRUE),
             asalariados = sum(PONDERA[Categoria=="Asalariados"]),
-            tasa.asalarizacion = asalariados/total,
+            tasa.asalarizacion = asalariados/total.ocupados,
             part.involun = sum(PONDERA[part.time.inv=="Part Involunt"]),
             part.volunt = sum(PONDERA[part.time.inv=="Part Volunt"]),
-            sobreocupados = sum(PONDERA[sobreocup=="Si"],na.rm = TRUE),
-            no.sobreocupados = sum(PONDERA[sobreocup=="No"],na.rm = TRUE),
             full.time = sum(PONDERA[part.time.inv=="Full Time"]),
             resto = sum(PONDERA[part.time.inv=="Otros"]),
-            tasa.part.invol = part.involun/(part.volunt+part.involun+full.time),
-            tasa.sobreocup = sobreocupados/(sobreocupados+no.sobreocupados),
-            s_desc_jubilat =sum(PONDERA[descuento_jubil=="No"],na.rm = T),
-            c_desc_jubilat =sum(PONDERA[descuento_jubil=="Si"],na.rm = T),
-            s_pension =sum(PONDERA[pension=="No"],na.rm = T),
-            c_pension =sum(PONDERA[pension=="Si"],na.rm = T),
-            tasa.s.desc.jubil = s_desc_jubilat/(c_desc_jubilat+s_desc_jubilat),
-            tasa.s.pension = s_pension/(c_pension+s_pension),
-            part.involun.s_desc = sum(PONDERA[part.time.inv=="Part Involunt" & descuento_jubil=="No"],na.rm = T),
-            part.involun.c_desc =sum(PONDERA[part.time.inv=="Part Involunt" & descuento_jubil=="Si"],na.rm = T),
-            tasa.cooc.invol.s.desc = part.involun.s_desc/(part.involun.s_desc+part.involun.c_desc),
-            no.part.involun.s_desc =sum(PONDERA[part.time.inv!="Part Involunt" & descuento_jubil=="No"],na.rm = T),
-            no.part.part.involun.c_desc =sum(PONDERA[part.time.inv!="Part Involunt" & descuento_jubil=="Si"],na.rm = T),
-            tasa.cooc.no.invol.s.desc = no.part.involun.s_desc/(no.part.involun.s_desc+no.part.part.involun.c_desc),
-            part.involun.s_pension = sum(PONDERA[part.time.inv=="Part Involunt" & pension=="No"],na.rm = T),
-            part.involun.c_pension =sum(PONDERA[part.time.inv=="Part Involunt" & pension=="Si"],na.rm = T),
-            tasa.cooc.invol.s.pension = part.involun.s_pension/(part.involun.s_pension+part.involun.c_pension),
-            no.part.involun.s_pension =sum(PONDERA[part.time.inv!="Part Involunt" & pension=="No"],na.rm = T),
-            no.part.part.involun.c_pension =sum(PONDERA[part.time.inv!="Part Involunt" & pension=="Si"],na.rm = T),
-            tasa.cooc.no.invol.s.pension = no.part.involun.s_pension/(no.part.involun.s_pension+no.part.part.involun.c_pension)) %>% 
+            sobreocupados = sum(PONDERA[sobreocup=="Si"],na.rm = TRUE),
+            no.sobreocupados = sum(PONDERA[sobreocup=="No"],na.rm = TRUE),
+            tasa.part.invol.ocup = part.involun/total.ocupados,
+            tasa.sobreocup = sobreocupados/total.ocupados
+            # s_desc_jubilat =sum(PONDERA[descuento_jubil=="No"],na.rm = T),
+            # c_desc_jubilat =sum(PONDERA[descuento_jubil=="Si"],na.rm = T),
+            # s_pension =sum(PONDERA[pension=="No"],na.rm = T),
+            # c_pension =sum(PONDERA[pension=="Si"],na.rm = T),
+            # tasa.s.desc.jubil = s_desc_jubilat/(c_desc_jubilat+s_desc_jubilat),
+            # tasa.s.pension = s_pension/(c_pension+s_pension),
+            # part.involun.s_desc = sum(PONDERA[part.time.inv=="Part Involunt" & descuento_jubil=="No"],na.rm = T),
+            # part.involun.c_desc =sum(PONDERA[part.time.inv=="Part Involunt" & descuento_jubil=="Si"],na.rm = T),
+            # tasa.cooc.invol.s.desc = part.involun.s_desc/(part.involun.s_desc+part.involun.c_desc),
+            # no.part.involun.s_desc =sum(PONDERA[part.time.inv!="Part Involunt" & descuento_jubil=="No"],na.rm = T),
+            # no.part.part.involun.c_desc =sum(PONDERA[part.time.inv!="Part Involunt" & descuento_jubil=="Si"],na.rm = T),
+            # tasa.cooc.no.invol.s.desc = no.part.involun.s_desc/(no.part.involun.s_desc+no.part.part.involun.c_desc),
+            # part.involun.s_pension = sum(PONDERA[part.time.inv=="Part Involunt" & pension=="No"],na.rm = T),
+            # part.involun.c_pension =sum(PONDERA[part.time.inv=="Part Involunt" & pension=="Si"],na.rm = T),
+            # tasa.cooc.invol.s.pension = part.involun.s_pension/(part.involun.s_pension+part.involun.c_pension),
+            # no.part.involun.s_pension =sum(PONDERA[part.time.inv!="Part Involunt" & pension=="No"],na.rm = T),
+            # no.part.part.involun.c_pension =sum(PONDERA[part.time.inv!="Part Involunt" & pension=="Si"],na.rm = T),
+            #tasa.cooc.no.invol.s.pension = no.part.involun.s_pension/(no.part.involun.s_pension+no.part.part.involun.c_pension)
+            ) %>% 
   group_by(Pais,ANO4,TRIMESTRE) %>% 
-  mutate(Particip_emp = total/sum(total)) %>% 
+  mutate(particip.ocup = total.ocupados/sum(total.ocupados)) %>% 
   ungroup()
 
 indicadores.anuales.ocupados.calif <- perfiles.ocupados.calif %>% 
@@ -436,56 +437,68 @@ indicadores.anuales.ocupados.calif <- perfiles.ocupados.calif %>%
   summarise_all(mean, na.rm = TRUE) %>% 
   select(-TRIMESTRE) %>% 
   arrange(ANO4,Pais,grupos.tamanio)
-
 #########asal.calif#############################################
 perfiles.asalariados.calif <- base.unica %>% 
   filter(Categoria == "Asalariados") %>% 
   filter(grupos.tamanio != "Ns/Nr",grupos.calif %in% c("Alta","Media","Baja")) %>% 
   group_by(grupos.calif,grupos.tamanio,Pais,ANO4,TRIMESTRE) %>% 
   summarise(casos.muestrales=n(),
-            total = sum(PONDERA,na.rm = TRUE),
-            asalariados = sum(PONDERA[Categoria=="Asalariados"]),
-            tasa.asalarizacion = asalariados/total,
+            total.asal = sum(PONDERA,na.rm = TRUE),
             part.involun = sum(PONDERA[part.time.inv=="Part Involunt"]),
             part.volunt = sum(PONDERA[part.time.inv=="Part Volunt"]),
+            full.time = sum(PONDERA[part.time.inv=="Full Time"]),
+            resto = sum(PONDERA[part.time.inv=="Otros"]),
             sobreocupados = sum(PONDERA[sobreocup=="Si"],na.rm = TRUE),
             no.sobreocupados = sum(PONDERA[sobreocup=="No"],na.rm = TRUE),
             empleo.temporal = sum(PONDERA[tiempo.determinado=="Si"],na.rm = TRUE),
             empleo.no.temporal = sum(PONDERA[tiempo.determinado=="No"],na.rm = TRUE),
-            full.time = sum(PONDERA[part.time.inv=="Full Time"]),
-            resto = sum(PONDERA[part.time.inv=="Otros"]),
             s_desc_jubilat =sum(PONDERA[descuento_jubil=="No"],na.rm = T),
             c_desc_jubilat =sum(PONDERA[descuento_jubil=="Si"],na.rm = T),
             s_pension =sum(PONDERA[pension=="No"],na.rm = T),
             c_pension =sum(PONDERA[pension=="Si"],na.rm = T),
-            tasa.part.invol = part.involun/(part.volunt+part.involun+full.time),
-            tasa.sobreocup = sobreocupados/(sobreocupados+no.sobreocupados),
-            tasa.s.desc.jubil = s_desc_jubilat/(c_desc_jubilat+s_desc_jubilat),
-            tasa.s.pension = s_pension/(c_pension+s_pension),
-            tasa.empleo.temporal = empleo.temporal/(empleo.temporal+empleo.no.temporal),
-            part.involun.s_desc = sum(PONDERA[part.time.inv=="Part Involunt" & descuento_jubil=="No"],na.rm = T),
-            part.involun.c_desc =sum(PONDERA[part.time.inv=="Part Involunt" & descuento_jubil=="Si"],na.rm = T),
-            no.part.involun.s_desc =sum(PONDERA[part.time.inv!="Part Involunt" & descuento_jubil=="No"],na.rm = T),
-            no.part.part.involun.c_desc =sum(PONDERA[part.time.inv!="Part Involunt" & descuento_jubil=="Si"],na.rm = T),
-            tasa.cooc.invol.s.desc = part.involun.s_desc/(part.involun.s_desc+part.involun.c_desc),
-#           tasa.cooc.no.invol.s.desc = no.part.involun.s_desc/(no.part.involun.s_desc+no.part.part.involun.c_desc),
-            part.involun.temporal = sum(PONDERA[part.time.inv=="Part Involunt" & tiempo.determinado=="Si"],na.rm = T),
-            part.involun.no.temporal = sum(PONDERA[part.time.inv=="Part Involunt" & tiempo.determinado=="No"],na.rm = T),
-            no.part.involun.temporal = sum(PONDERA[part.time.inv!="Part Involunt" & tiempo.determinado=="Si"],na.rm = T),
-            no.part.involun.no.temporal = sum(PONDERA[part.time.inv!="Part Involunt" & tiempo.determinado=="No"],na.rm = T),
-            tasa.O.part.involun.o.temporal = 1-(no.part.involun.no.temporal/(part.involun.temporal+
-                                                                    part.involun.no.temporal+
-                                                                    no.part.involun.temporal+
-                                                                    no.part.involun.no.temporal)),
-            tasa.cooc.involun.temporal = part.involun.temporal/(part.involun.temporal+part.involun.no.temporal),
-            part.involun.s_pension = sum(PONDERA[part.time.inv=="Part Involunt" & pension=="No"],na.rm = T),
-            part.involun.c_pension =sum(PONDERA[part.time.inv=="Part Involunt" & pension=="Si"],na.rm = T),
-            tasa.cooc.invol.s.pension = part.involun.s_pension/(part.involun.s_pension+part.involun.c_pension),
-            no.part.involun.s_pension =sum(PONDERA[part.time.inv!="Part Involunt" & pension=="No"],na.rm = T),
-            no.part.part.involun.c_pension =sum(PONDERA[part.time.inv!="Part Involunt" & pension=="Si"],na.rm = T),
-            tasa.cooc.no.invol.s.pension = no.part.involun.s_pension/(no.part.involun.s_pension+no.part.part.involun.c_pension)) %>% 
+            tasa.part.invol = part.involun/total.asal,
+            tasa.sobreocup = sobreocupados/total.asal,
+            tasa.s.desc.jubil = s_desc_jubilat/total.asal,
+            tasa.s.pension = s_pension/total.asal,
+            tasa.empleo.temporal = empleo.temporal/total.asal,
+            precarios.asal = sum(PONDERA[
+              part.time.inv=="Part Involunt" | 
+              descuento_jubil=="No"|
+              empleo.temporal=="Si"],na.rm = TRUE),
+            tasa.1.asalariados = precarios.asal/total.asal,
+            tasa.2.asalariados = sum(PONDERA[
+              (part.time.inv=="Part Involunt" & descuento_jubil=="No")| 
+              (part.time.inv=="Part Involunt" & tiempo.determinado=="Si")| 
+              (tiempo.determinado=="Si"  & descuento_jubil=="No")],
+              na.rm = TRUE)/total.asal,
+            tasa.3.asalariados = sum(PONDERA[
+              part.time.inv=="Part Involunt" &
+              descuento_jubil=="No" &
+                tiempo.determinado=="Si"],na.rm = TRUE)/total.asal
+           #  part.involun.s_desc = sum(PONDERA[part.time.inv=="Part Involunt" & descuento_jubil=="No"],na.rm = T),
+           #  part.involun.c_desc =sum(PONDERA[part.time.inv=="Part Involunt" & descuento_jubil=="Si"],na.rm = T),
+           #  no.part.involun.s_desc =sum(PONDERA[part.time.inv!="Part Involunt" & descuento_jubil=="No"],na.rm = T),
+           #  no.part.part.involun.c_desc =sum(PONDERA[part.time.inv!="Part Involunt" & descuento_jubil=="Si"],na.rm = T),
+           #  tasa.cooc.invol.s.desc = part.involun.s_desc/(part.involun.s_desc+part.involun.c_desc),
+           # tasa.cooc.no.invol.s.desc = no.part.involun.s_desc/(no.part.involun.s_desc+no.part.part.involun.c_desc),
+           #  part.involun.temporal = sum(PONDERA[part.time.inv=="Part Involunt" & tiempo.determinado=="Si"],na.rm = T),
+           #  part.involun.no.temporal = sum(PONDERA[part.time.inv=="Part Involunt" & tiempo.determinado=="No"],na.rm = T),
+           #  no.part.involun.temporal = sum(PONDERA[part.time.inv!="Part Involunt" & tiempo.determinado=="Si"],na.rm = T),
+           #  no.part.involun.no.temporal = sum(PONDERA[part.time.inv!="Part Involunt" & tiempo.determinado=="No"],na.rm = T),
+           #  tasa.O.part.involun.o.temporal = 1-(no.part.involun.no.temporal/(part.involun.temporal+
+           #                                                          part.involun.no.temporal+
+           #                                                          no.part.involun.temporal+
+           #                                                          no.part.involun.no.temporal)),
+           #  tasa.cooc.involun.temporal = part.involun.temporal/(part.involun.temporal+part.involun.no.temporal),
+           #  part.involun.s_pension = sum(PONDERA[part.time.inv=="Part Involunt" & pension=="No"],na.rm = T),
+           #  part.involun.c_pension =sum(PONDERA[part.time.inv=="Part Involunt" & pension=="Si"],na.rm = T),
+           #  tasa.cooc.invol.s.pension = part.involun.s_pension/(part.involun.s_pension+part.involun.c_pension),
+           #  no.part.involun.s_pension =sum(PONDERA[part.time.inv!="Part Involunt" & pension=="No"],na.rm = T),
+           #  no.part.part.involun.c_pension =sum(PONDERA[part.time.inv!="Part Involunt" & pension=="Si"],na.rm = T),
+           #  tasa.cooc.no.invol.s.pension = no.part.involun.s_pension/(no.part.involun.s_pension+no.part.part.involun.c_pension)
+) %>% 
   group_by(Pais,ANO4,TRIMESTRE) %>% 
-  mutate(Particip_emp = total/sum(total)) %>% 
+  mutate(particip.asal = total.asal/sum(total.asal)) %>% 
   ungroup()
 
 indicadores.anuales.asalariados.calif <- perfiles.asalariados.calif %>% 
@@ -493,6 +506,69 @@ indicadores.anuales.asalariados.calif <- perfiles.asalariados.calif %>%
   summarise_all(mean, na.rm = TRUE) %>% 
   select(-TRIMESTRE) %>% 
   arrange(ANO4,Pais,grupos.tamanio)
+
+###############TCP y Patrones###############
+perfiles.TCP.calif <- base.unica %>% 
+  filter(Categoria %in% c("Patrones y CP","Patrones","TCP"),
+         grupos.tamanio != "Ns/Nr",grupos.calif %in% c("Alta","Media","Baja")) %>% 
+  group_by(grupos.calif,grupos.tamanio,Pais,ANO4,TRIMESTRE) %>% 
+  summarise(casos.muestrales=n(),
+            total.tcp = sum(PONDERA,na.rm = TRUE),
+            part.involun = sum(PONDERA[part.time.inv=="Part Involunt"]),
+            part.volunt = sum(PONDERA[part.time.inv=="Part Volunt"]),
+            full.time = sum(PONDERA[part.time.inv=="Full Time"]),
+            resto = sum(PONDERA[part.time.inv=="Otros"]),
+            sobreocupados = sum(PONDERA[sobreocup=="Si"],na.rm = TRUE),
+            no.sobreocupados = sum(PONDERA[sobreocup=="No"],na.rm = TRUE),
+            tasa.parttime.tcp = part.involun/total.tcp,
+            tasa.sobreocup = sobreocupados/total.tcp
+            # s_desc_jubilat =sum(PONDERA[descuento_jubil=="No"],na.rm = T),
+            # c_desc_jubilat =sum(PONDERA[descuento_jubil=="Si"],na.rm = T),
+            # s_pension =sum(PONDERA[pension=="No"],na.rm = T),
+            # c_pension =sum(PONDERA[pension=="Si"],na.rm = T),
+            # tasa.s.desc.jubil = s_desc_jubilat/(c_desc_jubilat+s_desc_jubilat),
+            # tasa.s.pension = s_pension/(c_pension+s_pension),
+            # part.involun.s_desc = sum(PONDERA[part.time.inv=="Part Involunt" & descuento_jubil=="No"],na.rm = T),
+            # part.involun.c_desc =sum(PONDERA[part.time.inv=="Part Involunt" & descuento_jubil=="Si"],na.rm = T),
+            # tasa.cooc.invol.s.desc = part.involun.s_desc/(part.involun.s_desc+part.involun.c_desc),
+            # no.part.involun.s_desc =sum(PONDERA[part.time.inv!="Part Involunt" & descuento_jubil=="No"],na.rm = T),
+            # no.part.part.involun.c_desc =sum(PONDERA[part.time.inv!="Part Involunt" & descuento_jubil=="Si"],na.rm = T),
+            # tasa.cooc.no.invol.s.desc = no.part.involun.s_desc/(no.part.involun.s_desc+no.part.part.involun.c_desc),
+            # part.involun.s_pension = sum(PONDERA[part.time.inv=="Part Involunt" & pension=="No"],na.rm = T),
+            # part.involun.c_pension =sum(PONDERA[part.time.inv=="Part Involunt" & pension=="Si"],na.rm = T),
+            # tasa.cooc.invol.s.pension = part.involun.s_pension/(part.involun.s_pension+part.involun.c_pension),
+            # no.part.involun.s_pension =sum(PONDERA[part.time.inv!="Part Involunt" & pension=="No"],na.rm = T),
+            # no.part.part.involun.c_pension =sum(PONDERA[part.time.inv!="Part Involunt" & pension=="Si"],na.rm = T),
+            #tasa.cooc.no.invol.s.pension = no.part.involun.s_pension/(no.part.involun.s_pension+no.part.part.involun.c_pension)
+  ) %>% 
+  group_by(Pais,ANO4,TRIMESTRE) %>% 
+  mutate(particip.tcp = total.tcp/sum(total.tcp)) %>% 
+  ungroup()
+
+indicadores.anuales.TPC.calif <- perfiles.TCP.calif %>% 
+  group_by(grupos.calif,grupos.tamanio,Pais,ANO4) %>% 
+  summarise_all(mean, na.rm = TRUE) %>% 
+  select(-TRIMESTRE) %>% 
+  arrange(ANO4,Pais,grupos.tamanio)
+
+options(scipen=999)
+
+PRECARIEDAD <- left_join(
+indicadores.anuales.ocupados.calif %>% 
+  select(ANO4,Pais,grupos.tamanio,grupos.calif,
+         total.ocupados,particip.ocup,tasa.asalarizacion),
+indicadores.anuales.asalariados.calif %>% 
+  select(ANO4,Pais,grupos.tamanio,grupos.calif,
+         total.asal,particip.asal,tasa.1.asalariados,
+         tasa.2.asalariados,tasa.3.asalariados)) %>% 
+  left_join(., 
+indicadores.anuales.TPC.calif %>% 
+  select(ANO4,Pais,grupos.tamanio,grupos.calif,
+         total.tcp,particip.tcp,tasa.parttime.tcp)) 
+# %>% 
+#   mutate(tasa.precariedad = 
+#            (total.asal*tasa.1.asalariados+
+#             total.tcp*tasa.parttime.tcp)/(total.asal+total.tcp))
 
 ###################################Res. Perfiles#############################################
 
@@ -537,31 +613,7 @@ ing.prom.decil.usa <-  Base.USA.ingresos.ASEC.decil %>%
  
  nrow(Base.USA.ingresos.ASEC.decil)
  
- ingresos.asec.asalariados.nivel <- Base.USA.ingresos.ASEC.decil %>% 
-   filter(grupos.tamanio != "Ns/Nr",grupos.nivel.ed != "Ns/Nr") %>% 
-   left_join(ing.prom.decil.usa) %>% 
-   group_by(grupos.nivel.ed,grupos.tamanio,Pais,ANO4) %>%
-   summarise(casos.muestrales=n(),
-             total = sum(ASECWT,na.rm = TRUE),
-             ingreso.horario.prom = weighted.mean(x = ingreso.horario,
-                                                  w = ASECWT),
-             ingreso.horario.mediana = median(ingreso.horario),
-             ingreso.h.coef.variacion = w.cv(ingreso.horario,
-                                           ASECWT),
-             decil.h.promedio = weighted.mean(Decil.ing.hora,ASECWT,na.rm = T),
-             ingreso.mensual.prom = weighted.mean(x = ingreso.mensual,
-                                                  w = ASECWT),
-             ingreso.mensual.via.decil = weighted.mean(x = ing.prom.decil,
-                                                  w = ASECWT),
-             ingreso.mensual.mediana = median(ingreso.mensual),
-             ingreso.m.coef.variacion = w.cv(ingreso.mensual,
-                                             ASECWT),
-             decil.m.promedio = weighted.mean(Decil.ing.mens,ASECWT,na.rm = T)) %>% 
-   ungroup() %>% 
-   mutate(Particip_emp = total/sum(total)*100) %>% 
-   ungroup()%>% 
-   arrange(ANO4,Pais,grupos.tamanio)
- 
+
 ingresos.asec.asalariados.calif <- Base.USA.ingresos.ASEC.decil %>% 
    filter(grupos.tamanio != "Ns/Nr",grupos.calif  %in% c("Alta","Media","Baja")) %>% 
   left_join(ing.prom.decil.usa) %>% 
@@ -676,19 +728,19 @@ ingresos.eph.ocupados.calif <- EPH.ingresos.deciles.ocupados %>%
   arrange(ANO4,Pais,grupos.tamanio)
 
 ###################################Res. ingresos#############################################
-write.xlsx(x = list("USA NIVEL ED" = ingresos.asec.asalariados.nivel,
-                    "USA CALIF" = ingresos.asec.asalariados.calif,
-                    "ARG NIVEL ED" = ingresos.eph.asalariados.nivel ,
-                    "ARG CALIF" =ingresos.eph.asalariados.calif),
-           file = "Resultados/INGRESOS_Arg_USA_2018.xlsx")  
+# write.xlsx(x = list("USA NIVEL ED" = ingresos.asec.asalariados.nivel,
+#                     "USA CALIF" = ingresos.asec.asalariados.calif,
+#                     "ARG NIVEL ED" = ingresos.eph.asalariados.nivel ,
+#                     "ARG CALIF" =ingresos.eph.asalariados.calif),
+#            file = "Resultados/INGRESOS_Arg_USA_2018.xlsx")  
 
-save(insercion.niveles.arg,
+save(
+  insercion.niveles.arg,
   insercion.niveles.usa,
   cruces.educ.calif.abs,
   desocup.calif.ant.usa,
   desocup.calif.ant.arg,
-  indicadores.anuales.ocupados.calif,
-  indicadores.anuales.asalariados.calif,
+  PRECARIEDAD,
   ingresos.asec.asalariados.calif,
   ingresos.eph.asalariados.calif,
   ingresos.eph.ocupados.calif,
