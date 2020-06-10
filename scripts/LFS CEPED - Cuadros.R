@@ -12,12 +12,14 @@ countries <- c("ES", "FR", "UK", "DE", "GR", "IT", "PT", "DK", "BG", "RO")
 i <- 1
 
 Resultados_bind <- data.frame()
+Desocup.Calif_bind <- data.frame()
+Ocup.Calif_bind <- data.frame()
 
 while (i < length(countries) + 1) {
 
   Base <- readRDS(paste0(CarpetaBasesUnificadas, countries[i], "2008-2018.Rda"))
   
-  ## Sacar Sector público, servicio doméstico y trabajadores familiares
+  ## Sacar Sector público y empleo doméstico
   
   Base <- Base           %>%
     filter(NACE1D!="O")  %>%
@@ -54,10 +56,41 @@ while (i < length(countries) + 1) {
   
   Resultados_bind <-   bind_rows(Resultados, Resultados_bind)
   
+  ## DESOCUPADOS CON CALIF ANTERIOR
+  
+  Desocup.Calif <- Base                               %>%
+    filter(COND!="Inactivo" & CALIFANT!="Ns/Nc")       %>%
+    group_by(CALIFANT)                                 %>%
+    summarise('Pais'                    = countries[i],
+              'ANO4'                   =mean(YEAR),
+              'DesocupadosConCalifAnt' = sum(WEIGHT, na.rm=TRUE)) %>%
+    ungroup() %>%
+    mutate('Por.Desocup'  = DesocupadosConCalifAnt/sum(DesocupadosConCalifAnt, na.rm=TRUE))%>% 
+    rename(CALIF=CALIFANT)
+  
+  
+  Desocup.Calif_bind <-   bind_rows(Desocup.Calif, Desocup.Calif_bind)
+  
+  Ocup.Calif <- Base                                 %>%
+    filter(COND=="Ocupado" & CALIF!="Ns/Nc")   %>%
+    group_by(CALIF)  %>%
+    summarise('Pais'                    = countries[i],
+              'Ocupados' = sum(WEIGHT, na.rm=TRUE)) %>%
+    ungroup() %>%
+    mutate('Por.Ocup'  = Ocupados/sum(Ocupados, na.rm=TRUE))
+  
+  Ocup.Calif_bind <-   bind_rows(Ocup.Calif, Ocup.Calif_bind)
+  
+  
   i <- i+1
 }
 
-save(Resultados_bind,
+  Desocup.Calif <- inner_join(Desocup.Calif_bind, Ocup.Calif_bind, by=c("Pais", "CALIF")) %>%
+    mutate(brecha=Por.Desocup/Por.Ocup)
+  
+  
+
+save(Resultados_bind, Desocup.Calif,
      file = paste0(CarpetaRdos,"EUROPA.RDATA"))
 
 
