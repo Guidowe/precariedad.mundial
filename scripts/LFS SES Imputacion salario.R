@@ -1,5 +1,6 @@
 library(tidyverse)
 
+CarpetaBasesUnificadas <- "F:/LFS/BasesUnificadas/" 
 
 ### PROMEDIO DE CADA DECIL
 
@@ -19,15 +20,21 @@ PromedioHorarioDeciles <- SES                                                   
   spread(PAIS, Promedio)                                                        %>% 
   select(-decilhorario)
 
+remove(SES)
+
 #Saco a SE sin datos para deciles
 PromedioDeciles <- PromedioDeciles %>% select(-SE2014)
 PromedioHorarioDeciles <- PromedioHorarioDeciles %>% select(-SE2014)
 #No incluyo a Grecia que no está en SES
 countries <- c("BG", "DE", "DK", "ES", "FR", "IT", "PT",  "RO", "UK")
+PPP <- c(1, 0.834523744, 8.552694151, 0.738510185, 0.832556816, 0.853587053, 0.687558871, 1.217568971, 0.656065473)
 
+
+i <- 1
 while (i < length(countries) + 1) {
-  
-  Base <- readRDS(paste0(CarpetaBasesUnificadas, countries[i], "2008-2018.Rda"))
+
+
+Base <- readRDS(paste0(CarpetaBasesUnificadas, countries[i], "2008-2018.Rda"))
 
 Base <- Base  %>%
   mutate(salarioNAC= case_when(
@@ -56,30 +63,8 @@ Base <- Base  %>%
     INCDECIL==10 ~ PromedioHorarioDeciles[[10,i]]))
 
 Base <- Base %>%
-  mutate(salarioNAC        = case_when(YEAR==2014 ~ salarioNAC), 
-         salariohorarioNAC = case_when(YEAR==2014 ~ salariohorarioNAC))
-
-Base <- Base %>%
-  mutate('salario'= case_when( COUNTRY=="ES" ~ salarioNAC/0.738510185, 
-                               COUNTRY=="FR" ~ salarioNAC/0.832556816    ,
-                               COUNTRY=="IT" ~ salarioNAC/0.853587053    ,
-                               COUNTRY=="PT" ~ salarioNAC/0.687558871    ,
-                               COUNTRY=="UK" ~ salarioNAC/0.656065473    ,
-                               COUNTRY=="RO" ~ salarioNAC/1.217568971    ,
-                               COUNTRY=="SE" ~ salarioNAC/8.447913694    ,
-                               COUNTRY=="DE" ~ salarioNAC/0.834523744    ,
-                               COUNTRY=="DK" ~ salarioNAC/8.552694151    ,
-                               COUNTRY=="BG"  ~ 0), 
-         'salariohorario'= case_when( COUNTRY=="ES" ~ salariohorarioNAC/0.738510185, 
-                                      COUNTRY=="FR" ~ salariohorarioNAC/0.832556816    ,
-                                      COUNTRY=="IT" ~ salariohorarioNAC/0.853587053    ,
-                                      COUNTRY=="PT" ~ salariohorarioNAC/0.687558871    ,
-                                      COUNTRY=="UK" ~ salariohorarioNAC/0.656065473    ,
-                                      COUNTRY=="RO" ~ salariohorarioNAC/1.217568971    ,
-                                      COUNTRY=="SE" ~ salariohorarioNAC/8.447913694    ,
-                                      COUNTRY=="DE" ~ salariohorarioNAC/0.834523744    ,
-                                      COUNTRY=="DK" ~ salariohorarioNAC/8.552694151    ,
-                                      COUNTRY=="BG"  ~ 0))
+  mutate('salario'=  salarioNAC/PPP[i], 
+         'salariohorario'= salariohorarioNAC/PPP[i])
     
 saveRDS(Base, paste0(CarpetaBasesUnificadas, countries[i], "2008-2018.Rda"))    
 
