@@ -456,11 +456,11 @@ perfiles.asalariados.calif <- base.unica %>%
             c_desc_jubilat =sum(PONDERA[descuento_jubil=="Si"],na.rm = T),
             s_pension =sum(PONDERA[pension=="No"],na.rm = T),
             c_pension =sum(PONDERA[pension=="Si"],na.rm = T),
-            tasa.part.invol = part.involun/total.asal,
+            tasa.partime.asal = part.involun/total.asal,
             tasa.sobreocup = sobreocupados/total.asal,
             tasa.s.desc.jubil = s_desc_jubilat/total.asal,
             tasa.s.pension = s_pension/total.asal,
-            tasa.empleo.temporal = empleo.temporal/total.asal,
+            tasa.temp.asal = empleo.temporal/total.asal,
             precarios.asal = sum(PONDERA[
               part.time.inv=="Part Involunt" | 
               descuento_jubil=="No"|
@@ -509,13 +509,10 @@ indicadores.anuales.asalariados.calif <- perfiles.asalariados.calif %>%
 
 precariedad.asal <- indicadores.anuales.asalariados.calif %>%
   #filter(Pais =="ARG") %>% 
-  select(ANO4,Pais,total.asal,grupos.tamanio,grupos.calif,tasa.empleo.temporal,
-         tasa.s.desc.jubil,tasa.part.invol,tasa.1.asalariados,
+  select(ANO4,Pais,total.asal,grupos.tamanio,grupos.calif,tasa.temp.asal,
+         tasa.s.desc.jubil,tasa.partime.asal,tasa.1.asalariados,
          tasa.2.asalariados,tasa.3.asalariados)
 
-
-write.xlsx(x = list("Asalariados" = precariedad.asal),
-                    file = "Resultados/Tasas_Prec.xlsx")  
 
 ###############TCP y Patrones###############
 perfiles.TCP.calif <- base.unica %>% 
@@ -569,16 +566,12 @@ indicadores.anuales.ocupados.calif %>%
          total.ocupados,particip.ocup,tasa.asalarizacion),
 indicadores.anuales.asalariados.calif %>% 
   select(ANO4,Pais,grupos.tamanio,grupos.calif,
-         total.asal,particip.asal,tasa.1.asalariados,
+         total.asal,particip.asal,tasa.s.desc.jubil,tasa.partime.asal,tasa.temp.asal,tasa.1.asalariados,
          tasa.2.asalariados,tasa.3.asalariados)) %>% 
   left_join(., 
 indicadores.anuales.TPC.calif %>% 
   select(ANO4,Pais,grupos.tamanio,grupos.calif,
          total.tcp,particip.tcp,tasa.parttime.tcp)) 
-# %>% 
-#   mutate(tasa.precariedad = 
-#            (total.asal*tasa.1.asalariados+
-#             total.tcp*tasa.parttime.tcp)/(total.asal+total.tcp))
 
 ###################################Res. Perfiles#############################################
 
@@ -751,7 +744,6 @@ save(
   desocup.calif.ant.usa,
   desocup.calif.ant.arg,
   PRECARIEDAD,
-  precariedad.asal,
   ingresos.asec.asalariados.calif,
   ingresos.eph.asalariados.calif,
   ingresos.eph.ocupados.calif,

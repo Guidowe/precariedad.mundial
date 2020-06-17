@@ -5,18 +5,33 @@ library(stringr)
 library(ggrepel)
 library(ggthemes)
 library(cluster)
+
+########PALETA#####
+azul <- colorspace::diverge_hcl(n = 12,h = c(255,330),
+                                l = c(40,90))[c(4,2,1)]
+verde <- colorspace::diverge_hcl(n = 12,h = c(130,43),
+                                 c = 100,
+                                 l = c(70,90))[c(4,2,1)]
+
+naranja <- colorspace::diverge_hcl(n = 12,h = c(130,43),
+                                   c = 100,
+                                   l = c(70,90))[c(10,11,12)]
+paleta <- c(azul,
+            naranja,
+            verde)
+
+paleta3 <- c(azul[1],
+             naranja[1],
+             verde[1])
+
 #####Carga de datos#####
 #Salarios y productividad#
-Eurostat <- read_tsv("data/ilc_di01.tsv") 
-names(Eurostat)[1] <- "Id"
-Eurostat <- Eurostat %>%
-  separate(Id, c("Percentil", "Indicador","moneda","Pais"), ",")
-  
 Paises <- read.xlsx("data/Prod y Salarios.xlsx",sheet = "Paises")
 
 Salarios <- read.xlsx("data/Prod y Salarios.xlsx",sheet = 1) %>% 
   rename(nombre.pais = X1,
          COD.OCDE = LOCATION)
+
 Productividad <- read.xlsx("data/Prod y Salarios.xlsx",
                            sheet = 2,startRow = 2) %>% 
   rename(COD.OCDE = LOCATION, name = label.x)
@@ -37,13 +52,14 @@ PPA <- read.xlsx("data/Prod y Salarios.xlsx",
                values_to = "PPA") %>% 
   left_join(Paises)
 
-##Europa#
-
-
 #Procesamiento de Encuestas#
 #Argentina y USA#
 load("Resultados/ARG_USA.RDATA")
 load("Resultados/EUROPA.RDATA")
+
+##Europa Ingresos#
+asal.Calificacion.europa <- read.xlsx(
+  "Resultados/RestultadosLFS 29.5.xlsx",sheet = "Asalariados.nivel.ed") 
 
 #Unificacion de Paises####
 options(scipen = 999)
@@ -73,8 +89,15 @@ EUROPA_USA_ARG <- PRECARIEDAD %>%
     total.tcp*tasa.parttime.tcp)/
   (total.asal+total.tcp))
 
-#######ASALARIZACION POR TAMAÑOS######
+##Cuadrito 2018##
+cuadro.2018 <- EUROPA_USA_ARG %>% 
+  filter(ANO4==2018) %>% 
+  select(ANO4,Pais,grupos.calif,grupos.tamanio,
+   tasa.s.desc.jubil,tasa.partime.asal,tasa.temp.asal,tasa.1.asalariados) 
 
+write.xlsx(list("2018" = cuadro.2018),file = "Resultados/tasas2018.xlsx")  
+
+#######asalarización######
 asalarizacion.tamanio <- EUROPA_USA_ARG %>% 
   group_by(ANO4,Pais,grupos.tamanio) %>% 
   summarise(tasa.asal = sum(total.ocupados*tasa.asalarizacion)/
@@ -87,59 +110,14 @@ asalarizacion.total <- EUROPA_USA_ARG %>%
               sum(total.ocupados),
             tasa.TCP = 1-tasa.asal)
 
-# Calificacion.todos <- indicadores.anuales.ocupados.calif %>% 
-#   select(grupos.calif,grupos.tamanio,Particip_emp,Pais,ANO4,everything()) %>% 
-#   bind_rows(Calificacion.europa %>% 
-#   select(grupos.calif,grupos.tamanio,Particip_emp,Pais,ANO4,everything())) %>% 
-#   arrange(desc(grupos.tamanio),grupos.calif)
-  
-ingresos.todos <- asal.Calificacion.europa  %>%
-  select(grupos.calif,grupos.tamanio,Pais,ANO4,
-         ingreso.mensual.prom = Salario.prom,
-         decil.m.promedio = PromedioDecil) %>% 
-  bind_rows(ingresos.asec.asalariados.calif,
-            ingresos.eph.asalariados.calif) %>% 
-  mutate(ANO4 = case_when(Pais == "USA" ~ ANO4-1,
-                          TRUE~ANO4)) %>%
-  rename(COD.ENCUESTAS = Pais) %>% 
-  left_join(PPA) %>% 
-  mutate(ingreso.mensual.ppa = ingreso.mensual.prom/PPA) %>% 
-  mutate(tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
-         tamanio.calif = factor(tamanio.calif,
-                                levels = 
-                                  c("Pequeño - Baja",
-                                    "Pequeño - Media",
-                                    "Pequeño - Alta",
-                                    "Mediano - Baja",
-                                    "Mediano - Media", 
-                                    "Mediano - Alta",
-                                    "Grande - Baja",
-                                    "Grande - Media",
-                                    "Grande - Alta")))
+write.xlsx(list("asalarizacion por tamanio" = asalarizacion.tamanio,
+                "asalarizacion total" = asalarizacion.total),
+file = "Resultados/asalarizacion.xlsx")  
 
-
-########PALETA#####
-azul <- colorspace::diverge_hcl(n = 12,h = c(255,330),
-                                l = c(40,90))[c(4,2,1)]
-verde <- colorspace::diverge_hcl(n = 12,h = c(130,43),
-                                   c = 100,
-                                   l = c(70,90))[c(4,2,1)]
-
-naranja <- colorspace::diverge_hcl(n = 12,h = c(130,43),
-                                   c = 100,
-                                   l = c(70,90))[c(10,11,12)]
-paleta <- c(azul,
-            naranja,
-            verde)
-
-paleta3 <- c(azul[1],
-            naranja[1],
-            verde[1])
-
+####Salarios y productividad agregada#####
 salarios.prod <- Salarios %>% 
   left_join(Productividad)
 
-####Salarios y productividad agregada#####
 ggplot(salarios.prod,
        aes(x=`2018`,
            y=`Prod.relativa.a.EEUU.-.TOTAL`,
@@ -162,22 +140,6 @@ ggplot(salarios.prod,
 
 ggsave("Resultados/productividad_salarios.png",scale = 2)
 
-
-
-####Distrib.Calificaciones#####
-# calif.graf<- Calificacion.todos %>% 
-#   mutate(tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
-#          tamanio.calif = factor(tamanio.calif,
-#                                 levels = 
-#                                   c("Pequeño - Baja",
-#                                     "Pequeño - Media",
-#                                     "Pequeño - Alta",
-#                                     "Mediano - Baja",
-#                                     "Mediano - Media", 
-#                                     "Mediano - Alta",
-#                                     "Grande - Baja",
-#                                     "Grande - Media",
-#                                     "Grande - Alta")))
 
 EUROPA_USA_ARG %>% 
   filter((ANO4 == 2018 & !(Pais %in% c("DE","ES")))|
@@ -223,7 +185,7 @@ desocup.usa <- desocup.calif.ant.usa %>%
   select(-desocupados) %>% 
   rename(ANO4 =YEAR,particip.desocup = distribucion)
 
-desocup.europa <- Resultados.Calif.Ant %>% 
+desocup.europa <- Desocup.Calif %>% 
   select(ANO4,
          Pais,
          grupos.calif = CALIF,
@@ -269,7 +231,158 @@ ggplot(.,
   facet_wrap(~Pais,scales = "free_x")
 
 
-ggsave("Resultados/desocupacion anterior.png",scale = 2)
+#ggsave("Resultados/desocupacion anterior.png",scale = 2)
+
+
+
+
+#########PRECAIREDAD ASALARIADOS########
+EUROPA_USA_ARG %>% 
+  filter((ANO4 == 2018 & !(Pais %in% c("DE","ES")))|
+           ANO4 == 2017 & Pais %in% c("DE","ES")) %>% 
+  ggplot(.,
+         aes(x = tamanio.calif, y = tasa.1.asalariados,
+             fill = tamanio.calif,group = tamanio.calif,
+             label = scales::percent(tasa.1.asalariados))) +
+  geom_col(position = "dodge")+
+  geom_text(position = position_dodge(),size=2.5)+
+  labs(title = "Tasa de precariedad. Año 2018",
+       subtitle = "Una o más expresiones de precariedad. Total Asalariados")+
+  theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        axis.title = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_fill_manual(values = paleta)+
+  scale_y_continuous(labels = scales::percent)+
+  facet_wrap(~Pais)
+ggsave("Resultados/Precariedad asalariados.png",scale = 2.5)
+
+
+
+###Evolucion Part Time####
+EUROPA_USA_ARG %>% 
+  filter(Pais != "SE",ANO4<=2018) %>% 
+  ggplot(.,
+         aes(x = as.character(ANO4), y = tasa.1.asalariados,
+             color = tamanio.calif,group = tamanio.calif,
+             label = round(tasa.1.asalariados,2))) +
+  geom_line(size = 1)+
+  geom_point(size = 1.2)+
+  #geom_text(position = position_dodge(),size=2.5,angle = 90)+
+  labs(title = "Porcentaje de asalariados con al menos una expresión de precariedad")+
+  theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        axis.title = element_blank(),
+        legend.title = element_blank(),
+        axis.text.x = element_text(angle = 90),
+        axis.ticks.x = element_blank(),
+        panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_color_manual(values = paleta)+
+  facet_wrap(~Pais,scales = "free_y")
+
+ggsave("Resultados/evol_precariedad.png",scale = 2)
+
+####Argentina Precariedad Asal####
+graf.argentina <- EUROPA_USA_ARG %>%
+  filter(Pais == "ARG",ANO4<=2018) %>%
+  ungroup() %>% 
+  select(ANO4,Pais,tamanio.calif,tasa.s.desc.jubil,tasa.partime.asal,tasa.temp.asal,
+         tasa.1.asalariados,tasa.2.asalariados,tasa.3.asalariados) %>% 
+  pivot_longer(cols = 4:ncol(.),
+               names_to = "indicador",values_to = "valor") %>% 
+  mutate(
+    indicador = factor(
+      case_when(
+        indicador == "tasa.1.asalariados" ~ "1 o más expresiones",
+        indicador == "tasa.2.asalariados" ~ "2 o más expresiones",
+        indicador == "tasa.3.asalariados" ~ "3 expresiones",
+        indicador == "tasa.s.desc.jubil" ~ "Sin descuento jubilatorio",
+        indicador == "tasa.temp.asal" ~ "Empleo temporal",
+        indicador == "tasa.partime.asal" ~ "Part time involuntario"),
+      levels = c("Sin descuento jubilatorio",
+                 "Empleo temporal",
+                 "Part time involuntario",
+                 "1 o más expresiones",
+                 "2 o más expresiones",
+                 "3 expresiones"))) %>% 
+  ungroup()
+
+ANO4 <- c(2015,2016)
+grilla <- tidyr::crossing(
+  tamanio.calif = unique(graf.argentina$tamanio.calif),
+  indicador = unique(graf.argentina$indicador),
+  ANO4)
+
+
+graf.argentina  %>% 
+  bind_rows(grilla) %>% 
+  ggplot(.,
+         aes(x = as.character(ANO4), y = valor,
+             color = tamanio.calif,group = tamanio.calif,
+             label = round(valor,1))) +
+  geom_line(size = 1)+
+  geom_point(size = 1.2)+
+  #geom_text(position = position_dodge(),size=2.5,angle = 90)+
+  labs(title = "Asalariados según expresiones de la precariedad",
+       subtitle = "Argentina")+
+  theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        axis.title = element_blank(),
+        legend.title = element_blank(),
+        axis.text.x = element_text(angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.ticks.x = element_blank(),
+        panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_color_manual(values = paleta)+
+  scale_y_continuous(labels = scales::percent)+
+  facet_wrap(~indicador,scales = "free_y")
+
+ggsave("Resultados/evol_precariedad_arg.png",scale = 2)
+
+
+###########INGRESOS##################
+
+ingresos.todos <- asal.Calificacion.europa  %>%
+  select(grupos.calif,grupos.tamanio,Pais,ANO4,
+         ingreso.mensual.prom = Salario.prom,
+         decil.m.promedio = PromedioDecil) %>% 
+  bind_rows(ingresos.asec.asalariados.calif,
+            ingresos.eph.asalariados.calif) %>% 
+  mutate(ANO4 = case_when(Pais == "USA" ~ ANO4-1,
+                          TRUE~ANO4)) %>%
+  rename(COD.ENCUESTAS = Pais) %>% 
+  left_join(PPA) %>% 
+  mutate(ingreso.mensual.ppa = ingreso.mensual.prom/PPA) %>% 
+  mutate(tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
+         tamanio.calif = factor(tamanio.calif,
+                                levels = 
+                                  c("Pequeño - Baja",
+                                    "Pequeño - Media",
+                                    "Pequeño - Alta",
+                                    "Mediano - Baja",
+                                    "Mediano - Media", 
+                                    "Mediano - Alta",
+                                    "Grande - Baja",
+                                    "Grande - Media",
+                                    "Grande - Alta")))
+
 
 ####Deciles#####
 ingresos.todos %>% 
@@ -356,159 +469,3 @@ ingresos.todos %>%
 
 ggsave("Resultados/salarios_moneda_nac.png",scale = 2)
 
-#####Part Time Involuntario#####
-calif.graf %>% 
-  filter((ANO4 == 2018 & !(Pais %in% c("DE","ES")))|
-           ANO4 == 2017 & Pais %in% c("DE","ES")) %>% 
-  ggplot(.,
-         aes(x = tamanio.calif, y = tasa.part.invol,
-             fill = tamanio.calif,group = tamanio.calif,
-             label = scales::percent(tasa.part.invol))) +
-  geom_col(position = "dodge")+
-  geom_text(position = position_dodge(),size=2.5)+
-  labs(title = "Tasa de part time involuntario según grupos. Año 2018")+
-  theme_tufte()+
-  theme(legend.position = "left",
-        legend.direction = "vertical",
-        axis.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        panel.spacing = unit(1,"cm"),
-        panel.grid.major.y = element_line(colour = "grey"),
-        panel.grid.minor.y = element_line(colour = "grey30"),
-        panel.grid.minor.x = element_line(colour = "grey"),
-        panel.grid.major.x = element_line(colour = "grey"))+
-  scale_fill_manual(values = paleta)+
-  scale_y_continuous(labels = scales::percent)+
-  facet_wrap(~Pais)
-
-
-#########PRECAIREDAD ASALARIADOS########
-EUROPA_USA_ARG %>% 
-  filter((ANO4 == 2018 & !(Pais %in% c("DE","ES")))|
-           ANO4 == 2017 & Pais %in% c("DE","ES")) %>% 
-  ggplot(.,
-         aes(x = tamanio.calif, y = tasa.1.asalariados,
-             fill = tamanio.calif,group = tamanio.calif,
-             label = scales::percent(tasa.1.asalariados))) +
-  geom_col(position = "dodge")+
-  geom_text(position = position_dodge(),size=2.5)+
-  labs(title = "Tasa de precariedad. Año 2018",
-       subtitle = "Una o más expresiones de precariedad. Total Asalariados")+
-  theme_tufte()+
-  theme(legend.position = "left",
-        legend.direction = "vertical",
-        axis.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        panel.spacing = unit(1,"cm"),
-        panel.grid.major.y = element_line(colour = "grey"),
-        panel.grid.minor.y = element_line(colour = "grey30"),
-        panel.grid.minor.x = element_line(colour = "grey"),
-        panel.grid.major.x = element_line(colour = "grey"))+
-  scale_fill_manual(values = paleta)+
-  scale_y_continuous(labels = scales::percent)+
-  facet_wrap(~Pais)
-ggsave("Resultados/Precariedad asalariados.png",scale = 2.5)
-
-
-
-###Evolucion Part Time####
-EUROPA_USA_ARG %>% 
-  filter(Pais != "SE",ANO4<=2018) %>% 
-  ggplot(.,
-         aes(x = as.character(ANO4), y = tasa.1.asalariados,
-             color = tamanio.calif,group = tamanio.calif,
-             label = round(tasa.1.asalariados,2))) +
-  geom_line(size = 1)+
-  geom_point(size = 1.2)+
-  #geom_text(position = position_dodge(),size=2.5,angle = 90)+
-  labs(title = "Porcentaje de asalariados con al menos una expresión de precariedad")+
-  theme_tufte()+
-  theme(legend.position = "left",
-        legend.direction = "vertical",
-        axis.title = element_blank(),
-        legend.title = element_blank(),
-        axis.text.x = element_text(angle = 90),
-        axis.ticks.x = element_blank(),
-        panel.spacing = unit(1,"cm"),
-        panel.grid.major.y = element_line(colour = "grey"),
-        panel.grid.minor.y = element_line(colour = "grey30"),
-        panel.grid.minor.x = element_line(colour = "grey"),
-        panel.grid.major.x = element_line(colour = "grey"))+
-  scale_color_manual(values = paleta)+
-  facet_wrap(~Pais,scales = "free_y")
-
-ggsave("Resultados/evol_precariedad.png",scale = 2)
-
-####Argentina Precariedad Asal####
-names(argentina.precariedad.asal)
-graf.argentina <- argentina.precariedad.asal %>% 
-  filter(ANO4<=2018) %>% 
-  pivot_longer(cols = 5:ncol(.),
-               names_to = "indicador",values_to = "valor") %>% 
-  mutate(
-    indicador = factor(
-      case_when(
-      indicador == "tasa.1.asalariados" ~ "1 o más expresiones",
-      indicador == "tasa.2.asalariados" ~ "2 o más expresiones",
-      indicador == "tasa.3.asalariados" ~ "3 expresiones",
-      indicador == "tasa.s.desc.jubil" ~ "Sin descuento jubilatorio",
-      indicador == "tasa.empleo.temporal" ~ "Empleo temporal",
-      indicador == "tasa.part.invol" ~ "Part time involuntario"),
-      levels = c("Sin descuento jubilatorio",
-                 "Empleo temporal",
-                 "Part time involuntario",
-                 "1 o más expresiones",
-                 "2 o más expresiones",
-                 "3 expresiones")),
-    tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
-    tamanio.calif = factor(tamanio.calif,
-                         levels = 
-                           c("Pequeño - Baja",
-                             "Pequeño - Media",
-                             "Pequeño - Alta",
-                             "Mediano - Baja",
-                             "Mediano - Media", 
-                             "Mediano - Alta",
-                             "Grande - Baja",
-                             "Grande - Media",
-                             "Grande - Alta"))) %>% 
-  ungroup()
-
-ANO4 <- c(2015,2016)
-grilla <- tidyr::crossing(
-  tamanio.calif = unique(graf.argentina$tamanio.calif),
-  indicador = unique(graf.argentina$indicador),
-  ANO4)
-
-
-graf.argentina  %>% 
- bind_rows(grilla) %>% 
-  ggplot(.,
-         aes(x = as.character(ANO4), y = valor,
-             color = tamanio.calif,group = tamanio.calif,
-             label = round(valor,1))) +
-  geom_line(size = 1)+
-  geom_point(size = 1.2)+
-  #geom_text(position = position_dodge(),size=2.5,angle = 90)+
-  labs(title = "Asalariados según expresiones de la precariedad",
-       subtitle = "Argentina")+
-  theme_tufte()+
-  theme(legend.position = "left",
-        legend.direction = "vertical",
-        axis.title = element_blank(),
-        legend.title = element_blank(),
-        axis.text.x = element_text(angle = 90),
-        axis.text.y = element_text(size = 12),
-        axis.ticks.x = element_blank(),
-        panel.spacing = unit(1,"cm"),
-        panel.grid.major.y = element_line(colour = "grey"),
-        panel.grid.minor.y = element_line(colour = "grey30"),
-        panel.grid.minor.x = element_line(colour = "grey"),
-        panel.grid.major.x = element_line(colour = "grey"))+
-  scale_color_manual(values = paleta)+
-  scale_y_continuous(labels = scales::percent)+
-  facet_wrap(~indicador,scales = "free_y")
-
-ggsave("Resultados/evol_precariedad_arg.png",scale = 2)
