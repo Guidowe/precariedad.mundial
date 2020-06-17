@@ -1,12 +1,19 @@
 #####Librerias#####
 library(openxlsx)
 library(tidyverse)
+library(stringr)
 library(ggrepel)
 library(ggthemes)
 library(cluster)
 #####Carga de datos#####
 #Salarios y productividad#
+Eurostat <- read_tsv("data/ilc_di01.tsv") 
+names(Eurostat)[1] <- "Id"
+Eurostat <- Eurostat %>%
+  separate(Id, c("Percentil", "Indicador","moneda","Pais"), ",")
+  
 Paises <- read.xlsx("data/Prod y Salarios.xlsx",sheet = "Paises")
+
 Salarios <- read.xlsx("data/Prod y Salarios.xlsx",sheet = 1) %>% 
   rename(nombre.pais = X1,
          COD.OCDE = LOCATION)
@@ -31,12 +38,7 @@ PPA <- read.xlsx("data/Prod y Salarios.xlsx",
   left_join(Paises)
 
 ##Europa#
-asal.Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 29.5.xlsx",
-                                      sheet = "Asalariados.nivel.ed") %>% 
-  mutate(ANO4 = as.numeric(ANO4))
 
-desoc.Calificacion.europa <- read.xlsx("Resultados/RestultadosLFS 29.5.xlsx",
-                                       sheet = "Desocup.Calif") 
 
 #Procesamiento de Encuestas#
 #Argentina y USA#
@@ -221,7 +223,7 @@ desocup.usa <- desocup.calif.ant.usa %>%
   select(-desocupados) %>% 
   rename(ANO4 =YEAR,particip.desocup = distribucion)
 
-desocup.europa <- desoc.Calificacion.europa %>% 
+desocup.europa <- Resultados.Calif.Ant %>% 
   select(ANO4,
          Pais,
          grupos.calif = CALIF,
@@ -234,24 +236,25 @@ desocup.calif <- desocup.arg %>%
   bind_rows(desocup.europa)%>% 
   mutate(Brecha = Particip_emp - particip.desocup) %>% 
   pivot_longer(cols = c(4,5),names_to = "distrib",values_to = "Valor") %>% 
-  mutate(grupos.calif = factor(grupos.calif,
+  mutate(Calificación = factor(grupos.calif,
                                levels = c("Baja","Media","Alta")),
          distrib = factor(distrib,
+                          labels = c("Ocupados","Desocupados"),
                           levels = c("Particip_emp","particip.desocup"))) 
   
 
 desocup.calif %>% 
-  filter(ANO4 == 2014|Pais == "ES") %>%  
+  filter(ANO4 == 2018) %>%  
 ggplot(.,
        aes(x=distrib,
            y=Valor,
            label = scales::percent(Valor),
-           fill = grupos.calif,
-           group = grupos.calif))+
+           fill = Calificación,
+           group = Calificación))+
   geom_col(position = "stack")+
   geom_text(position = position_stack(vjust = .5),size=2.5)+
-  labs(title = "Distribución de desocupados con empleo anterior y participación en el empleo según calificación",
-       subtitle = "Año 2014")+
+  labs(title = "Distribución de Ocupados y desocupados con empleo anterior según calificación",
+       subtitle = "Año 2018")+
   theme_tufte()+
   theme(legend.position = "left",
         legend.direction = "vertical",
@@ -438,3 +441,74 @@ EUROPA_USA_ARG %>%
 
 ggsave("Resultados/evol_precariedad.png",scale = 2)
 
+####Argentina Precariedad Asal####
+names(argentina.precariedad.asal)
+graf.argentina <- argentina.precariedad.asal %>% 
+  filter(ANO4<=2018) %>% 
+  pivot_longer(cols = 5:ncol(.),
+               names_to = "indicador",values_to = "valor") %>% 
+  mutate(
+    indicador = factor(
+      case_when(
+      indicador == "tasa.1.asalariados" ~ "1 o más expresiones",
+      indicador == "tasa.2.asalariados" ~ "2 o más expresiones",
+      indicador == "tasa.3.asalariados" ~ "3 expresiones",
+      indicador == "tasa.s.desc.jubil" ~ "Sin descuento jubilatorio",
+      indicador == "tasa.empleo.temporal" ~ "Empleo temporal",
+      indicador == "tasa.part.invol" ~ "Part time involuntario"),
+      levels = c("Sin descuento jubilatorio",
+                 "Empleo temporal",
+                 "Part time involuntario",
+                 "1 o más expresiones",
+                 "2 o más expresiones",
+                 "3 expresiones")),
+    tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
+    tamanio.calif = factor(tamanio.calif,
+                         levels = 
+                           c("Pequeño - Baja",
+                             "Pequeño - Media",
+                             "Pequeño - Alta",
+                             "Mediano - Baja",
+                             "Mediano - Media", 
+                             "Mediano - Alta",
+                             "Grande - Baja",
+                             "Grande - Media",
+                             "Grande - Alta"))) %>% 
+  ungroup()
+
+ANO4 <- c(2015,2016)
+grilla <- tidyr::crossing(
+  tamanio.calif = unique(graf.argentina$tamanio.calif),
+  indicador = unique(graf.argentina$indicador),
+  ANO4)
+
+
+graf.argentina  %>% 
+ bind_rows(grilla) %>% 
+  ggplot(.,
+         aes(x = as.character(ANO4), y = valor,
+             color = tamanio.calif,group = tamanio.calif,
+             label = round(valor,1))) +
+  geom_line(size = 1)+
+  geom_point(size = 1.2)+
+  #geom_text(position = position_dodge(),size=2.5,angle = 90)+
+  labs(title = "Asalariados según expresiones de la precariedad",
+       subtitle = "Argentina")+
+  theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        axis.title = element_blank(),
+        legend.title = element_blank(),
+        axis.text.x = element_text(angle = 90),
+        axis.text.y = element_text(size = 12),
+        axis.ticks.x = element_blank(),
+        panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_color_manual(values = paleta)+
+  scale_y_continuous(labels = scales::percent)+
+  facet_wrap(~indicador,scales = "free_y")
+
+ggsave("Resultados/evol_precariedad_arg.png",scale = 2)
