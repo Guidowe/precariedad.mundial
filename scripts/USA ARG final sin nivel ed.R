@@ -507,6 +507,16 @@ indicadores.anuales.asalariados.calif <- perfiles.asalariados.calif %>%
   select(-TRIMESTRE) %>% 
   arrange(ANO4,Pais,grupos.tamanio)
 
+precariedad.asal <- indicadores.anuales.asalariados.calif %>%
+  #filter(Pais =="ARG") %>% 
+  select(ANO4,Pais,total.asal,grupos.tamanio,grupos.calif,tasa.empleo.temporal,
+         tasa.s.desc.jubil,tasa.part.invol,tasa.1.asalariados,
+         tasa.2.asalariados,tasa.3.asalariados)
+
+
+write.xlsx(x = list("Asalariados" = precariedad.asal),
+                    file = "Resultados/Tasas_Prec.xlsx")  
+
 ###############TCP y Patrones###############
 perfiles.TCP.calif <- base.unica %>% 
   filter(Categoria %in% c("Patrones y CP","Patrones","TCP"),
@@ -741,6 +751,7 @@ save(
   desocup.calif.ant.usa,
   desocup.calif.ant.arg,
   PRECARIEDAD,
+  precariedad.asal,
   ingresos.asec.asalariados.calif,
   ingresos.eph.asalariados.calif,
   ingresos.eph.ocupados.calif,
