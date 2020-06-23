@@ -4,8 +4,6 @@ library(beepr)
 Carpeta <- "F:/LFS/"                                                                              # Carpeta con bases originales
 CarpetaBasesUnificadas <- "F:/LFS/BasesUnificadas/"                                
 
-                         ##########   GENERACION BASE UNIFICADA PARA SELECCION DE PAISES 2018    ##########
-
 variables <- c("YEAR", "COEFF", "WSTATOR", "SEX", "AGE", "COUNTRYB", "SEEKWORK", "AVAILBLE", "STAPRO", "NACE1D", 
                "SIZEFIRM", "ISCO1D", "ISCO2D", "ISCO3D", "IS881D", "YSTARTWK", "MSTARTWK", "EXIST2J", "FTPT", 
                "FTPTREAS", "TEMP", "TEMPREAS", "TEMPAGCY", "WISHMORE", "HAT11LEV", "HAT97LEV", "HATLEV1D", "COUNTRYB", 
@@ -46,10 +44,7 @@ while (i < length(countries) + 1) {
       #Precariedad por contrato de tiempo limitado
       PRECATEMP= case_when(TEMP==2 & TEMPREAS==2       ~ 1,
                            TRUE                        ~ 0),
-      #Precariedad por querer trabajar mas horas
-      PRECAHORA= case_when(WISHMORE==1 & HWACTUAL < 35 ~ 1,
-                           TRUE                        ~ 0),
-      PRECACOUNT= PRECAPT + PRECATEMP + PRECAHORA,
+      PRECACOUNT= PRECAPT + PRECATEMP,
       #Tamaño establecimiento
       TAMA= factor(case_when( #1. 10 o menos
         SIZEFIRM==10 | SIZEFIRM==14 ~ "Pequeño",

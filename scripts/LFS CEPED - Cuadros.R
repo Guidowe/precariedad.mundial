@@ -14,6 +14,7 @@ i <- 1
 Resultados_bind <- data.frame()
 Desocup.Calif_bind <- data.frame()
 Ocup.Calif_bind <- data.frame()
+Asalariados_bind <- data.frame()
 
 while (i < length(countries) + 1) {
 
@@ -37,10 +38,8 @@ while (i < length(countries) + 1) {
               'promedio.decil'                       = weighted.mean(INCDECIL[STAPRO==3], WEIGHT[STAPRO==3], na.rm=TRUE),            
               'tasa.partime.asal'                    = sum(WEIGHT[PRECAPT==1 & STAPRO==3], na.rm=TRUE)/sum(WEIGHT[STAPRO==3], na.rm=TRUE),         
               'tasa.temp.asal'                       = sum(WEIGHT[PRECATEMP==1 & STAPRO==3], na.rm=TRUE)/sum(WEIGHT[STAPRO==3], na.rm=TRUE), 
-              'tasa.subhora.asal'                    = sum(WEIGHT[PRECAHORA==1 & STAPRO==3], na.rm=TRUE)/sum(WEIGHT[STAPRO==3], na.rm=TRUE), 
-              'tasa.1.asalariados'                   = sum(WEIGHT[PRECACOUNT==1 | PRECACOUNT==2 | PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
-              'tasa.2.asalariados'                   = sum(WEIGHT[PRECACOUNT==2 | PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),              
-              'tasa.3.asalariados'                   = sum(WEIGHT[PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
+              'tasa.1.asalariados'                   = sum(WEIGHT[PRECACOUNT==1 | PRECACOUNT==2], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
+              'tasa.2.asalariados'                   = sum(WEIGHT[PRECACOUNT==2], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
               'total.tcp'                            = sum(WEIGHT[STAPRO==0], na.rm=TRUE),              
               'tasa.parttime.tcp'                    = sum(WEIGHT[PRECAPT==1 & STAPRO==0], na.rm=TRUE)/sum(WEIGHT[STAPRO==0], na.rm=TRUE))  %>%
     ungroup() %>%
@@ -53,7 +52,7 @@ while (i < length(countries) + 1) {
   colnames(Resultados)[1] <- "ANO4"
   colnames(Resultados)[2] <- "grupos.tamanio"
   colnames(Resultados)[3] <- "grupos.calif"
-  Resultados <-  Resultados[,c(4, 1, 2, 3, 5, 17, 6:8, 18, 9:14, 19, 15, 16)]
+  Resultados <-  Resultados[,c(4, 1, 2, 3, 5, 15, 6:14, 16:17)]
   
   
   Resultados_bind <-   bind_rows(Resultados, Resultados_bind)
@@ -83,7 +82,16 @@ while (i < length(countries) + 1) {
   
   Ocup.Calif_bind <-   bind_rows(Ocup.Calif, Ocup.Calif_bind)
   
-  
+  ## SALARIOS ASALARIADOS 2014 | HACER NUEVO CALCULO PARA QUE QUEDE EN EUROPA.RDATA
+ 
+#  Asalariados <- Base                                 %>%
+#  filter(COND=="Ocupado" & STAPRO==3 & CALIF!="Ns/Nc" & TAMA!="Ns/Nc" & YEAR==2014)   %>%
+#    group_by(TAMA, CALIF)                             %>%
+#    summarise('pais'                                 = countries[i],
+#              'Salario.prom'= weighted.mean(salarioNAC, WEIGHT, na.rm = TRUE),
+#              'Salario.horario.prom'= weighted.mean(salariohorarioNAC, WEIGHT, na.rm = TRUE), 
+#              'Salario.prom.ppp'= weighted.mean(salario, WEIGHT, na.rm = TRUE),
+#              'Salario.horario.prom.ppp'= weighted.mean(salariohorario, WEIGHT, na.rm = TRUE))
   i <- i+1
 }
 
