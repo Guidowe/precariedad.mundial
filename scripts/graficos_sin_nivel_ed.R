@@ -26,7 +26,7 @@ paleta3 <- c(azul[1],
 
 #####Carga de datos#####
 
-Paises <- read.xlsx("data/Prod y Salarios.xlsx",sheet = "Paises")
+Paises <- read.xlsx("data/Prod y Salarios2.xlsx",sheet = "Paises")
 
 
 Salarios_UMN <- read.xlsx("data/Prod y Salarios2.xlsx",
@@ -38,7 +38,7 @@ Salarios_UMN <- read.xlsx("data/Prod y Salarios2.xlsx",
                values_to = "Salario.UMN") %>% 
   mutate(nombre.pais = str_replace_all(nombre.pais,"[[:punct:] ]+",replacement = " "))
 
-IPC_2005 <- read.xlsx("data/Prod y Salarios.xlsx",
+IPC_2005 <- read.xlsx("data/Prod y Salarios2.xlsx",
                           sheet = "IPC (2005)") %>% 
   rename(ANO4 = X1)%>%
   pivot_longer(cols = 2:ncol(.),
@@ -76,17 +76,17 @@ Estimacion_GW <- Salarios_UMN %>%
 
 ####Salarios y productividad### Laupa y Dami
 
-Salarios <- read.xlsx("data/Prod y Salarios.xlsx",sheet = 1) %>% 
+Salarios <- read.xlsx("data/Prod y Salarios2.xlsx",sheet = 1) %>% 
   rename(nombre.pais = X1,
          COD.OCDE = LOCATION)
 
 
-Productividad <- read.xlsx("data/Prod y Salarios.xlsx",
+Productividad <- read.xlsx("data/Prod y Salarios2.xlsx",
                            sheet = 2,startRow = 2) %>% 
   rename(COD.OCDE = LOCATION, name = label.x) 
 
 
-PPA <- read.xlsx("data/Prod y Salarios.xlsx",
+PPA <- read.xlsx("data/Prod y Salarios2.xlsx",
                            sheet = 3) %>% 
   rename(ANO4 = Coeficientes) %>% 
   pivot_longer(cols = 2:ncol(.),
@@ -158,36 +158,36 @@ write.xlsx(list("asalarizacion por tamanio" = asalarizacion.tamanio,
 file = "Resultados/asalarizacion.xlsx")  
 
 ####Salarios y productividad agregada#####
-salarios.prod <- Salarios %>% 
-  left_join(Productividad) %>% 
-  left_join(Paises) %>% 
-  select(Salario2018=`2018`,nombre.pais,COD.ESPANIOL,Color,`Prod.relativa.a.EEUU.-.TOTAL`) %>% 
-  #filter(!is.na(Salario2018),!nombre.pais %in%  c("Irlanda","Estonia")) %>%
-  ungroup() %>% 
-  mutate(salario.relativo.usa = 
-           Salario2018/Salario2018[nombre.pais=="Estados Unidos"]*100)
-
-ggplot(salarios.prod,
-       aes(x=salario.relativo.usa,
-           y=`Prod.relativa.a.EEUU.-.TOTAL`,
-           label = nombre.pais))+
-  geom_smooth(method = 'lm',color = "grey70",se = FALSE)  +
-  geom_point(aes(color = Color))+
-  geom_text_repel(aes(color = Color))+  
-  labs(title = "Salarios promedio y productividad relativa (USA = 100). Año 2018",
-       x = "Salario Relativo (USA = 100)",
-       y = "Productividad Relativa (USA = 100)" )+
-  theme_tufte()+
-  theme(panel.spacing = unit(1,"cm"),
-        legend.position = "none",
-        panel.grid.minor.x = element_line(colour = "grey"),
-        panel.grid.minor.y= element_line(colour = "grey"),
-        panel.grid.major.x = element_line(colour = "grey30"),
-        panel.grid.major.y = element_line(colour = "grey30"),
-        text = element_text(size = 15))+
-  scale_fill_grey()
-
-ggsave("Resultados/productividad_salarios.png",scale = 2)
+# salarios.prod <- Salarios %>% 
+#   left_join(Productividad) %>% 
+#   left_join(Paises) %>% 
+#   select(Salario2018=`2018`,nombre.pais,COD.ESPANIOL,Color,`Prod.relativa.a.EEUU.-.TOTAL`) %>% 
+#   #filter(!is.na(Salario2018),!nombre.pais %in%  c("Irlanda","Estonia")) %>%
+#   ungroup() %>% 
+#   mutate(salario.relativo.usa = 
+#            Salario2018/Salario2018[nombre.pais=="Estados Unidos"]*100)
+# 
+# ggplot(salarios.prod,
+#        aes(x=salario.relativo.usa,
+#            y=`Prod.relativa.a.EEUU.-.TOTAL`,
+#            label = nombre.pais))+
+#   geom_smooth(method = 'lm',color = "grey70",se = FALSE)  +
+#   geom_point(aes(color = Color))+
+#   geom_text_repel(aes(color = Color))+  
+#   labs(title = "Salarios promedio y productividad relativa (USA = 100). Año 2018",
+#        x = "Salario Relativo (USA = 100)",
+#        y = "Productividad Relativa (USA = 100)" )+
+#   theme_tufte()+
+#   theme(panel.spacing = unit(1,"cm"),
+#         legend.position = "none",
+#         panel.grid.minor.x = element_line(colour = "grey"),
+#         panel.grid.minor.y= element_line(colour = "grey"),
+#         panel.grid.major.x = element_line(colour = "grey30"),
+#         panel.grid.major.y = element_line(colour = "grey30"),
+#         text = element_text(size = 15))+
+#   scale_fill_grey()
+# 
+# ggsave("Resultados/productividad_salarios.png",scale = 2)
 
 
 ##estimacion gw###
@@ -202,8 +202,11 @@ salarios.prod.GW <- Estimacion_GW %>%
   mutate(salario.relativo.usa = salario.PPA/salario.PPA[nombre.pais=="Estados Unidos"]*100)
   
 
- 
-ggplot(salarios.prod.GW %>% filter(ANO4==2017),
+salarios.prod.2017 <- salarios.prod.GW %>% 
+  filter(ANO4==2017) %>% 
+  select(nombre.pais,Color,Salario.UMN,PPA.BENCHMARK.2017,salario.PPA,salario.relativo.usa,`Prod.relativa.a.EEUU.-.TOTAL`)
+
+ggplot(salarios.prod.2017,
        aes(x=salario.relativo.usa,
            y=`Prod.relativa.a.EEUU.-.TOTAL`,
            label = nombre.pais))+
@@ -223,30 +226,32 @@ ggplot(salarios.prod.GW %>% filter(ANO4==2017),
         text = element_text(size = 15))+
   scale_fill_grey()
 
-ggsave("Resultados/productividad_salarios_GW_filtrado.png",scale = 2)
+ggsave("Resultados/productividad_salarios_GW_filtrado.png",scale = 2.5)
+write.xlsx(list("salarios.prod.2017" = salarios.prod.2017),
+           file = "Resultados/Salarios_Productividad2017_CCNN.xlsx")  
 
 
-ggplot(salarios.prod.GW %>% filter(ANO4==2018),
-       aes(x=salario.relativo.usa,
-           y=`Prod.relativa.a.EEUU.-.TOTAL`,
-           label = nombre.pais))+
-  geom_smooth(method = 'lm',color = "grey70",se = FALSE)  +
-  geom_point(aes(color = Color))+
-  geom_text_repel(aes(color = Color))+  
-  labs(title = "Salarios promedio y productividad relativa (USA = 100). Año 2018",
-       x = "Salario Relativo (USA = 100)",
-       y = "Productividad Relativa (USA = 100)" )+
-  theme_tufte()+
-  theme(panel.spacing = unit(1,"cm"),
-        legend.position = "none",
-        panel.grid.minor.x = element_line(colour = "grey"),
-        panel.grid.minor.y= element_line(colour = "grey"),
-        panel.grid.major.x = element_line(colour = "grey30"),
-        panel.grid.major.y = element_line(colour = "grey30"),
-        text = element_text(size = 15))+
-  scale_fill_grey()
-
-ggsave("Resultados/productividad_salarios_GW_filtrado_2018.png",scale = 2)
+# ggplot(salarios.prod.GW %>% filter(ANO4==2018),
+#        aes(x=salario.relativo.usa,
+#            y=`Prod.relativa.a.EEUU.-.TOTAL`,
+#            label = nombre.pais))+
+#   geom_smooth(method = 'lm',color = "grey70",se = FALSE)  +
+#   geom_point(aes(color = Color))+
+#   geom_text_repel(aes(color = Color))+  
+#   labs(title = "Salarios promedio y productividad relativa (USA = 100). Año 2018",
+#        x = "Salario Relativo (USA = 100)",
+#        y = "Productividad Relativa (USA = 100)" )+
+#   theme_tufte()+
+#   theme(panel.spacing = unit(1,"cm"),
+#         legend.position = "none",
+#         panel.grid.minor.x = element_line(colour = "grey"),
+#         panel.grid.minor.y= element_line(colour = "grey"),
+#         panel.grid.major.x = element_line(colour = "grey30"),
+#         panel.grid.major.y = element_line(colour = "grey30"),
+#         text = element_text(size = 15))+
+#   scale_fill_grey()
+# 
+# ggsave("Resultados/productividad_salarios_GW_filtrado_2018.png",scale = 2)
 
 ####PERFILES####
 
@@ -259,20 +264,22 @@ EUROPA_USA_ARG %>%
              fill = tamanio.calif,group = tamanio.calif,
              label = scales::percent(particip.ocup))) +
   geom_col(position = "stack")+
-  geom_text(position = position_stack(vjust = .5),size=2.5)+
-  labs(title = "Distribución del empleo según grupos")+
+  geom_text(position = position_stack(vjust = .5),size=3)+
+#  labs(title = "Distribución del empleo según grupos")+
   theme_tufte()+
   theme(legend.position = "left",
         legend.direction = "vertical",
         legend.title = element_blank(),
         axis.title = element_blank(),
+        text = element_text(size = 15),
         axis.text.x = element_text(angle = 45),
         #panel.spacing = unit(1,"cm"),
         panel.grid.major.y = element_line(colour = "grey"),
         panel.grid.minor.y = element_line(colour = "grey30"),
         panel.grid.minor.x = element_line(colour = "grey"),
         panel.grid.major.x = element_line(colour = "grey"))+
-  scale_fill_manual(values = paleta)
+  scale_fill_manual(values = paleta)+
+  scale_y_continuous(labels = scales::percent)
 
 ggsave("Resultados/grupos_calificacion_tamanio.png",width = 10,height = 8)
 
@@ -300,7 +307,9 @@ desocup.europa <- Desocup.Calif %>%
          Pais,
          grupos.calif = CALIF,
          particip.desocup = Por.Desocup,
-         Particip_emp = Por.Ocup) 
+         Particip_emp = Por.Ocup) %>% 
+  mutate(Pais = case_when(Pais == "UK"~ "GB",
+                          T ~ Pais))
 
 desocup.calif <- desocup.arg %>% 
   bind_rows(desocup.usa)%>%
@@ -308,6 +317,8 @@ desocup.calif <- desocup.arg %>%
   bind_rows(desocup.europa)%>% 
   mutate(Brecha = Particip_emp - particip.desocup) %>% 
   pivot_longer(cols = c(4,5),names_to = "distrib",values_to = "Valor") %>% 
+  rename(COD.ENCUESTAS = Pais) %>% 
+  left_join(Paises) %>% 
   mutate(Calificación = factor(grupos.calif,
                                levels = c("Baja","Media","Alta")),
          distrib = factor(distrib,
@@ -338,10 +349,8 @@ ggplot(.,
         panel.grid.minor.x = element_line(colour = "grey"),
         panel.grid.major.x = element_line(colour = "grey"))+
   scale_fill_manual(values = paleta3) +
-  facet_wrap(~Pais,scales = "free_x")
-
-
-#ggsave("Resultados/desocupacion anterior.png",scale = 2)
+  facet_wrap(~COD.ESPANIOL,scales = "free_x")
+ggsave("Resultados/desocupacion anterior.png",scale = 2)
 
 ####Tasas precariedad####
 #Graf 4#
@@ -372,14 +381,16 @@ graf.todos %>%
              label = round(valor,2))) +
   geom_col(position = "dodge")+
   #geom_text(position = position_dodge(),size=2.5,angle = 90)+
-  labs(title = "Expresiones de la precariedad según perfiles y paises. Año 2018")+
+  #labs(title = "Expresiones de la precariedad según perfiles y paises. Año 2018")+
   theme_tufte()+
   theme(legend.position = "bottom",
         legend.direction = "horizontal",
-        legend.key.size = unit(0.4,"cm"),
+        legend.key.size = unit(0.2,"cm"),
+        #legend.spacing.x  = unit(0.4,"cm"),
         legend.title = element_blank(),
+        legend.text = element_text(size = 12),
         axis.title = element_blank(),
-        axis.text.x = element_text(angle = 90),
+        axis.text.x = element_text(angle = 90,size = 12,vjust = .5),
         axis.ticks.x = element_blank(),
         panel.spacing = unit(1,"cm"),
         panel.grid.major.y = element_line(colour = "grey"),
@@ -453,7 +464,7 @@ EUROPA_USA_ARG %>%
   scale_color_manual(values = paleta)+
   facet_wrap(~COD.ESPANIOL,scales = "free_y")
 
-ggsave("Resultados/evol_precariedad.png",scale = 2)
+#ggsave("Resultados/evol_precariedad.png",scale = 2)
 
 ####Argentina Precariedad Asal####
 graf.argentina <- EUROPA_USA_ARG %>%
@@ -515,7 +526,7 @@ graf.argentina  %>%
   scale_y_continuous(labels = scales::percent)+
   facet_wrap(~indicador,scales = "free_y")
 
-ggsave("Resultados/evol_precariedad_arg.png",scale = 2)
+#ggsave("Resultados/evol_precariedad_arg.png",scale = 2)
 
 
 ###########INGRESOS##################
@@ -528,7 +539,9 @@ ingresos.todos <- asal.Calificacion.europa %>%
   bind_rows(ingresos.asec.asalariados.calif,
             ingresos.eph.asalariados.calif) %>% 
   mutate(ANO4 = case_when(Pais == "USA" ~ ANO4-1,
-                          TRUE~ANO4)) %>%
+                          TRUE~ANO4),
+         Pais= case_when(Pais == "UK" ~ "GB",
+                         TRUE~Pais)) %>%
   rename(COD.ENCUESTAS = Pais) %>% 
   left_join(PPA) %>% 
   left_join(Estimacion_GW %>% 
@@ -585,42 +598,41 @@ data.graf.PPA <- ingresos.todos %>%
   filter(COD.ENCUESTAS != "SE") %>% 
   filter(!is.na(ingreso.mensual.ppa)) %>% 
   #group_by(tamanio.calif) %>% 
-  mutate(
-    ing.usa.calif.100 = 100*ingreso.mensual.ppa/
-           ingreso.mensual.ppa[COD.ENCUESTAS=="USA" & tamanio.calif=="Grande - Alta"],
-    ing.usa.calif.100.gw = 100*ingreso.mensual.ppa.gw/
+  mutate(ing.perfil9.usa.100 = 100*ingreso.mensual.ppa.gw/
       ingreso.mensual.ppa.gw[COD.ENCUESTAS=="USA" & tamanio.calif=="Grande - Alta"]
-  )
+  ) %>% 
+  select(ANO4,nombre.pais,COD.ESPANIOL,tamanio.calif,
+         ingreso.mensual.ppa.gw,ing.perfil9.usa.100)
 
-  ggplot(data.graf.PPA,
-         aes(x = COD.ESPANIOL, y = ing.usa.calif.100,
-             fill = tamanio.calif,group = tamanio.calif,
-             label = round(ing.usa.calif.100,1))) +
-  geom_col(position = "dodge")+
-  geom_text(position = position_dodge(),size=2.5)+
-  labs(title = "Salario relativo en PPA. Año 2014. Perfil 9 de USA=100")+
-  theme_tufte()+
-  theme(legend.position = "none",
-        legend.direction = "vertical",
-        axis.title = element_blank(),
-        axis.text.x = element_text(angle = 90),
-        axis.ticks.x = element_blank(),
-        panel.spacing = unit(1,"cm"),
-        panel.grid.major.y = element_line(colour = "grey"),
-        panel.grid.minor.y = element_line(colour = "grey30"),
-        panel.grid.minor.x = element_line(colour = "grey"),
-        panel.grid.major.x = element_line(colour = "grey"))+
-  scale_fill_manual(values = paleta)+
-  scale_y_continuous(limits = c(0,101),breaks = c(20,40,60,80,100))+
-  facet_wrap(~tamanio.calif)
-  
-ggsave("Resultados/PPA USA 100.png",scale = 2)
+#   ggplot(data.graf.PPA,
+#          aes(x = COD.ESPANIOL, y = ing.usa.calif.100,
+#              fill = tamanio.calif,group = tamanio.calif,
+#              label = round(ing.usa.calif.100,1))) +
+#   geom_col(position = "dodge")+
+#   geom_text(position = position_dodge(),size=2.5)+
+#   labs(title = "Salario relativo en PPA. Año 2014. Perfil 9 de USA=100")+
+#   theme_tufte()+
+#   theme(legend.position = "none",
+#         legend.direction = "vertical",
+#         axis.title = element_blank(),
+#         axis.text.x = element_text(angle = 90),
+#         axis.ticks.x = element_blank(),
+#         panel.spacing = unit(1,"cm"),
+#         panel.grid.major.y = element_line(colour = "grey"),
+#         panel.grid.minor.y = element_line(colour = "grey30"),
+#         panel.grid.minor.x = element_line(colour = "grey"),
+#         panel.grid.major.x = element_line(colour = "grey"))+
+#   scale_fill_manual(values = paleta)+
+#   scale_y_continuous(limits = c(0,101),breaks = c(20,40,60,80,100))+
+#   facet_wrap(~tamanio.calif)
+#   
+# ggsave("Resultados/PPA USA 100.png",scale = 2)
   
 
 ggplot(data.graf.PPA,
-       aes(x = COD.ESPANIOL, y = ing.usa.calif.100.gw,
+       aes(x = COD.ESPANIOL, y = ing.perfil9.usa.100,
            fill = tamanio.calif,group = tamanio.calif,
-           label = round(ing.usa.calif.100.gw,1))) +
+           label = round(ing.perfil9.usa.100,1))) +
   geom_col(position = "dodge")+
   geom_text(position = position_dodge(),size=2.5)+
   labs(title = "Salario relativo en PPA. Año 2014. Perfil 9 de USA=100")+
@@ -647,13 +659,13 @@ ggsave("Resultados/PPA BENCHMARK 2017_USA 100.png",scale = 2)
 
 
 cuadro_ingresos <- ingresos.todos %>% 
-  filter((ANO4 == 2014 & !(COD.ENCUESTAS %in% c("ES")))|
-           COD.ENCUESTAS %in% c("ES")) %>% 
-  select(ANO4,COD.ENCUESTAS,nombre.pais,grupos.calif,grupos.tamanio,
-         PPA,ingreso.mensual.prom,ingreso.mensual.ppa,ingreso.mensual.ppa.gw)
+   select(ANO4,COD.ENCUESTAS,nombre.pais,COD.ESPANIOL,grupos.calif,grupos.tamanio,decil.m.promedio,
+         ingreso.mensual.prom,PPA.BENCHMARK.2017,Ingreso.mensual.PPA = ingreso.mensual.ppa.gw)
 
-write.xlsx(list("Salarios" = cuadro_ingresos),
-           file = "Resultados/SalariosPPA.xlsx")  
+
+write.xlsx(list("Grafico 9" = data.graf.PPA,
+                "Ingresos Deciles Evol" = cuadro_ingresos),
+           file = "Resultados/Salarios Encuestas PPA.xlsx")  
 
 
 
