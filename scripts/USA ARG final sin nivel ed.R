@@ -25,11 +25,12 @@
   sample.isco <- function(df) {
     sample(df$ISCO.1.digit,size = 1)
   }
+
   
 ####bases de datos#####
 ####ARGENTINA#####
 Base_ARG0814 <- readRDS("../bases/EPH2008_2014.RDS")  
-  Base_ARG1719 <- readRDS("../bases/EPH2016_2019.RDS")  
+Base_ARG1719 <- readRDS("../bases/EPH2016_2019.RDS")  
   
 ####ARG Variables####
 Variables1719  <- c("CODUSU","NRO_HOGAR","COMPONENTE","ANO4","TRIMESTRE" ,"AGLOMERADO","H15",
@@ -57,7 +58,23 @@ Base_ARG1719 %>% select(Variables1719)) %>%
   mutate(PP04B_COD = case_when(ANO4 %in% 2011:2015 ~ PP04B_CAES,
                                TRUE~ PP04B_COD))
 
-#Check <- eph::calculate_tabulates(bases_bind,x = "PP04B_COD",y = "ANO4",weights = "PONDERA")
+salario_medio <- bases_bind %>% 
+  filter(!(ANO4 %in% 2011:2020 & PP04B_COD %in% c(83:84,8300:8499,#Adm Publica
+                                                  97:98,9700:9899)),#Serv Domestico
+         !(ANO4 %in% 2008:2010 & PP04B_COD %in% c(75,7500:7599,#Adm Publica
+                                                  95,9500:9599)),#Serv Domestico
+         
+         ESTADO == 1, CAT_OCUP ==3) %>% 
+  mutate(Pais = "ARG",
+         PONDERA_SALARIOS = case_when(ANO4  %in%  2016:2020 ~ as.integer(PONDIIO),
+                                      ANO4  %in%  2003:2015 ~ as.integer(PONDERA))) %>% 
+  rename(ingreso.mensual = P21) %>% 
+  filter(ingreso.mensual!= 0) %>% 
+  group_by(ANO4) %>% 
+  summarise(Promedio_anual = weighted.mean(ingreso.mensual,PONDERA_SALARIOS))
+
+openxlsx::write.xlsx(list("Salario Medio Spriv" = salario_medio),
+           file = "Resultados/salario medio arg.xlsx")  
 
 
 rm(list = c("Base_ARG1719","Base_ARG0814"))
