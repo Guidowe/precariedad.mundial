@@ -4,10 +4,12 @@ library(tidyverse)
 library(ipumsr)
 library(foreign)
 ####Lectura bases####
-costarica<- read.spss('../bases/Costa Rica/ENAHO 2019.sav',
-                      reencode = "UTF-8",use.value.labels = F,
-                      to.data.frame = T) %>% 
-  mutate(periodo = 2019)
+# costarica<- read.spss('../bases/Costa Rica/ENAHO 2019.sav',
+#                       reencode = "UTF-8",use.value.labels = F,
+#                       to.data.frame = T) %>% 
+#   mutate(periodo = 2019)
+#saveRDS(costarica,file = "Bases/costa_rica_2019.RDS")
+costarica<-readRDS(file = "Bases/costa_rica_2019.RDS")
 
 colombia<- read.spss('../bases/Colombia/Diciembre.spss/Cabecera - Ocupados.sav',
                       reencode = "UTF-8",use.value.labels = F,
@@ -40,15 +42,17 @@ mexico <- mexico.basico %>%
 canada <- read.csv("../bases/Canada/pub1219.csv")
 ####Colombia####
 ##Miro variables##
-table(colombia$P6430)
-table(colombia$P6460)
-table(colombia$P6440)
-table(colombia$P6450)
-table(colombia$OFICIO)
+# table(colombia$CLASE)
+# table(colombia$P6430)
+# table(colombia$P6460)
+# table(colombia$P6440)
+# table(colombia$P6450)
+# table(colombia$OFICIO)
 ##Proceso##
 
 co.categ <- colombia %>% 
   rename(fexp = fex_c_2011) %>% 
+#  filter(CLASE == 1) %>% # Ubana
   filter(! P6430  %in%  c(2,3)) %>% # saco S.Pub y S.Dom
    #   filter(P6430 == 1) %>% # Asalariad
   mutate(
@@ -111,6 +115,7 @@ co.asalariados.tasas <- co.categ %>%
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
     total.asal = sum(fexp,na.rm = T),
+    promedio.ing.oc.prin=weighted.mean(x = P6500,w = fexp,na.rm = T),
     registrados =sum(fexp[registracion=="Si"],na.rm = T),
     no.registrados =sum(fexp[registracion=="No"],na.rm = T),
     empleo.temporal =sum(fexp[tiempo.determinado=="Si"],na.rm = T),
@@ -129,8 +134,10 @@ co.resultado <- co.ocupados.distrib %>%
 
 ####Ecuador####
 ##Miro variables##
-# table(ecuador$p42)
-# table(ecuador$condact)
+ # table(ecuador$area)
+ # table(ecuador2$area)
+ # table(ecuador$p27)
+ # table(ecuador2$p27)
 # table(ecuador$p44f)
 # table(ecuador$p24)
 # table(ecuador$p27,useNA = "always")
@@ -147,6 +154,7 @@ co.resultado <- co.ocupados.distrib %>%
 ##Proceso##
 
 ec.categ <- ecuador %>% 
+  filter(area == 1) %>% #Urbanos
   filter(condact %in% 2:7) %>% #Ocupados
   filter(p42 %in% c(2,4,5,6)) %>% # CP, PaAtron y SPriv sin S/D
   #   filter(p42 == 2) %>% # Asalariad
@@ -231,7 +239,7 @@ ec.resultado <- ec.ocupados.distrib %>%
 # asalad.mex <- mexico %>% 
 #   filter(clase2 == 1) %>% 
 #   filter(pos_ocu == 1)  
-
+#ver <- calculate_tabulates(mexico,"t_loc","cd_a")
 # table(asalad.mex$tip_con)
 # table(asalad.mex$dur_est)
 # table(asalad.mex$hrsocup)
@@ -243,6 +251,7 @@ ec.resultado <- ec.ocupados.distrib %>%
 
 #Proceso#
 mex.cat <- mexico %>% 
+  filter(t_loc != 4) %>%  #Localidades mayores a 2500
   filter(clase2 == 1) %>%  #Ocupados
   filter((tue1  %in%  c(1,4))   |
          (tue1 == 2 & tue2 == 3)|
@@ -309,11 +318,13 @@ table(costarica$C10)
 table(costarica$CondAct)
 table(costarica$PosiEmpPri)
 table(costarica$E9A)
+table(costarica$C2A1)
 table(costarica$E10A)
 table(costarica$Estabili)
 weighted.mean(costarica$C2A1,costarica$FACTOR,na.rm = T) #horas
 
 cr.categ <- costarica %>% 
+    filter(ZONA == 1) %>% #Urbano
     filter(CondAct %in% 1) %>% #Ocupados
     filter(SecInsPri %in% 3) %>% # Spriv
     filter(PosiEmpPri != 11) %>% # No serv domestico
@@ -392,10 +403,13 @@ cr.resultado <- cr.ocupados.distrib %>%
 ####Guatemala####
 # table(guatemala$P04C02B_1D)
 # table(guatemala$P04C05)
+# table(guatemala$AREA)
 # table(guatemala$P04C06,useNA = "always")
-# table(guatemala$P04C28)
+ table(guatemala$OCUPADOS,useNA = "always")
+
 guatemala.cat <- guatemala %>% 
-  filter(!is.na(P04C06)) %>%  #Ocupados
+  filter(AREA == 1) %>%  #area urbana
+  filter(OCUPADOS == 1) %>%  #Ocupados
   filter(!(P04C06 %in% c(1,4))) %>% # Spriv s/ serv domestico
  # filter(P04C06 == 2) %>% # Asalariado
   mutate(
@@ -460,11 +474,12 @@ guate.resultado <- guate.ocupados.distrib %>%
 ####El Salvador####
 # eph::calculate_tabulates(base = elsalvador,
 #                          x = "segm",weights = "fac00",add.totals = "row")  
-# table(elsalvador$r421)
+ table(elsalvador$area)
 # eph::calculate_tabulates(base = elsalvador,
 #                          x = "r421",weights = "fac00",add.totals = "row")  
 
 el.salvador.cat<- elsalvador %>% 
+  filter(area == 1) %>%  #Urbano
   filter(actpr2012 == 10) %>%  #Ocupados
   filter(r418 != 9,r420 == 1) %>% # Spriv s/ serv domestico
   # filter(r418 == 6:7) %>% # Asalariado
@@ -533,6 +548,7 @@ elsa.resultado <- elsa.ocupados.distrib %>%
 
 
 ####Canada####
+table(canada$LFSSTAT)
 
 canada.cat<- canada %>% 
   filter(LFSSTAT  %in%  1:2) %>%  #Ocupados
