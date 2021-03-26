@@ -3,43 +3,62 @@ library(xml2)
 library(tidyverse)
 library(ipumsr)
 library(foreign)
-####Lectura bases####
+####Lectura bases original####
 # costarica<- read.spss('../bases/Costa Rica/ENAHO 2019.sav',
 #                       reencode = "UTF-8",use.value.labels = F,
 #                       to.data.frame = T) %>% 
 #   mutate(periodo = 2019)
-#saveRDS(costarica,file = "Bases/costa_rica_2019.RDS")
-costarica<-readRDS(file = "Bases/costa_rica_2019.RDS")
-
-colombia<- read.spss('../bases/Colombia/Diciembre.spss/Cabecera - Ocupados.sav',
-                      reencode = "UTF-8",use.value.labels = F,
-                      to.data.frame = T) %>% 
-  mutate(periodo = 122019)
+#saveRDS(costarica,file = "Bases/costarica_2019.RDS")
 
 
-guatemala<- read.spss('../bases/Guatemala/2017 guatemala.sav',
-                      reencode = "UTF-8",use.value.labels = F,
-                      to.data.frame = T) %>% 
-  mutate(periodo = 2017)
+# colombia<- read.spss('../bases/Colombia/Diciembre.spss/Cabecera - Ocupados.sav',
+#                       reencode = "UTF-8",use.value.labels = F,
+#                       to.data.frame = T) %>% 
+#   mutate(periodo = 122019)
+#saveRDS(colombia,file = "Bases/colombia_122019.RDS")
 
-ecuador <- read.spss("../bases/Ecuador/enemdu_personas_2020_09.sav",
-                     reencode = "UTF-8",use.value.labels = F,
-                     to.data.frame = T) 
+# guatemala<- read.spss('../bases/Guatemala/2017 guatemala.sav',
+#                       reencode = "UTF-8",use.value.labels = F,
+#                       to.data.frame = T) %>% 
+#   mutate(periodo = 2017)
+#saveRDS(guatemala,file = "Bases/guatemala_2017.RDS")
 
-elsalvador <- read.spss("../bases/El Salvador/El Salvador 2016.sav",
-                        reencode = "UTF-8",use.value.labels = F,
-                        to.data.frame = T)
+# ecuador <- read.spss("../bases/Ecuador/enemdu_persona_201912.sav",
+#                      reencode = "UTF-8",use.value.labels = F,
+#                      to.data.frame = T)
+# saveRDS(ecuador,file = "Bases/ecuador_122019.RDS")
 
-mexico.basico <- read_csv("../bases/Mexico/SDEMT319.csv.CSV")
-mexico.ampliado <- read_csv("../bases/Mexico/COE1T319.csv.CSV")
-mex.variables.ampliado <- mexico.ampliado %>% 
-  mutate(eda = as.character(eda)) %>% 
-  select(1:16,p3)
+# elsalvador <- read.spss("../bases/El Salvador/El Salvador 2016.sav",
+#                         reencode = "UTF-8",use.value.labels = F,
+#                         to.data.frame = T)
+# 
+# saveRDS(elsalvador,file = "Bases/elsalvador_2016.RDS")
 
-mexico <- mexico.basico %>% 
-  left_join(mex.variables.ampliado)
+# mexico.basico <- read_csv("../bases/Mexico/SDEMT319.csv.CSV")
+# mexico.ampliado <- read_csv("../bases/Mexico/COE1T319.csv.CSV")
+# mexico.ampliado2 <- read_csv("../bases/Mexico/COE2T319.csv.CSV")
+# mex.variables.ampliado <- mexico.ampliado %>%
+#   mutate(eda = as.character(eda)) %>%
+#   select(1:16,p3)
+# mex.variables.ampliado2 <- mexico.ampliado2 %>%
+#   mutate(eda = as.character(eda)) %>%
+#   select(1:16,p6b2)
+#  mexico <- mexico.basico %>% 
+#    left_join(mex.variables.ampliado) %>% 
+#    left_join(mex.variables.ampliado2)  
+#saveRDS(mexico,file = "Bases/mexico_T32019.RDS")
 
-canada <- read.csv("../bases/Canada/pub1219.csv")
+
+# canada <- read.csv("../bases/Canada/pub1219.csv")
+#  saveRDS(canada,file = "Bases/canada_122019.RDS")
+####Bases RDS####
+costarica<-readRDS(file = "Bases/costarica_2019.RDS")
+colombia<-readRDS(file = "Bases/colombia_122019.RDS")
+guatemala<-readRDS(file = "Bases/guatemala_2017.RDS")
+ecuador<-readRDS(file = "Bases/ecuador_122019.RDS")
+mexico<-readRDS(file = "Bases/mexico_T32019.RDS")
+elsalvador<-readRDS(file = "Bases/elsalvador_2016.RDS")
+canada<-readRDS(file = "Bases/canada_122019.RDS")
 ####Colombia####
 ##Miro variables##
 # table(colombia$CLASE)
@@ -49,10 +68,9 @@ canada <- read.csv("../bases/Canada/pub1219.csv")
 # table(colombia$P6450)
 # table(colombia$OFICIO)
 ##Proceso##
-
 co.categ <- colombia %>% 
   rename(fexp = fex_c_2011) %>% 
-#  filter(CLASE == 1) %>% # Ubana
+  filter(CLASE == 1) %>% # Ubana
   filter(! P6430  %in%  c(2,3)) %>% # saco S.Pub y S.Dom
    #   filter(P6430 == 1) %>% # Asalariad
   mutate(
@@ -93,29 +111,30 @@ co.tasa.asalariz <- co.categ %>%
 co.ocupados.distrib  <- co.categ %>% 
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
-  summarise(total.ocupados = sum(fexp,na.rm = T),
-            asalariados = sum(fexp[P6430 %in% 1:2],na.rm = T),
-            tasa.asalarizacion = asalariados/total.ocupados) %>% 
+  summarise(ocupados = sum(fexp,na.rm = T),
+            asalariados = sum(fexp[P6430 %in% 1],na.rm = T),
+            no.asalariados = sum(fexp[P6430 != 1],na.rm = T),
+            tasa.asalarizacion = asalariados/ocupados,
+            promedio.ing.oc.prin=weighted.mean(
+              x = INGLABO,
+              w = fexp,na.rm = T),
+            promedio.ing.oc.prin.noasal=weighted.mean(
+              x = INGLABO[P6430 != 1],
+              w = fexp[P6430 != 1],na.rm = T),
+            promedio.ing.oc.prin.asal=weighted.mean(
+              x = INGLABO[P6430 == 1],
+              w = fexp[P6430 == 1],na.rm = T)
+            ) %>% 
   ungroup() %>% 
-  mutate(particip.ocup = total.ocupados/sum(total.ocupados))
-
-
-# ec.asalariados.salario <- cr.prueba %>% 
-#   filter(PosiEmpPri == 12) %>% # Asalariad
-#   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
-#   filter(E12A > 2, E12A!=99999999) %>% 
-#   filter(E12B == 1) %>% #salario bruto
-#   group_by(grupos.calif,grupos.tamanio) %>% 
-#   summarise(
-#     sal.prom = weighted.mean(E12A,FACTOR,na.rm = T))
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.no.asal= no.asalariados/sum(no.asalariados))
 
 co.asalariados.tasas <- co.categ %>% 
   filter(P6430 %in% 1) %>% # Asalariad S.priv
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
-    total.asal = sum(fexp,na.rm = T),
-    promedio.ing.oc.prin=weighted.mean(x = P6500,w = fexp,na.rm = T),
     registrados =sum(fexp[registracion=="Si"],na.rm = T),
     no.registrados =sum(fexp[registracion=="No"],na.rm = T),
     empleo.temporal =sum(fexp[tiempo.determinado=="Si"],na.rm = T),
@@ -123,11 +142,13 @@ co.asalariados.tasas <- co.categ %>%
     part.involun = sum(fexp[part.time.inv=="Part Involunt"],na.rm = T),
     part.volunt = sum(fexp[part.time.inv=="Part Volunt"],na.rm = T),
     full.time = sum(fexp[part.time.inv=="Full Time"],na.rm = T),
-    tasa.partime.asal = part.involun/total.asal,
-     tasa.temp.asal = empleo.temporal/total.asal,
-    tasa.no.registro = no.registrados/total.asal) %>%
-  ungroup() %>% 
-  mutate(particip.asal = total.asal/sum(total.asal))
+    tasa.partime.asal = part.involun/(part.involun+
+                                      part.volunt+
+                                      full.time),
+    tasa.temp.asal = empleo.temporal/(empleo.temporal+
+                                      empleo.no.temporal),
+    tasa.no.registro = no.registrados/(registrados+
+                                       no.registrados)) 
 
 co.resultado <- co.ocupados.distrib %>% 
   left_join(co.asalariados.tasas) 
@@ -194,11 +215,25 @@ ec.tasa.asalariz <- ec.categ %>%
 ec.ocupados.distrib  <- ec.categ %>% 
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
-  summarise(total.ocupados = sum(fexp,na.rm = T),
-            asalariados = sum(fexp[p42 == 2]),
-            tasa.asalarizacion = asalariados/total.ocupados) %>% 
+  summarise(
+    ocupados = sum(fexp,na.rm = T),
+    asalariados = sum(fexp[p42 == 2],na.rm = T),
+    no.asalariados = sum(fexp[p42 != 2],na.rm = T),
+    tasa.asalarizacion = asalariados/ocupados,
+    promedio.ing.oc.prin=weighted.mean(
+            x = ingrl,
+            w = fexp,na.rm = T),
+          promedio.ing.oc.prin.noasal=weighted.mean(
+            x = ingrl[p42!= 2],
+            w = fexp[p42!= 2],na.rm = T),
+          promedio.ing.oc.prin.asal=weighted.mean(
+            x = p66[p42== 2],
+            w = fexp[p42== 2],na.rm = T)
+) %>% 
   ungroup() %>% 
-  mutate(particip.ocup = total.ocupados/sum(total.ocupados))
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.no.asal= no.asalariados/sum(no.asalariados))
 
 
 # ec.asalariados.salario <- cr.prueba %>% 
@@ -215,7 +250,6 @@ ec.asalariados.tasas <- ec.categ %>%
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
-    total.asal = sum(fexp,na.rm = T),
     registrados =sum(fexp[registracion=="Si"],na.rm = T),
     no.registrados =sum(fexp[registracion=="No"],na.rm = T),
     # empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
@@ -223,11 +257,11 @@ ec.asalariados.tasas <- ec.categ %>%
     part.involun = sum(fexp[part.time.inv=="Part Involunt"],na.rm = T),
     part.volunt = sum(fexp[part.time.inv=="Part Volunt"],na.rm = T),
     full.time = sum(fexp[part.time.inv=="Full Time"],na.rm = T),
-    tasa.partime.asal = part.involun/total.asal,
-    # tasa.temp.asal = empleo.temporal/total.asal,
-    tasa.no.registro = no.registrados/total.asal) %>%
-  ungroup() %>% 
-  mutate(particip.asal = total.asal/sum(total.asal))
+    tasa.partime.asal = part.involun/(part.involun+
+                                      part.volunt+
+                                      full.time),
+    tasa.no.registro = no.registrados/(registrados+
+                                      no.registrados))
 
 ec.resultado <- ec.ocupados.distrib %>% 
   left_join(ec.asalariados.tasas) 
@@ -279,22 +313,36 @@ mex.cat <- mexico %>%
         substr(p3,1,1) %in% 4:8 ~ "Media",
         substr(p3,1,1) %in% 9 ~ "Baja")
       ) 
-
 mex.ocupados.distrib <-  mex.cat  %>% 
+  mutate(p6b2 = as.numeric(p6b2)) %>% 
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
-  summarise(total.ocupados = sum(FACTOR,na.rm = T),
-            total.asal = sum(FACTOR[pos_ocu == 1]),
-            tasa.asalarizacion = total.asal/total.ocupados) %>% 
+  summarise(
+  ocupados = sum(FACTOR,na.rm = T),
+  asalariados = sum(FACTOR[pos_ocu == 1],na.rm = T),
+  no.asalariados = sum(FACTOR[pos_ocu != 1],na.rm = T),
+  tasa.asalarizacion = asalariados/ocupados,
+  promedio.ing.oc.prin=weighted.mean(
+    x = p6b2[p6b2 != 999999],
+    w = FACTOR[p6b2 != 999999],na.rm = T),
+  promedio.ing.oc.prin.noasal=weighted.mean(
+    x = p6b2[pos_ocu!= 1 & p6b2!= 999999],
+    w = FACTOR[pos_ocu!= 1 & p6b2!= 999999],na.rm = T),
+  promedio.ing.oc.prin.asal=weighted.mean(
+    x = p6b2[pos_ocu== 1 & p6b2!= 999999],
+    w = FACTOR[pos_ocu== 1 & p6b2!= 999999],na.rm = T)
+) %>% 
   ungroup() %>% 
-  mutate(particip.ocup = total.ocupados/sum(total.ocupados))
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.no.asal= no.asalariados/sum(no.asalariados))
+
 
 mex.asalariados.tasas <- mex.cat %>% 
   filter(pos_ocu == 1) %>% # Asalariado
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
-    total.asal = sum(FACTOR,na.rm = T),
     registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
     no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
     empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
@@ -302,26 +350,28 @@ mex.asalariados.tasas <- mex.cat %>%
     part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
     part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
     full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
-    tasa.partime.asal = part.involun/total.asal,
-    tasa.temp.asal = empleo.temporal/total.asal,
-    tasa.no.registro = no.registrados/total.asal) %>%
-  ungroup() %>% 
-  mutate(particip.asal = total.asal/sum(total.asal))
+    tasa.partime.asal = part.involun/(part.involun+
+                                      part.volunt+
+                                      full.time),
+    tasa.no.registro = no.registrados/(registrados+
+                                       no.registrados),
+    tasa.temp.asal = empleo.temporal/(empleo.temporal+
+                                     empleo.no.temporal))
 
 mex.resultado <- mex.ocupados.distrib %>%
-  left_join(mex.asalariados.tasas %>% select(-total.asal))
+  left_join(mex.asalariados.tasas)
 
 
 ####Costa Rica####
-table(costarica$OcupEmpPri)
-table(costarica$C10)
-table(costarica$CondAct)
-table(costarica$PosiEmpPri)
-table(costarica$E9A)
-table(costarica$C2A1)
-table(costarica$E10A)
-table(costarica$Estabili)
-weighted.mean(costarica$C2A1,costarica$FACTOR,na.rm = T) #horas
+# table(costarica$OcupEmpPri)
+# table(costarica$C10)
+# table(costarica$CondAct)
+# table(costarica$PosiEmpPri)
+# table(costarica$E9A)
+# table(costarica$C2A1)
+# table(costarica$E10A)
+# table(costarica$Estabili)
+# weighted.mean(costarica$C2A1,costarica$FACTOR,na.rm = T) #horas
 
 cr.categ <- costarica %>% 
     filter(ZONA == 1) %>% #Urbano
@@ -357,44 +407,48 @@ cr.tasa.asalariz <- cr.categ %>%
 cr.ocupados.distrib  <- cr.categ %>% 
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
-  summarise(total.ocupados = sum(FACTOR,na.rm = T),
-            total.asal = sum(FACTOR[PosiEmpPri == 12]),
-            tasa.asalarizacion = total.asal/total.ocupados) %>% 
-  ungroup() %>% 
-  mutate(particip.ocup = total.ocupados/sum(total.ocupados))
-
-
-cr.asalariados.salario <- cr.categ %>% 
-  filter(PosiEmpPri == 12) %>% # Asalariad
-  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
-  filter(E12A > 2, E12A!=99999999) %>% 
-  filter(E12B == 1) %>% #salario bruto
-  group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
-    sal.prom = weighted.mean(E12A,FACTOR,na.rm = T))
+  ocupados = sum(FACTOR,na.rm = T),
+  asalariados = sum(FACTOR[PosiEmpPri == 12],na.rm = T),
+  no.asalariados = sum(FACTOR[PosiEmpPri != 12],na.rm = T),
+  tasa.asalarizacion = asalariados/ocupados,
+  promedio.ing.oc.prin=weighted.mean(
+    x = ipnt,
+    w = FACTOR,na.rm = T),
+  promedio.ing.oc.prin.noasal=weighted.mean(
+    x = ipnt[PosiEmpPri!= 12],
+    w = FACTOR[PosiEmpPri!= 12],na.rm = T),
+  promedio.ing.oc.prin.asal=weighted.mean(
+    x = ipnt[PosiEmpPri== 12 ],
+    w = FACTOR[PosiEmpPri== 12 ],na.rm = T)
+) %>% 
+  ungroup() %>% 
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.no.asal= no.asalariados/sum(no.asalariados))
 
 cr.asalariados.tasas <- cr.categ %>% 
   filter(PosiEmpPri == 12) %>% # Asalariad
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
-    total.asal = sum(FACTOR,na.rm = T),
-    horas.prom = weighted.mean(C2A1,FACTOR,na.rm = T),
     registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
     no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
     empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
     empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
-    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"]),
-    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"]),
-    full.time = sum(FACTOR[part.time.inv=="Full Time"]),
-    tasa.partime.asal = part.involun/total.asal,
-    tasa.temp.asal = empleo.temporal/total.asal,
-    tasa.no.registro = no.registrados/total.asal) %>%
-  ungroup() %>% 
-  mutate(particip.asal = total.asal/sum(total.asal))
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime.asal = part.involun/(part.involun+
+                                        part.volunt+
+                                        full.time),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp.asal = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal))
 
 cr.resultado <- cr.ocupados.distrib %>%
-  left_join(cr.asalariados.tasas %>% select(-total.asal))
+  left_join(cr.asalariados.tasas)
 # openxlsx::write.xlsx(x = list(cr.tasa.asalariz,
 #                               cr.ocupados.distrib,
 #                               cr.asalariados.tasas),
@@ -405,9 +459,10 @@ cr.resultado <- cr.ocupados.distrib %>%
 # table(guatemala$P04C05)
 # table(guatemala$AREA)
 # table(guatemala$P04C06,useNA = "always")
- table(guatemala$OCUPADOS,useNA = "always")
+#table(guatemala$OCUPADOS,useNA = "always")
 
 guatemala.cat <- guatemala %>% 
+  mutate(FACTOR = Factor_expansion) %>% 
   filter(AREA == 1) %>%  #area urbana
   filter(OCUPADOS == 1) %>%  #Ocupados
   filter(!(P04C06 %in% c(1,4))) %>% # Spriv s/ serv domestico
@@ -439,44 +494,60 @@ guatemala.cat <- guatemala %>%
 guate.ocupados.distrib <-  guatemala.cat  %>% 
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
-  summarise(total.ocupados = sum(Factor_expansion,na.rm = T),
-            total.asal = sum(Factor_expansion[P04C06 == 2]),
-            tasa.asalarizacion = total.asal/total.ocupados,
-            sal.prom = weighted.mean(P04C10,Factor_expansion,na.rm = T)) %>% 
+  summarise(
+    ocupados = sum(FACTOR,na.rm = T),
+    asalariados = sum(FACTOR[P04C06 == 2 ],na.rm = T),
+    no.asalariados = sum(FACTOR[P04C06 != 2],na.rm = T),
+    tasa.asalarizacion = asalariados/ocupados,
+    promedio.ing.oc.prin=weighted.mean(
+      x = P04C10,
+      w = FACTOR,na.rm = T),
+    promedio.ing.oc.prin.noasal=weighted.mean(
+      x = P04C10[P04C06 != 2],
+      w = FACTOR[P04C06 != 2],na.rm = T),
+    promedio.ing.oc.prin.asal=weighted.mean(
+      x = P04C10[P04C06 == 2 ],
+      w = FACTOR[P04C06 == 2],na.rm = T)
+  ) %>% 
   ungroup() %>% 
-  mutate(particip.ocup = total.ocupados/sum(total.ocupados))
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.no.asal= no.asalariados/sum(no.asalariados))
+
 
 guat.asalariados.tasas <- guatemala.cat %>% 
-  rename(FACTOR = Factor_expansion) %>% 
   filter(P04C06 == 2) %>% # Asalariado
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
-    total.asal = sum(FACTOR,na.rm = T),
-    horas.prom = weighted.mean(horas.semana,FACTOR),
     registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
     no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
     empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
     empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
-    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"]),
-    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"]),
-    full.time = sum(FACTOR[part.time.inv=="Full Time"]),
-    tasa.partime.asal = part.involun/total.asal,
-    tasa.temp.asal = empleo.temporal/total.asal,
-    tasa.no.registro = no.registrados/total.asal) %>%
-  ungroup() %>% 
-  mutate(particip.asal = total.asal/sum(total.asal))
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime.asal = part.involun/(part.involun+
+                                        part.volunt+
+                                        full.time),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp.asal = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal))
 
 guate.resultado <- guate.ocupados.distrib %>%
-  left_join(guat.asalariados.tasas %>% select(-total.asal))
+  left_join(guat.asalariados.tasas )
 
 
 ####El Salvador####
 # eph::calculate_tabulates(base = elsalvador,
 #                          x = "segm",weights = "fac00",add.totals = "row")  
- table(elsalvador$area)
 # eph::calculate_tabulates(base = elsalvador,
 #                          x = "r421",weights = "fac00",add.totals = "row")  
+table(elsalvador$r420)
+table(elsalvador$r418)
+table(elsalvador$actpr2012)
+table(elsalvador$area)
 
 el.salvador.cat<- elsalvador %>% 
   filter(area == 1) %>%  #Urbano
@@ -509,26 +580,40 @@ el.salvador.cat<- elsalvador %>%
   ) 
 
 
-unique(el.salvador.cat$part.time.inv)
-table(el.salvador.cat$r413)
+# unique(el.salvador.cat$part.time.inv)
+# table(el.salvador.cat$r413)
 #summary(guatemala.cat$horas.semana)
 
 elsa.ocupados.distrib <-  el.salvador.cat  %>% 
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
-  summarise(total.ocupados = sum(FACTOR,na.rm = T),
-            total.asal = sum(FACTOR[r418 %in%  6:7]),
-            tasa.asalarizacion = total.asal/total.ocupados) %>% 
+  summarise(
+    ocupados = sum(FACTOR,na.rm = T),
+    asalariados = sum(FACTOR[r418 %in%  6:7],na.rm = T),
+    no.asalariados = sum(FACTOR[!(r418 %in%  6:7)],na.rm = T),
+    tasa.asalarizacion = asalariados/ocupados,
+    promedio.ing.oc.prin=weighted.mean(
+      x = money,
+      w = FACTOR,na.rm = T),
+    promedio.ing.oc.prin.noasal=weighted.mean(
+      x = money[!(r418 %in%  6:7)],
+      w = FACTOR[!(r418 %in%  6:7)],na.rm = T),
+    promedio.ing.oc.prin.asal=weighted.mean(
+      x = money[r418 %in%  6:7],
+      w = FACTOR[r418 %in%  6:7],na.rm = T)
+  ) %>% 
   ungroup() %>% 
-  mutate(particip.ocup = total.ocupados/sum(total.ocupados))
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.no.asal= no.asalariados/sum(no.asalariados))
 
+
+    
 elsa.asalariados.tasas <- el.salvador.cat %>% 
   filter(r418 %in%  6:7) %>% # Asalariado
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
-    total.asal = sum(FACTOR,na.rm = T),
-    horas.prom = weighted.mean(horas.semana,FACTOR),
     registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
     no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
     empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
@@ -536,20 +621,20 @@ elsa.asalariados.tasas <- el.salvador.cat %>%
     part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
     part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
     full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
-    tasa.partime.asal = part.involun/total.asal,
-    tasa.temp.asal = empleo.temporal/total.asal,
-    tasa.no.registro = no.registrados/total.asal) %>%
-  ungroup() %>% 
-  mutate(particip.asal = total.asal/sum(total.asal))
+    tasa.partime.asal = part.involun/(part.involun+
+                                        part.volunt+
+                                        full.time),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp.asal = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal))
 
 elsa.resultado <- elsa.ocupados.distrib %>%
-  left_join(elsa.asalariados.tasas %>% select(-total.asal))
+  left_join(elsa.asalariados.tasas)
   
 
 
 ####Canada####
-table(canada$LFSSTAT)
-
 canada.cat<- canada %>% 
   filter(LFSSTAT  %in%  1:2) %>%  #Ocupados
   filter(COWMAIN != 1) %>% # Spriv 
@@ -560,6 +645,7 @@ canada.cat<- canada %>%
     # registracion =  case_when(r419 %in% 1:6 ~ "Si",
     #                           r419 %in% 7:8 ~ "No"),
     registracion = NA,
+    ing.mensual =  HRLYEARN*UHRSMAIN*4.25,
     part.time.inv = case_when(UHRSMAIN < 35 & WHYPT  %in%  6:7 ~ "Part Involunt",
                               UHRSMAIN < 35 & !(WHYPT  %in% 6:7) ~ "Part Volunt",
                               UHRSMAIN >= 35 ~ "Full Time"), 
@@ -584,19 +670,33 @@ canada.cat<- canada %>%
 canada.ocupados.distrib <-  canada.cat %>% 
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
-  summarise(total.ocupados = sum(FACTOR,na.rm = T),
-            total.asal = sum(FACTOR[COWMAIN == 2]),
-            tasa.asalarizacion = total.asal/total.ocupados) %>% 
+  summarise(
+    ocupados = sum(FACTOR,na.rm = T),
+    asalariados = sum(FACTOR[COWMAIN == 2],na.rm = T),
+    no.asalariados = sum(FACTOR[COWMAIN != 2],na.rm = T),
+    tasa.asalarizacion = asalariados/ocupados,
+    promedio.ing.oc.prin=weighted.mean(
+      x = ing.mensual,
+      w = FACTOR,na.rm = T),
+    promedio.ing.oc.prin.noasal=weighted.mean(
+      x = ing.mensual[COWMAIN != 2],
+      w = FACTOR[COWMAIN != 2],na.rm = T),
+    promedio.ing.oc.prin.asal=weighted.mean(
+      x = ing.mensual[COWMAIN == 2],
+      w = FACTOR[COWMAIN == 2],na.rm = T)
+  ) %>% 
   ungroup() %>% 
-  mutate(particip.ocup = total.ocupados/sum(total.ocupados))
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.no.asal= no.asalariados/sum(no.asalariados))
+
+
 
 canada.asalariados.tasas <- canada.cat %>% 
   filter(COWMAIN == 2) %>% # Asalariado
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
-    total.asal = sum(FACTOR,na.rm = T),
-   # horas.prom = weighted.mean(horas.semana,FACTOR),
     registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
     no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
     empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
@@ -604,14 +704,16 @@ canada.asalariados.tasas <- canada.cat %>%
     part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
     part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
     full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
-    tasa.partime.asal = part.involun/total.asal,
-    tasa.temp.asal = empleo.temporal/total.asal,
-    tasa.no.registro = no.registrados/total.asal) %>%
-  ungroup() %>% 
-  mutate(particip.asal = total.asal/sum(total.asal))
+    tasa.partime.asal = part.involun/(part.involun+
+                                        part.volunt+
+                                        full.time),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp.asal = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal))
 
 canada.resultado <- canada.ocupados.distrib %>%
-  left_join(canada.asalariados.tasas %>% select(-total.asal))
+  left_join(canada.asalariados.tasas)
 
 ####Union Paises####
 resultados <- 
