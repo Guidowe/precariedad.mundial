@@ -5,8 +5,9 @@ account: guidowe45
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3822122
-bundleId: 4369579
+bundleId: 4411928
 url: https://guidowe45.shinyapps.io/Precariedad/
-when: 1616175426.38889
+when: 1617113924.54752
 asMultiple: FALSE
 asStatic: FALSE
+ignoredFiles: pre_app.R

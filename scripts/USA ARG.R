@@ -2,25 +2,10 @@
   library(ipumsr)
   library(eph)
   library(ggthemes)
-  library(ggalt)
   library(tidyverse)
-  library(kableExtra)
-  library(formattable)
   library(openxlsx)
   library(Weighted.Desc.Stat)
   library(stringr)
-  # Funcion de redondeo para presentación (queda como character)
-  formato_porc <- function(numero, dec = 1){
-    format(round(numero, digits = dec), nsmall = dec, decimal.mark = ",")
-  }
-  
-  formato_pesos <- function(numero, dec = 2){
-    paste0("$", format(round(numero, digits = dec), nsmall = dec, big.mark = ".", decimal.mark = ","))
-  }
-  
-  formato_cantidad <- function(numero, dec = 0){
-    format(round(numero, digits = dec), nsmall = dec, big.mark = ".", decimal.mark = ",")
-  }
   
   sample.isco <- function(df) {
     sample(df$ISCO.1.digit,size = 1)

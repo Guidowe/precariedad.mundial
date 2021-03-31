@@ -126,7 +126,7 @@ sample.isco <- function(df) {
 # gc()
 
 #saveRDS(Base_Usa_sampleada,"../bases/Base_Usa_sampleada.RDS")
-#Base_Usa_sampleada<- readRDS("../bases/Estados Unidos/Base_Usa_sampleada.RDS")
+Base_Usa_sampleada<- readRDS("../bases/Estados Unidos/Base_Usa_sampleada.RDS")
 
 ####USA Categorias####
 Base_USA.cat <- Base_Usa_sampleada %>% 
@@ -168,5 +168,15 @@ Base_USA.cat <- Base_Usa_sampleada %>%
       TRUE ~ "Otros"),
     sobreocup = case_when(UHRSWORKLY %in%  46:99~"Si",
                           UHRSWORKLY %in%  1:45~"No"))
+
+
+##Filtros USA #####
+usa.ocup.privados <- Base_USA.cat %>% 
+  filter(INDLY <9370,#sin Sector publico
+         INDLY <9290,#sin Sector publico ni S. doméstico 
+         WORKLY ==  2)%>% 
+  mutate(Pais = "USA",
+         periodo = YEAR,
+         PONDERA = ASECWT)
 
 #table(Base_USA.cat$sobreocup,useNA = "always")

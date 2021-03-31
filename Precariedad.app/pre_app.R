@@ -1,6 +1,5 @@
 library(plotly)
 library(shiny)
-library(shinythemes)
 library(DT)
 library(tidyverse)
 library(ggthemes)

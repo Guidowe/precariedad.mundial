@@ -143,7 +143,8 @@ America <- tabla %>%
       tamanio.calif == "Mediano - Alta" ~ "6) Mediano - Alta",
       tamanio.calif == "Grande - Baja" ~ "7) Grande - Baja",
       tamanio.calif == "Grande - Media" ~ "8) Grande - Media",
-      tamanio.calif == "Grande - Alta" ~ "9) Grande - Alta"))
+      tamanio.calif == "Grande - Alta" ~ "9) Grande - Alta")) %>% 
+  arrange(Pais,tamanio.calif)
 
 
 
@@ -171,8 +172,8 @@ America %>%
   scale_y_continuous(labels = scales::percent)+
   guides(fill=guide_legend(title="Tamaño - Calificación"))
 
-#write.xlsx(America,"Resultados/Resultados_America.xlsx")
-ggsave("Resultados/latam_calificacion_tamanio.jpg",width = 10,height = 8)
+write.xlsx(America,"Resultados/America/Resultados_America.xlsx")
+#ggsave("Resultados/latam_calificacion_tamanio.jpg",width = 10,height = 8)
 
 
 ####Tasas precariedad####

@@ -1,13 +1,7 @@
 ####funciones y librerias#####
-  library(ipumsr)
   library(eph)
   library(tidyverse)
   library(openxlsx)
-  library(stringr)
-
-  sample.isco <- function(df) {
-    sample(df$ISCO.1.digit,size = 1)
-  }
 
   
 ####bases de datos#####
@@ -79,6 +73,8 @@ Base_EPH.cat <- bases_bind %>%
                 PP04C %in% 7:8  ~ "Mediano",
                 PP04C %in% 9:12 |(PP04C %in% 99 & PP04C99 == 3)~ "Grande"),
       levels = c("Pequeño","Mediano","Grande")),
+    seguridad.social = case_when(PP07H == 1 ~ "Si",
+                             PP07H == 2 ~ "No"),
     registracion = case_when(PP07H == 1 ~ "Si",
                              PP07H == 2 ~ "No"),
     Categoria =  case_when(CAT_OCUP == 1 ~ "Patrones",
@@ -155,6 +151,8 @@ arg.asalariados.tasas <- eph.ocup.privados %>%
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,ANO4) %>% 
   summarise(
+    seguridad.social.si = sum(PONDERA[seguridad.social=="Si"],na.rm = T),
+    seguridad.social.no = sum(PONDERA[seguridad.social=="No"],na.rm = T),
     registrados =sum(PONDERA[registracion=="Si"],na.rm = T),
     no.registrados =sum(PONDERA[registracion=="No"],na.rm = T),
     empleo.temporal =sum(PONDERA[tiempo.determinado=="Si"],na.rm = T),
@@ -165,6 +163,8 @@ arg.asalariados.tasas <- eph.ocup.privados %>%
     tasa.partime.asal = part.involun/(part.involun+
                                         part.volunt+
                                         full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
     tasa.no.registro = no.registrados/(registrados+
                                          no.registrados),
     tasa.temp.asal = empleo.temporal/(empleo.temporal+
@@ -172,16 +172,20 @@ arg.asalariados.tasas <- eph.ocup.privados %>%
 
 arg.resultado <- arg.ocupados.distrib %>%
   left_join(arg.asalariados.tasas) %>% 
-  rename(periodo = ANO4)
+  rename(periodo = ANO4) %>% 
+  mutate(Pais = "Argentina",
+         tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
+         tamanio.calif = factor(tamanio.calif,
+                                levels = 
+                                  c("Pequeño - Baja",
+                                    "Pequeño - Media",
+                                    "Pequeño - Alta",
+                                    "Mediano - Baja",
+                                    "Mediano - Media", 
+                                    "Mediano - Alta",
+                                    "Grande - Baja",
+                                    "Grande - Media",
+                                    "Grande - Alta"))) %>% 
+  arrange(tamanio.calif)
 
-save(arg.resultado,file = "Resultados/ResultadoArg.RDATA")
-
-##Tablas USA #####
-usa.ocup.privados <- Base_USA.cat %>% 
-  filter(INDLY <9370,#sin Sector publico
-         INDLY <9290,#sin Sector publico ni S. doméstico 
-         WORKLY ==  2)%>% 
-  mutate(Pais = "USA",
-         Periodo = YEAR,
-         PONDERA = ASECWT)
-
+save(arg.resultado,file = "Resultados/Argentina.RDS")
