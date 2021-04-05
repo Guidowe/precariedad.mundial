@@ -33,7 +33,7 @@ tabla <-  resultados.todos %>%
   
 
 resultados <- resultados.todos %>% 
-  pivot_longer(cols = 5:ncol(.),
+  pivot_longer(cols = 7:ncol(.),
                names_to = "Serie",
                values_to = "Valor") %>% 
   mutate(tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
@@ -50,6 +50,7 @@ resultados <- resultados.todos %>%
                                "Grande - Alta")))%>% 
   ungroup()
 
+saveRDS(resultados.todos,file = "Resultados/America.RDS")
 save(list = c("tabla","resultados"),
      file = "Precariedad.app/datashiny.RDATA")
 

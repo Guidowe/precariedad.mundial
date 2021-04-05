@@ -148,19 +148,14 @@ Base_USA.cat <- Base_Usa_sampleada %>%
       CLASSWLY  %in% 20:28 ~ "Asalariados",
       CLASSWLY == 29 ~ "TFSR",
       CLASSWLY == 99 ~ "Ns/Nr"),
-    # Categoria =  case_when(CLASSWKR %in% 10:19 ~ "Patrones y CP",
-    #                        CLASSWKR  %in% 20:28 ~ "Asalariados",
-    #                        CLASSWKR == 29 ~ "TFSR",
-    #                        CLASSWKR == 99 ~ "Ns/Nr"),
-    pension = case_when(
+    Categoria =  case_when(CLASSWKR %in% 10:19 ~ "Patrones y CP",
+                           CLASSWKR  %in% 20:28 ~ "Asalariados",
+                           CLASSWKR == 29 ~ "TFSR",
+                           CLASSWKR == 99 ~ "Ns/Nr"),
+    seguridad.social = case_when(
       PENSION %in% 1:2 ~ "No",
       PENSION %in% 3 ~ "Si",
       PENSION %in% 0 ~ "NIU"),
-    # part.time.inv = case_when(WKSTAT  %in%  20:42 &
-    #                             WHYPTLWK %in% c(10:40,
-    #                                             52,60,17:81,
-    #                                             4)~"Involunt",
-    #                           TRUE ~ "Resto"),
     part.time.inv = case_when(
       FULLPART == 2 & WHYPTLY %in% c(1,3,4)~"Part Involunt",
       FULLPART == 2 & WHYPTLY %in% c(2)~"Part Volunt",
@@ -171,12 +166,88 @@ Base_USA.cat <- Base_Usa_sampleada %>%
 
 
 ##Filtros USA #####
-usa.ocup.privados <- Base_USA.cat %>% 
-  filter(INDLY <9370,#sin Sector publico
+usa.cat <- Base_USA.cat %>% 
+  filter(ASECFLAG==1,
+         INDLY <9370,#sin Sector publico
          INDLY <9290,#sin Sector publico ni S. doméstico 
-         WORKLY ==  2)%>% 
-  mutate(Pais = "USA",
-         periodo = YEAR,
-         PONDERA = ASECWT)
+         WORKLY ==  2)%>% # Ocupados
+  mutate(periodo = YEAR -1,
+         FACTOR = ASECWT)
 
-#table(Base_USA.cat$sobreocup,useNA = "always")
+
+usa.ocupados.distrib <-  usa.cat  %>% 
+  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(grupos.calif,grupos.tamanio,periodo) %>% 
+  summarise(
+    ocupados = sum(FACTOR,na.rm = T),
+    asalariados = sum(FACTOR[Categoria  == "Asalariados"],na.rm = T),
+    no.asalariados = sum(FACTOR[Categoria  != "Asalariados"],na.rm = T),
+    tasa.asalarizacion = asalariados/ocupados) %>% 
+  ungroup() %>% 
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.no.asal= no.asalariados/sum(no.asalariados))
+
+
+
+usa.asalariados.tasas <- usa.cat %>% 
+  filter(Categoria  == "Asalariados") %>% # Asalariado
+  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(grupos.calif,grupos.tamanio,periodo) %>% 
+  summarise(
+    seguridad.social.si = sum(FACTOR[seguridad.social=="Si"],na.rm = T),
+    seguridad.social.no = sum(FACTOR[seguridad.social=="No"],na.rm = T),
+    # registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
+    # no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
+    # empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
+    # empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime.asal = part.involun/(part.involun+
+                                        part.volunt+
+                                        full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no))
+
+
+
+set.seed(999)  
+usa.ingresos.asal <- usa.cat %>% 
+  filter(INCWAGE>0,
+         INCWAGE!=99999999,
+         Categoria=="Asalariados",
+         WORKLY==2) %>% 
+  mutate(ingresos.no.salario.ppal = INCBUS+OINCFARM+OINCWAGE+INCFARM,
+         ingreso.horario = INCWAGE/WKSWORK1/UHRSWORKLY,
+         ingreso.mensual = INCWAGE/WKSWORK1*4,
+         ingreso.horario.d = ingreso.horario+runif(nrow(.),min = -.01,max =.01),
+         ingreso.mens.d = ingreso.mensual+runif(nrow(.),min = -.01,max =.01)) %>% 
+  filter(INCWAGE==INCLONGJ,ingresos.no.salario.ppal== 0) %>% 
+  group_by(periodo,grupos.calif,grupos.tamanio) %>% 
+  summarise(promedio.ing.oc.prin.asal = weighted.mean(x = ingreso.mensual,
+                                                 w = FACTOR,na.rm = TRUE))
+                     
+
+
+usa.resultado <- usa.ocupados.distrib %>%
+  left_join(usa.asalariados.tasas)%>% 
+  left_join(usa.ingresos.asal)%>% 
+  mutate(Pais = "Estados Unidos",
+         tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
+         tamanio.calif = factor(tamanio.calif,
+                                levels = 
+                                  c("Pequeño - Baja",
+                                    "Pequeño - Media",
+                                    "Pequeño - Alta",
+                                    "Mediano - Baja",
+                                    "Mediano - Media", 
+                                    "Mediano - Alta",
+                                    "Grande - Baja",
+                                    "Grande - Media",
+                                    "Grande - Alta"))) %>% 
+  arrange(tamanio.calif)
+
+saveRDS(usa.resultado,file = "Resultados/Estados Unidos.RDS")  
+
+
