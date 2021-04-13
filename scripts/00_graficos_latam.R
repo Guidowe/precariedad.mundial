@@ -25,16 +25,18 @@ paleta3 <- c(azul[1],
 ###############################Data Encuestas#########################
 load("Precariedad.app/datashiny.RDATA")
 
+periodos <- unique(tabla[c("Pais","periodo")])
+
 ###############################Fuentes complementarias#########################
 Paises <- read.xlsx("Fuentes Complementarias/Prod y Salarios.xlsx",
                     sheet = "Paises_Latam")
 
-Productividad <- read.xlsx("Fuentes Complementarias/Prod y Salarios2.xlsx",
+Productividad <- read.xlsx("Fuentes Complementarias/Prod y Salarios.xlsx",
                            sheet = "Prod Relativa_Total e IND",
                            startRow = 2) %>% 
   rename(COD.OCDE = LOCATION, name = label.x) 
 
-Salarios_UMN <- read.xlsx("Fuentes Complementarias/Prod y Salarios2.xlsx",
+Salarios_UMN <- read.xlsx("Fuentes Complementarias/Prod y Salarios.xlsx",
                           sheet = "salario nominal - UMN"
                           ) %>%
   rename(ANO4 = X1)%>%
@@ -152,7 +154,7 @@ America %>%
   ggplot(.,
          aes(x = Pais, y = particip.ocup,
              fill = tamanio.calif,group = tamanio.calif,
-             label = scales::percent(particip.ocup))) +
+             label = scales::percent(particip.ocup,accuracy = 0.01))) +
   geom_col(position = "stack")+
   geom_text(position = position_stack(vjust = .5),size=3)+
 #  labs(title = "Distribución del empleo según grupos")+
@@ -173,59 +175,40 @@ America %>%
   guides(fill=guide_legend(title="Tamaño - Calificación"))
 
 write.xlsx(America,"Resultados/America/Resultados_America.xlsx")
-#ggsave("Resultados/latam_calificacion_tamanio.jpg",width = 10,height = 8)
+ggsave("Resultados/America/America_calificacion_tamanio.jpg",width = 10,height = 8)
 
 
 ####Tasas precariedad####
-#Graf 4#
-graf.todos <- America %>%
-  #left_join(Paises %>% rename(Pais = COD.ENCUESTAS)) %>% 
-  ungroup() %>% 
-  #select(Orden,Pais,tamanio.calif,tasa.s.desc.jubil,tasa.partime.asal,tasa.temp.asal) %>% 
-  select(Pais,tamanio.calif,tasa.partime.asal,tasa.temp.asal,tasa.no.registro) %>% 
-  pivot_longer(cols = 3:ncol(.),
-               names_to = "indicador",values_to = "valor") %>% 
-  mutate(
-    indicador = factor(
-      case_when(
-        indicador == "tasa.no.registro" ~ "No Registro",
-        indicador == "tasa.temp.asal" ~ "Empleo temporal",
-        indicador == "tasa.partime.asal" ~ "Part time involuntario"),
-      levels = c("No Registro",
-                 "Empleo temporal",
-                 "Part time involuntario"))) %>% 
-  ungroup()
+America %>%
+filter(Pais != "Estados Unidos") %>% 
+  ggplot(.,
+         aes(x = Pais, y = tasa.seguridad.social,
+             label = round(tasa.seguridad.social,2))) +
+  geom_col(position = "dodge")+
+  #geom_text(position = position_dodge(),size=2.5,angle = 90)+
+  labs(title = "Tasa de ausencia de cobertura en la seguridad social")+
+  theme_tufte()+
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.key.size = unit(0.2,"cm"),
+        #legend.spacing.x  = unit(0.4,"cm"),
+        legend.title = element_blank(),
+        #legend.text = element_text(size = 17),
+        axis.title = element_blank(),
+        axis.text.x = element_text(angle = 90,vjust = .5),
+        axis.ticks.x = element_blank(),
+        panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"),
+        text = element_text(size = 17))+
+  scale_y_continuous(labels = scales::percent)+
+  scale_fill_manual(values = "blue")+
+  facet_wrap(~tamanio.calif)+
+  guides(fill=guide_legend(keywidth = 0.8))
 
-# graf.todos %>% 
-#   ggplot(.,
-#          aes(x = Pais, y = valor,
-#              fill = indicador,group = indicador,
-#              label = round(valor,2))) +
-#   geom_col(position = "dodge")+
-#   #geom_text(position = position_dodge(),size=2.5,angle = 90)+
-#   #labs(title = "Expresiones de la precariedad según perfiles y paises. Año 2018")+
-#   theme_tufte()+
-#   theme(legend.position = "bottom",
-#         legend.direction = "horizontal",
-#         legend.key.size = unit(0.2,"cm"),
-#         #legend.spacing.x  = unit(0.4,"cm"),
-#         legend.title = element_blank(),
-#         #legend.text = element_text(size = 17),
-#         axis.title = element_blank(),
-#         axis.text.x = element_text(angle = 90,vjust = .5),
-#         axis.ticks.x = element_blank(),
-#         panel.spacing = unit(1,"cm"),
-#         panel.grid.major.y = element_line(colour = "grey"),
-#         panel.grid.minor.y = element_line(colour = "grey30"),
-#         panel.grid.minor.x = element_line(colour = "grey"),
-#         panel.grid.major.x = element_line(colour = "grey"),
-#         text = element_text(size = 17))+
-#   scale_y_continuous(labels = scales::percent)+
-#   #scale_fill_manual(values = paleta)+
-#   facet_wrap(~tamanio.calif)+
-#   guides(fill=guide_legend(keywidth = 0.8))
-
-#ggsave("Resultados/tasas separadas.jpg",width = 15.59,height = 8)
+ggsave("Resultados/America/tasas seguridad social.jpg",width = 15.59,height = 8)
 
 graf.todos %>% 
   filter(indicador == "Empleo temporal") %>% 
@@ -299,11 +282,18 @@ ggsave("Resultados/Precariedad asalariados.jpg",width = 15.59,height = 9)
 
 
 ###########INGRESOS##################
-America %>% 
-   ggplot(.,
-         aes(x = tamanio.calif, y = promedio.ing.oc.prin.asal,
+America %>%
+  group_by(Pais,periodo) %>% 
+  mutate(salario.promedio.pais = weighted.mean(x = promedio.ing.oc.prin.asal,
+                                               w = asalariados)) %>% 
+  ungroup() %>% 
+  mutate(prima.salario.medio = promedio.ing.oc.prin.asal/salario.promedio.pais) %>% 
+  #filter(Pais != "Ecuador") %>% 
+  ggplot(.,
+         aes(x = tamanio.calif, y = prima.salario.medio,
              fill = tamanio.calif,group = tamanio.calif)) +
   geom_col(position = "dodge")+
+  geom_hline(mapping = aes(yintercept = 1),size = 1)+
  # labs(title = "Promedio de deciles de pertenencia de los asalariados según grupos. Año 2018")+
   theme_tufte()+
   theme(legend.position = "bottom",
@@ -320,18 +310,18 @@ America %>%
         panel.grid.minor.x = element_line(colour = "grey"),
         panel.grid.major.x = element_line(colour = "grey"))+
   scale_fill_manual(values = paleta)+
-  facet_wrap(~Pais,scales = "free_y")
-
+  facet_wrap(~Pais)
 
 ggsave("Resultados/America/Ingreso Asalariados.png",width = 15.59,height = 9)
 
 ########Salarios perfiles###########
-# data.graf.PPA <- ingresos.todos %>% 
-#   filter((ANO4 == 2014 & !(COD.ENCUESTAS %in% c("ES")))|
-#            COD.ENCUESTAS %in% c("ES")) %>% 
-#   filter(COD.ENCUESTAS != "SE") %>% 
-#   filter(!is.na(ingreso.mensual.ppa)) %>% 
-#   #group_by(tamanio.calif) %>% 
+ data.graf.PPA <- America %>% 
+  select(Pais,tamanio.calif,periodo,promedio.ing.oc.prin) %>% 
+  left_join(Paises %>% rename(Pais = nombre.pais)) %>%
+  left_join(Estimacion_GW %>% select(periodo = ANO4,
+                                     Pais = nombre.pais,
+                                     PPA.BENCHMARK.2017.EXTRAPOLADO))  
+  #   #group_by(tamanio.calif) %>% 
 #   mutate(ing.perfil9.usa.100 = 100*ingreso.mensual.ppa.gw/
 #       ingreso.mensual.ppa.gw[COD.ENCUESTAS=="USA" & tamanio.calif=="Grande - Alta"]
 #   ) %>% 

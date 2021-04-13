@@ -188,4 +188,4 @@ arg.resultado <- arg.ocupados.distrib %>%
                                     "Grande - Alta"))) %>% 
   arrange(tamanio.calif)
 
-save(arg.resultado,file = "Resultados/Argentina.RDS")
+saveRDS(arg.resultado,file = "Resultados/Argentina.RDS")

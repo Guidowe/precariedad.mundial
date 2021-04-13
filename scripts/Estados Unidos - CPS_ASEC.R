@@ -183,7 +183,7 @@ usa.ocupados.distrib <-  usa.cat  %>%
     asalariados = sum(FACTOR[Categoria  == "Asalariados"],na.rm = T),
     no.asalariados = sum(FACTOR[Categoria  != "Asalariados"],na.rm = T),
     tasa.asalarizacion = asalariados/ocupados) %>% 
-  ungroup() %>% 
+  group_by(periodo) %>% 
   mutate(particip.ocup = ocupados/sum(ocupados),
          particip.asal = asalariados/sum(asalariados),
          particip.no.asal= no.asalariados/sum(no.asalariados))

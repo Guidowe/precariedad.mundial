@@ -5,8 +5,17 @@
 
 ecuador<-readRDS(file = "Bases/ecuador_122019.RDS")
 
+
+
 ####Ecuador####
 ##Miro variables##
+# prueba.salario <- ecuador %>% 
+#   filter(p42 == 2,ingrl!= 0,ingrl!= 999999)
+# 
+# prueba.salario %>% 
+#   ggplot(aes(x = ingrl)) +
+#   geom_histogram()
+# table(prueba.salario$ingrl)
 # table(ecuador$area)
 # table(ecuador2$area)
 # table(ecuador$p27)
@@ -74,14 +83,14 @@ ec.ocupados.distrib  <- ec.categ %>%
     no.asalariados = sum(fexp[p42 != 2],na.rm = T),
     tasa.asalarizacion = asalariados/ocupados,
     promedio.ing.oc.prin=weighted.mean(
-      x = ingrl,
-      w = fexp,na.rm = T),
+      x = ingrl[!(ingrl %in% c(0,999999))],
+      w = fexp[!(ingrl %in% c(0,999999))],na.rm = T),
     promedio.ing.oc.prin.noasal=weighted.mean(
-      x = ingrl[p42!= 2],
-      w = fexp[p42!= 2],na.rm = T),
+      x = ingrl[p42!= 2 & (!(ingrl %in% c(0,999999)))],
+      w = fexp[p42!= 2 & (!(ingrl %in% c(0,999999)))],na.rm = T),
     promedio.ing.oc.prin.asal=weighted.mean(
-      x = p66[p42== 2],
-      w = fexp[p42== 2],na.rm = T)
+      x = p66[p42== 2 & (!(ingrl %in% c(0,999999)))],
+      w = fexp[p42== 2 & (!(ingrl %in% c(0,999999)))],na.rm = T)
   ) %>% 
   ungroup() %>% 
   mutate(particip.ocup = ocupados/sum(ocupados),
