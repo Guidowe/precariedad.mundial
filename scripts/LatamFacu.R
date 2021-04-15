@@ -3,6 +3,8 @@
 
 # RepDom y Nicaragua
 
+# Ordenar bases dentro de GitHub
+
 # Calcular absolutos part-time voluntario e involuntario
 
 # Estimar para trimestres 2019 y sacar promedio anual
@@ -143,9 +145,14 @@ CHI <- CHI                                  %>%
       levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
     
     #Ingreso de la ocupación principal
-    ING=as.numeric(sub(",", ".", ing_t_p)))                     %>% 
+    ING=as.numeric(as.numeric(gsub(",", ".", gsub("\\.", "", ing_t_p)))), 
+    #Limpio ruido
+    ING=case_when(
+          ING==0 ~ NA_real_, 
+          ING>14000000 ~ NA_real_, 
+          TRUE   ~ ING))                            %>%
+  
     select(variables2)                          
-
 
 #### Uruguay ####
 
@@ -259,7 +266,12 @@ URU <- URU                                          %>%
       levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
 
 #Ingreso de la ocupación principal
-ING=as.numeric(sub(",", ".", PT2)))              %>% 
+ING=as.numeric(sub(",", ".", PT2)), 
+
+ING=case_when(
+  ING==0 ~ NA_real_,
+  ING>750000 ~ NA_real_,
+  TRUE   ~ ING))  %>% 
   select(variables2)    
 
 
@@ -500,9 +512,12 @@ PAR <- PAR                                  %>%
       levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
     
     #Ingreso de la ocupación principal
-    ING=E01AIMDE                                     # Ingreso mensual que habitualmente recibe de la actividad principal
-      
-  )                                  %>% 
+    ING=as.numeric(E01AIMDE), 
+   ING=case_when(
+     ING==0 ~ NA_real_, 
+     ING > 100000000 ~ NA_real_, 
+     TRUE   ~ ING))                                 %>% 
+  
   select(variables2)    
 
 
@@ -625,7 +640,10 @@ BOL <- BOL                                 %>%
       levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
      
      #Ingreso de la ocupación principal
-     ING=yprilab)              %>% 
+     ING=yprilab, 
+     ING=case_when(
+      ING==0 ~ NA_real_, 
+      TRUE   ~ ING))              %>% 
       select(variables2)    
 
 #### Peru ####
