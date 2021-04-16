@@ -23,7 +23,13 @@ resultados.todos <-
             mexico,
             Resultados  %>% rename(particip.no.asal = particip.noasal),
             argentina %>% filter(periodo==2019)) %>% 
-  select(Pais,tamanio.calif,tamanio.calif2,everything())
+  select(Pais,tamanio.calif,tamanio.calif2,everything()) %>% 
+  group_by(Pais,periodo) %>% 
+  mutate(salario.promedio.pais = weighted.mean(x = promedio.ing.oc.prin.asal,
+                                               w = asalariados)) %>% 
+  ungroup() %>% 
+  mutate(prima.salario.medio = promedio.ing.oc.prin.asal/salario.promedio.pais)   %>% 
+  ungroup() 
   
 
 tabla <-  resultados.todos %>% 

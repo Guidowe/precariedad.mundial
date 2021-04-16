@@ -26,12 +26,29 @@ paleta3 <- c(azul[1],
 
 ####Data####
 load("datashiny.RDATA")
+metadata <- read.csv("Metadata.csv",
+                     sep = ";",
+                     encoding = "UTF-8") %>% 
+    mutate(
+    across(
+    .cols = 1:ncol(.),
+    .fns = ~factor(.x))) %>%
+  ungroup()
+
+tabla <- tabla %>% 
+  mutate(
+     across(
+     .cols = 7:ncol(.),
+     .fns = ~round(.x, digits = 2))) %>%
+ungroup()
+
 ###### SHINY ######
 ui <-  fluidPage(
   titlePanel(title = "Precariedad Mundial"),
   tabsetPanel(
     id = 'Display',
     tabPanel("Tabla", DTOutput("table")),
+    tabPanel("Metadata", DTOutput("table2")),
     tabPanel("Grafico",fluid = TRUE,
              sidebarLayout(
                sidebarPanel(
@@ -51,7 +68,7 @@ ui <-  fluidPage(
                    inputId = "Serie",
                    label =  "Serie:",
                    choices = unique(resultados$Serie),
-                   selected = "tasa.no.registro",
+                   selected = "tasa.seguridad.social",
                    multiple = FALSE,
                    width = 400),
                  selectInput(
@@ -99,6 +116,16 @@ server <- function(input, output) {
   output$table   <- renderDT({
     
     datatable(tabla,
+              filter="top",
+              selection="multiple",
+              escape=FALSE,
+              rownames = FALSE)
+    
+  })
+  
+  output$table2   <- renderDT({
+    
+    datatable(metadata,
               filter="top",
               selection="multiple",
               escape=FALSE,
