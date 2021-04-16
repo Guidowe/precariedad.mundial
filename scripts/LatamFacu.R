@@ -651,7 +651,7 @@ BOL <- BOL                                 %>%
 CarpetaPer <- paste0(Carpeta, "Peru/enaho01a-2019-500.dta")
 PER <- read_dta(CarpetaPer)
 
-variables <- c("p507", "p510", "fac500", "p507", "ocu500", "p513t", "p521a", "p521",
+variables <- c("p507", "p510", "fac500", "p507", "ocu500", "p513t", "p521a", "p510a1", "p521",
                "p511a", "p512a", "p512b", "p505", "p523", "p524a1", "estrato")            
 
 PER$p510[is.na(PER$p510)] = 0         #Saco NA de variable p510 para no perder a los cuentapropistas cuando cruzo p507 y p510 en los filter
@@ -705,12 +705,15 @@ PER <- PER                                  %>%
                           TRUE                          ~ "Ns/Nc"), 
     levels= c("Temporal", "No temporal", "Ns/Nc")),
     
-        #Precariedad por aportes a la seguridad social
-    PRECASEG= "Ns/Nc", 
+    #Precariedad por aportes a la seguridad social
+    PRECASEG= factor(case_when( p510a1==3         ~ "Sin aportes", 
+                                p510a1 %in% 1:2   ~ "Con aportes",             
+                                TRUE              ~  "Ns/Nc"),
+                     levels=c( "Sin aportes", "Con aportes", "Ns/Nc")), 
     
     #Precariedad por registración
     PRECAREG= factor(case_when( p511a==7 ~ "No registrado",
-                         p511a %in% c(1:6, 8)  ~ "Registrado",                    #Como no había pregunta sobre descuento jubilatorio, usé como criterio p551a==7 (No tiene contrato).
+                         p511a %in% c(1:6, 8)  ~ "Registrado",                    # p551a==7 : No tiene contrato
                          TRUE      ~  "Ns/Nc"),
     levels=c("No registrado", "Registrado", "Ns/Nc")),
     
@@ -762,7 +765,7 @@ PER <- PER                                  %>%
       p523==1       ~ p524a1 * 20,                      # El dato de ingreso de ocupacion principal esta en jornal, semana, quincenal o mes
       p523==2       ~ p524a1 * 4,                       # dependiendo como cobre el encuestado. Lo mensualice suponiendo que la persona trabaja todo el mes
       p523==3       ~ p524a1 * 2,                       # lo mismo que trabajo en la semana de referencia
-      p523==4       ~ p524a1))  #                                %>% 
+      p523==4       ~ p524a1))              %>% 
   select(variables2) 
 
 
