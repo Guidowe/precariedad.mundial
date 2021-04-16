@@ -3,6 +3,8 @@
 
 # RepDom y Nicaragua
 
+# Ordenar bases dentro de GitHub
+
 # Calcular absolutos part-time voluntario e involuntario
 
 # Estimar para trimestres 2019 y sacar promedio anual
@@ -143,9 +145,14 @@ CHI <- CHI                                  %>%
       levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
     
     #Ingreso de la ocupación principal
-    ING=as.numeric(sub(",", ".", ing_t_p)))                     %>% 
+    ING=as.numeric(as.numeric(gsub(",", ".", gsub("\\.", "", ing_t_p)))), 
+    #Limpio ruido
+    ING=case_when(
+          ING==0 ~ NA_real_, 
+          ING>14000000 ~ NA_real_, 
+          TRUE   ~ ING))                            %>%
+  
     select(variables2)                          
-
 
 #### Uruguay ####
 
@@ -259,7 +266,12 @@ URU <- URU                                          %>%
       levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
 
 #Ingreso de la ocupación principal
-ING=as.numeric(sub(",", ".", PT2)))              %>% 
+ING=as.numeric(sub(",", ".", PT2)), 
+
+ING=case_when(
+  ING==0 ~ NA_real_,
+  ING>750000 ~ NA_real_,
+  TRUE   ~ ING))  %>% 
   select(variables2)    
 
 
@@ -500,9 +512,12 @@ PAR <- PAR                                  %>%
       levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
     
     #Ingreso de la ocupación principal
-    ING=E01AIMDE                                     # Ingreso mensual que habitualmente recibe de la actividad principal
-      
-  )                                  %>% 
+    ING=as.numeric(E01AIMDE), 
+   ING=case_when(
+     ING==0 ~ NA_real_, 
+     ING > 100000000 ~ NA_real_, 
+     TRUE   ~ ING))                                 %>% 
+  
   select(variables2)    
 
 
@@ -625,7 +640,10 @@ BOL <- BOL                                 %>%
       levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
      
      #Ingreso de la ocupación principal
-     ING=yprilab)              %>% 
+     ING=yprilab, 
+     ING=case_when(
+      ING==0 ~ NA_real_, 
+      TRUE   ~ ING))              %>% 
       select(variables2)    
 
 #### Peru ####
@@ -633,8 +651,9 @@ BOL <- BOL                                 %>%
 CarpetaPer <- paste0(Carpeta, "Peru/enaho01a-2019-500.dta")
 PER <- read_dta(CarpetaPer)
 
-variables <- c("p507", "p510", "fac500", "p507", "ocu500", "p513t", "p521a", "p521",
-               "p511a", "p512a", "p512b", "p505", "p523", "p524a1", "estrato")            
+variables <- c("p507", "p510", "fac500", "p507", "ocu500", "p513t", "p521a", "p510a1", "p521",
+               "p511a", "p512a", "p512b", "p505", "p523", "p524a1", "estrato", "p558a1", "p558a2", 
+               "p558a3", "p558a4", "p558a5")            
 
 PER$p510[is.na(PER$p510)] = 0         #Saco NA de variable p510 para no perder a los cuentapropistas cuando cruzo p507 y p510 en los filter
 
@@ -687,12 +706,15 @@ PER <- PER                                  %>%
                           TRUE                          ~ "Ns/Nc"), 
     levels= c("Temporal", "No temporal", "Ns/Nc")),
     
-        #Precariedad por aportes a la seguridad social
-    PRECASEG= "Ns/Nc", 
+    #Precariedad por aportes a la seguridad social
+    PRECASEG= factor(case_when( p558a5==5                                   ~ "Sin aportes", 
+                        p558a1==1 | p558a2==2 | p558a3==3 | p558a4==4 ~ "Con aportes",             
+                        TRUE              ~  "Ns/Nc"),
+                     levels=c( "Sin aportes", "Con aportes", "Ns/Nc")), 
     
     #Precariedad por registración
     PRECAREG= factor(case_when( p511a==7 ~ "No registrado",
-                         p511a %in% c(1:6, 8)  ~ "Registrado",                    #Como no había pregunta sobre descuento jubilatorio, usé como criterio p551a==7 (No tiene contrato).
+                         p511a %in% c(1:6, 8)  ~ "Registrado",                    # p551a==7 : No tiene contrato
                          TRUE      ~  "Ns/Nc"),
     levels=c("No registrado", "Registrado", "Ns/Nc")),
     
@@ -744,7 +766,7 @@ PER <- PER                                  %>%
       p523==1       ~ p524a1 * 20,                      # El dato de ingreso de ocupacion principal esta en jornal, semana, quincenal o mes
       p523==2       ~ p524a1 * 4,                       # dependiendo como cobre el encuestado. Lo mensualice suponiendo que la persona trabaja todo el mes
       p523==3       ~ p524a1 * 2,                       # lo mismo que trabajo en la semana de referencia
-      p523==4       ~ p524a1))  #                                %>% 
+      p523==4       ~ p524a1))              %>% 
   select(variables2) 
 
 
