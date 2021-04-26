@@ -283,13 +283,7 @@ ggsave("Resultados/Precariedad asalariados.jpg",width = 15.59,height = 9)
 
 ###########INGRESOS##################
 America %>%
-  group_by(Pais,periodo) %>% 
-  mutate(salario.promedio.pais = weighted.mean(x = promedio.ing.oc.prin.asal,
-                                               w = asalariados)) %>% 
-  ungroup() %>% 
-  mutate(prima.salario.medio = promedio.ing.oc.prin.asal/salario.promedio.pais) %>% 
-  #filter(Pais != "Ecuador") %>% 
-  ggplot(.,
+ ggplot(.,
          aes(x = tamanio.calif, y = prima.salario.medio,
              fill = tamanio.calif,group = tamanio.calif)) +
   geom_col(position = "dodge")+
