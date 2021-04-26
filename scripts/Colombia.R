@@ -1,11 +1,36 @@
 library(tidyverse)
 library(foreign)
-# colombia<- read.spss('../bases/Colombia/Diciembre.spss/Cabecera - Ocupados.sav',
-#                       reencode = "UTF-8",use.value.labels = F,
-#                       to.data.frame = T) %>% 
-#   mutate(periodo = 122019)
-#saveRDS(colombia,file = "Bases/colombia_122019.RDS")
-colombia<-readRDS(file = "Bases/colombia_122019.RDS")
+library(RVerbalExpressions)
+
+# data.2019 <- data.frame(
+#   ruta = list.files("../bases/Colombia/2019/",recursive = T))
+# 
+# hasta.el.punto<- rx() %>% 
+#   rx_anything_but(".")
+# 
+# data.2019.cabecera.ocup <- data.2019 %>% 
+#   filter(str_detect(ruta,"Cabecera - Ocupados")) %>% 
+#   mutate(mes = str_extract(string = ruta,pattern = hasta.el.punto))
+# 
+# colombia2019 <- data.frame()
+# for(base in data.2019.cabecera.ocup$ruta){
+#   
+# mes <- str_extract(string = base,pattern = hasta.el.punto)
+# 
+# colombia<- read.spss(file = paste0('../bases/Colombia/2019/',base),
+#                      reencode = "UTF-8",
+#                      use.value.labels = F,
+#                      to.data.frame = T) %>% 
+#   mutate(periodo = paste0(mes, " - ","2019"))
+# 
+# 
+# colombia2019 <- bind_rows(colombia2019,colombia)
+# }
+# 
+# 
+# 
+# saveRDS(colombia2019,file = "Bases/colombia_2019.RDS")
+colombia<-readRDS(file = "Bases/colombia_2019.RDS")
 
 ####Colombia####
 ##Miro variables##
@@ -52,10 +77,14 @@ co.categ <- colombia %>%
 # 
 # table(ec.categ$ISCO.1.digit)
 
-co.tasa.asalariz <- co.categ %>% 
+co.tasa.asalariz <- co.categ %>%
+  group_by(periodo) %>% 
   summarise(total.ocupados = sum(fexp,na.rm = T),
             asalariados = sum(fexp[P6430  %in%  1:2]),
-            tasa.asalarizacion = asalariados/total.ocupados) 
+            tasa.asalarizacion = asalariados/total.ocupados) %>% 
+  ungroup() %>% 
+  summarise(across(.cols = 2:ncol(.),.fns = mean))  
+
 
 
 co.ocupados.distrib  <- co.categ %>% 
@@ -75,10 +104,14 @@ co.ocupados.distrib  <- co.categ %>%
               x = INGLABO[P6430 == 1],
               w = fexp[P6430 == 1],na.rm = T)
   ) %>% 
-  ungroup() %>% 
+  group_by(periodo) %>% 
   mutate(particip.ocup = ocupados/sum(ocupados),
          particip.asal = asalariados/sum(asalariados),
-         particip.no.asal= no.asalariados/sum(no.asalariados))
+         particip.no.asal= no.asalariados/sum(no.asalariados))%>% 
+  ungroup() %>% 
+  group_by(grupos.calif,grupos.tamanio) %>% 
+  summarise(periodo = 2019, 
+            across(.cols = 4:ncol(.)-2,.fns = mean))  
 
 co.asalariados.tasas <- co.categ %>% 
   filter(P6430 %in% 1) %>% # Asalariad S.priv
@@ -102,7 +135,12 @@ co.asalariados.tasas <- co.categ %>%
     tasa.no.registro = no.registrados/(registrados+
                                          no.registrados),
     tasa.temp.asal = empleo.temporal/(empleo.temporal+
-                                        empleo.no.temporal))
+                                        empleo.no.temporal)) %>% 
+  ungroup() %>% 
+  group_by(grupos.calif,grupos.tamanio) %>% 
+  summarise(periodo = 2019, 
+            across(.cols = 4:ncol(.)-2,.fns = mean))  
+
 
 co.resultado <- co.ocupados.distrib %>% 
   left_join(co.asalariados.tasas) %>% 
