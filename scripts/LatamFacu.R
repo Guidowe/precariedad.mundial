@@ -1,13 +1,11 @@
 
 # COSAS PARA HACER
 
-# RepDom y Nicaragua
-
 # Ordenar bases dentro de GitHub
 
 # Calcular absolutos part-time voluntario e involuntario
 
-# Estimar para trimestres 2019 y sacar promedio anual
+# Estimar para todos los trimestres 2019 y sacar promedio anual
 
 # En peru da contraintuitivo tasas.temp ---> ver paises en los que la misma variable define PRECATEMP y PRECAREG
 
@@ -21,17 +19,18 @@ library(ggthemes)
 
 options(scipen = 999) 
 
-Carpeta <-  "C:/Users/facun/Documents/InvestigaciÃ³n/1.  Precariedad mundial/1. AmÃ©rica Latina/"
+setwd("~/GitHub/precariedad.mundial")
 
 variables2  <- c("PAIS", "WEIGHT", "CATOCUP", "COND", "PRECAPT", "PRECAREG", "PRECATEMP", "PRECASALUD", "PRECASEG", 
                  "PRECAPT_binaria", "PRECAREG_binaria", "PRECATEMP_binaria", "PRECASALUD_binaria", "PRECASEG_binaria",
-                 "TAMA", "CALIF", "ING", "ANO", "PRECACOUNT", "PRECACOUNT2")
+                 "TAMA", "CALIF", "ING", "ANO", "PRECACOUNT", "PRECACOUNT2", "PERIODO")
 
 #### Chile ####
 
-CarpetaChi <- paste0(Carpeta, "Chile/esi-2019-personas.csv")
 
-CHI <- read.csv(CarpetaChi, sep=";")
+CHI <- read.csv("Bases/chile_2019.csv", sep=";")    #Es una sola base anual que se levanta entre octubre y diciembre
+
+
 
 variables <- c("fact_cal_esi", "c1", "c10", "c11", "b9", "b7a_1", "b7a_2", "b8", 
                "b15_1", "b1", "cise", "cse_especifico", "habituales", "ing_t_p", "tipo", "d6_1_opcion")   
@@ -40,17 +39,15 @@ CHI <- CHI                                  %>%
   select(variables)                         %>%
   
   #  Filtro sector publico y servicio domestico
+    filter( cise!=4 & cise!=5 &  cise!=6)      %>%     # Asal sector publico, empleo domestico puertas afuera y puertas adentro
   
-  filter( cise!=4 & cise!=5 &  cise!=6)      %>%     # Asal sector publico, empleo domestico puertas afuera y puertas adentro
-  
-  # Filtro Ã¡reas rurales
-  
-  filter(tipo!=3)                            %>%
+  # Filtro areas rurales
+    filter(tipo!=3)                            %>%
   
   mutate(
     
     ANO= 2019,
-    
+    PERIODO= 1, 
     PAIS="Chile",
     
     #Ponderador
@@ -71,7 +68,7 @@ CHI <- CHI                                  %>%
       levels= c("Ocupado", "Desocupado", "Inactivo", "Ns/Nc")),
     
     #Precariedad por trabajo part-time
-    PRECAPT= factor(case_when(habituales<35 & habituales>0 & c10==1           ~ "Part-time involuntario",  #Horas habituales trabajadas menor a 35 / Si de usted dependiera, Â¿trabajarÃ­a habitualmente mÃ¡s horas de las que trabaja en la actualidad?
+    PRECAPT= factor(case_when(habituales<35 & habituales>0 & c10==1           ~ "Part-time involuntario",  #Horas habituales trabajadas menor a 35 / Si de usted dependiera, Â¿trabajarÃ­a habitualmente más horas de las que trabaja en la actualidad?
                                habituales<35 & habituales>0 & c10==2          ~ "Part-time voluntario", 
                                habituales %in% (35:98)         ~ "Tiempo completo",
                                habituales==99                  ~  "Ns/Nc", 
@@ -85,7 +82,7 @@ CHI <- CHI                                  %>%
                                 TRUE              ~ "Ns/Nc"), 
                       levels= c("Temporal", "No temporal", "Ns/Nc")),             
     
-    #Precariedad por registraciÃ³n del contrato
+    #Precariedad por registración del contrato
     
     PRECAREG= factor(case_when(b8== 2            ~ "No registrado", 
                                b8== 1            ~ "Registrado", 
@@ -106,7 +103,7 @@ CHI <- CHI                                  %>%
            levels=c("Sin cobertura", "Con cobertura", "Ns/Nc")),  
     
    
-    #Conteo de expersiones de precariedad con generaciÃ³n de binarias
+    #Conteo de expersiones de precariedad con generación de binarias
     
     PRECAPT_binaria= case_when(PRECAPT=="Part-time involuntario"~ 1 ,         
                                  TRUE   ~ 0), 
@@ -123,18 +120,18 @@ CHI <- CHI                                  %>%
     
     PRECACOUNT2= PRECAPT_binaria + PRECASALUD_binaria,
     
-    #TamaÃ±o establecimiento
+    #Tamaño establecimiento
     TAMA= factor(case_when( 
       #1. 10 o menos
-      b15_1 %in% 1:2     ~ "PequeÃ±o",
+      b15_1 %in% 1:2     ~ "Pequeño",
       #2. 11 a 49
       b15_1==3           ~ "Mediano",
       #3. Mas de 50
       b15_1 %in% 4:5     ~ "Grande",
       TRUE               ~ "Ns/Nc"),
-      levels= c("PequeÃ±o", "Mediano", "Grande", "Ns/Nc")),
+      levels= c("Pequeño", "Mediano", "Grande", "Ns/Nc")),
     
-    #CalificaciÃ³n del puesto
+    #Calificación del puesto
     CALIF= factor(case_when( #1. Baja
       b1==9              ~ "Baja",
       #2. Media
@@ -144,7 +141,7 @@ CHI <- CHI                                  %>%
       TRUE               ~  "Ns/Nc"), 
       levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
     
-    #Ingreso de la ocupaciÃ³n principal
+    #Ingreso de la ocupación principal
     ING=as.numeric(as.numeric(gsub(",", ".", gsub("\\.", "", ing_t_p)))), 
     #Limpio ruido
     ING=case_when(
@@ -156,8 +153,9 @@ CHI <- CHI                                  %>%
 
 #### Uruguay ####
 
-CarpetaUru <- paste0(Carpeta, "Uruguay/P_2019_Terceros.dat")
-URU <- read.delim(CarpetaUru,header=TRUE)
+URU <- readRDS("Bases/uruguay_2019.RDS")    #Una sola basa anual
+
+## OJO: La base original pesaba mucho asi que guarde version liviana en el repositorio
 
 variables <- c("f73", "pesomen", "pobpcoac", "f82", "f77", "f71_2", "PT2", "f85", "f102", "f103", "region_4",
                "e45_1", "e45_2", "e45_3", "e45_4", "e45_5", "e45_6", "e45_7", "f263")                                            
@@ -166,17 +164,14 @@ URU <- URU                                          %>%
   select(variables)                                 %>%  
   
   # Filtro sector publico y servicio domestico
-  
-  filter(f73!=2 & f73!=8 & f71_2!=9111)             %>%   # Asalariado Sector Publico, programa social de empleo, servicio domestico segun CIOU
- 
-  # Filtro areas rurales
-  
-  filter(region_4!=4)                               %>%
+    filter(f73!=2 & f73!=8 & f71_2!=9111)             %>%   # Asalariado Sector Publico, programa social de empleo, servicio domestico segun CIOU
+   # Filtro areas rurales
+    filter(region_4!=4)                               %>%
   
   mutate(
     
     ANO= 2019,
-    
+    PERIODO=1, 
     PAIS="Uruguay",
     
     #Ponderador
@@ -226,7 +221,7 @@ URU <- URU                                          %>%
                           TRUE   ~  "Ns/Nc"), 
                        levels=c("Sin cobertura", "Con cobertura", "Ns/Nc")),  
     
-    #Conteo de expersiones de precariedad con generaciÃ³n de binarias
+    #Conteo de expersiones de precariedad con generación de binarias
     
     PRECAPT_binaria= case_when(PRECAPT=="Part-time involuntario"~ 1 ,         
                                TRUE   ~ 0), 
@@ -244,18 +239,18 @@ URU <- URU                                          %>%
     
     PRECACOUNT2= PRECAPT_binaria + PRECASALUD_binaria,
     
-    #TamaÃ±o establecimiento
+    #Tamaño establecimiento
     TAMA= factor(case_when( 
       #1. 10 o menos
-      f77 %in% 1:3    ~ "PequeÃ±o",
+      f77 %in% 1:3    ~ "Pequeño",
       #2. 11 a 49
       f77 %in% 6:7    ~ "Mediano",
       #3. Mas de 50
       f77 == 5        ~ "Grande",
       TRUE            ~ "Ns/Nc"),
-      levels= c("PequeÃ±o", "Mediano", "Grande", "Ns/Nc")),
+      levels= c("Pequeño", "Mediano", "Grande", "Ns/Nc")),
     
-    #CalificaciÃ³n del puesto
+    #Calificación del puesto
     CALIF= factor(case_when( #1. Baja
       f71_2 %in% 9000:9999            ~ "Baja",
       #2. Media
@@ -265,7 +260,7 @@ URU <- URU                                          %>%
       TRUE                        ~  "Ns/Nc"), 
       levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
 
-#Ingreso de la ocupaciÃ³n principal
+#Ingreso de la ocupación principal
 ING=as.numeric(sub(",", ".", PT2)), 
 
 ING=case_when(
@@ -277,21 +272,32 @@ ING=case_when(
 
 #### Brasil  ####
 
-CarpetaBra <- paste0(Carpeta, "Brasil/2019-3.Rda")
-BRA <- readRDS(CarpetaBra)
-
 variables <- c("V1028", "VD4002", "V4018", "VD4009", "VD4011", "VD4012", "VD4004A", "V4064A", "VD4016", "V1022", "VD4031", "V4063A")                                            
 
+BRA1 <- readRDS("Bases/Brasil_T12019.Rda")
+BRA1 <- BRA1  %>% select(variables) %>% mutate(PERIODO=1)
+
+BRA2 <- readRDS("Bases/Brasil_T22019.Rda")
+BRA2 <- BRA2  %>% select(variables) %>% mutate(PERIODO=2)
+
+BRA3 <- readRDS("Bases/Brasil_T32019.Rda")
+BRA3 <- BRA3  %>% select(variables) %>% mutate(PERIODO=3)
+
+BRA4 <- readRDS("Bases/Brasil_T42019.Rda")
+BRA4 <- BRA4  %>% select(variables) %>% mutate(PERIODO=4)
+
+BRA <- bind_rows(BRA1, BRA2, BRA3, BRA4)
+remove(BRA1, BRA2, BRA3, BRA4)
+
 BRA <- BRA                                              %>% 
-  select(variables)                                     %>%  
  
   # Filtro sector publico y servicio domestico
   
-   filter(VD4009!="Trabalhador domÃ©stico com carteira de trabalho assinada" &
-         VD4009!= "Trabalhador domÃ©stico sem carteira de trabalho assinada" &
-         VD4009!= "Empregado no setor pÃºblico com carteira de trabalho assinada" &
-         VD4009!= "Empregado no setor pÃºblico sem carteira de trabalho assinada" &
-         VD4009!= "Militar e servidor estatutÃ¡rio")      %>% 
+   filter(VD4009!="Trabalhador doméstico com carteira de trabalho assinada" &
+         VD4009!= "Trabalhador doméstico sem carteira de trabalho assinada" &
+         VD4009!= "Empregado no setor público com carteira de trabalho assinada" &
+         VD4009!= "Empregado no setor público sem carteira de trabalho assinada" &
+         VD4009!= "Militar e servidor estatutário")      %>% 
   
   # Filtro areas rurales
   
@@ -308,7 +314,7 @@ BRA <- BRA                                              %>%
     
     #Categoria Ocupacional                                         
     CATOCUP=factor(case_when(
-      VD4009== "Conta-prÃ³pria"                  | 
+      VD4009== "Conta-própria"                  | 
       VD4009== "Trabalhador familiar auxiliar" |
       VD4009== "Empregador"                          ~ "No Asalariados", 
 
@@ -326,7 +332,7 @@ BRA <- BRA                                              %>%
     
     #Precariedad por trabajo part-time
     PRECAPT= factor(case_when( VD4031 < 35 & VD4031>0 & V4063A=="Sim"   ~ "Part-time involuntario",                # VD4031: Horas habitualmente trabalhadas por semana em todos os trabalhos para pessoas de 14 anos ou mais de idade
-                               VD4031 < 35 & VD4031>0 & V4063A=="NÃ£o"   ~ "Part-time voluntario", 
+                               VD4031 < 35 & VD4031>0 & V4063A=="Não"   ~ "Part-time voluntario", 
                                VD4031 > 34                   ~ "Tiempo completo", 
                                TRUE              ~ "Ns/Nc"),                                            # V4063A: ... gostaria de trabalhar mais horas do que as ... (soma das horas declaradas nos quesitos 39, 56 e 62) horas que normalmente trabalhava no(s) trabalho(s) que tinha na semana de referÃªncia?
              levels= c("Part-time involuntario", "Part-time voluntario", "Tiempo completo","Ns/Nc")),
@@ -335,12 +341,12 @@ BRA <- BRA                                              %>%
     PRECATEMP= "Ns/Nc",        
     
     #Precariedad por aportes a la seguridad social
-    PRECASEG= factor(case_when(VD4012== "NÃ£o contribuinte"                     ~ "Sin aportes",          
+    PRECASEG= factor(case_when(VD4012== "Não contribuinte"                     ~ "Sin aportes",          
                                VD4012== "Contribuinte"                         ~ "Con aportes",
                                TRUE                                            ~ "Ns/Nc"),
                      levels=c( "Sin aportes", "Con aportes", "Ns/Nc")),                  
     
-    #Precariedad por registraciÃ³n
+    #Precariedad por registración
     PRECAREG= factor(case_when( VD4009=="Empregado no setor privado sem carteira de trabalho assinada"  ~ "No registrado",
                          VD4009=="Empregado no setor privado com carteira de trabalho assinada"  ~ "Registrado",
                          TRUE   ~ "Ns/Nc"), 
@@ -349,7 +355,7 @@ BRA <- BRA                                              %>%
     #Precariedad por acceso al sistema de salud
     PRECASALUD= "Ns/Nc", 
     
-    #Conteo de expersiones de precariedad con generaciÃ³n de binarias
+    #Conteo de expersiones de precariedad con generación de binarias
     
     PRECAPT_binaria= case_when(PRECAPT=="Part-time involuntario"~ 1 ,         
                                TRUE   ~ 0), 
@@ -366,36 +372,36 @@ BRA <- BRA                                              %>%
    
     PRECACOUNT2= PRECAPT_binaria + PRECASALUD_binaria,
     
-    #TamaÃ±o establecimiento
+    #Tamaño establecimiento
     TAMA= factor(case_when( 
       #1. 10 o menos
-      V4018== "1 a 5 pessoas" | V4018== "6 a 10 pessoas"     ~ "PequeÃ±o",
+      V4018== "1 a 5 pessoas" | V4018== "6 a 10 pessoas"     ~ "Pequeño",
       #2. 11 a 50
       V4018== "11 a 50 pessoas"                              ~ "Mediano",
       #3. 51 0 mas
       V4018== "51 ou mais pessoas"                           ~ "Grande",
       TRUE            ~ "Ns/Nc"),
-      levels= c("PequeÃ±o", "Mediano", "Grande", "Ns/Nc")),
+      levels= c("Pequeño", "Mediano", "Grande", "Ns/Nc")),
     
     
-    #CalificaciÃ³n del puesto
+    #Calificación del puesto
     CALIF= factor(case_when( 
       #1. Baja
-      VD4011== "OcupaÃ§Ãµes elementares"                                         ~ "Baja",
+      VD4011== "Ocupações elementares"                                         ~ "Baja",
       #2. Media
-      VD4011 == "Operadores de instalaÃ§Ãµes e mÃ¡quinas e montadores"  |
-      VD4011 == "Trabalhadores qualificados, operÃ¡rios e artesÃµes da construÃ§Ã£o, das artes mecÃ¢nicas e outros ofÃ­cios"  |
-      VD4011 == "Trabalhadores qualificados da agropecuÃ¡ria, florestais, da caÃ§a e da pesca"  |                
-      VD4011 == "Trabalhadores dos serviÃ§os, vendedores dos comÃ©rcios e mercados"  |
+      VD4011 == "Operadores de instalações e máquinas e montadores"  |
+      VD4011 == "Trabalhadores qualificados, operários e artesões da construção, das artes mecÃ¢nicas e outros ofÃ­cios"  |
+      VD4011 == "Trabalhadores qualificados da agropecuária, florestais, da caça e da pesca"  |                
+      VD4011 == "Trabalhadores dos serviços, vendedores dos comércios e mercados"  |
       VD4011 == "Trabalhadores de apoio administrativo"                        ~ "Media", 
       #3. Alta
-      VD4011 == "TÃ©cnicos e profissionais de nÃ­vel mÃ©dio"  |
-      VD4011 == "Profissionais das ciÃªncias e intelectuais"  |
+      VD4011 == "Técnicos e profissionais de nível médio"  |
+      VD4011 == "Profissionais das ciências e intelectuais"  |
       VD4011 == "Diretores e gerentes"                                         ~ "Alta", 
       TRUE                                                                     ~ "Ns/Nc"), 
       levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
     
-    #Ingreso de la ocupaciÃ³n principal
+    #Ingreso de la ocupación principal
     ING=VD4016
       
   )                                 %>% 
@@ -404,23 +410,31 @@ BRA <- BRA                                              %>%
 
 #### Paraguay ####
 
-CarpetaPar <- paste0(Carpeta, "Paraguay/REG02_EPHC_T1_2019.SAV")        #Base anual 2019 no tiene variables necesarias, hay que promediar las trimestrales
-
-PAR <- read_sav(CarpetaPar)
 
 variables <- c("CATE_PEA", "FEX", "PEAA", "B10", "B26", "A16", "TAMA_PEA", "B01REC", 
-               "E01AIMDE", "HORAB", "D03", "AREA")                                            
+               "E01AIMDE", "HORAB", "D03", "AREA") 
+
+PAR1 <- read_sav("Bases/Paraguay_T12019.SAV")
+PAR1 <- PAR1  %>% select(variables) %>% mutate(PERIODO=1)
+
+PAR2 <-  read_sav("Bases/Paraguay_T22019.SAV")
+PAR2 <- PAR2  %>% select(variables) %>% mutate(PERIODO=2)
+
+PAR3 <-  read_sav("Bases/Paraguay_T32019.SAV")
+PAR3 <- PAR3  %>% select(variables) %>% mutate(PERIODO=3)
+
+PAR4 <-  read_sav("Bases/Paraguay_T42019.SAV")
+PAR4 <- PAR4  %>% select(variables) %>% mutate(PERIODO=4)
+
+PAR <- bind_rows(PAR1, PAR2, PAR3, PAR4)
+remove(PAR1, PAR2, PAR3, PAR4)
 
 PAR <- PAR                                  %>% 
-  
-  select(variables)                         %>%
-  
+
   # Filtro sector publico y servicio domestico
-  
-  filter(CATE_PEA!=1 & CATE_PEA!=6 )        %>%   # Saco Sector Publico y empleo domestico
+  filter(CATE_PEA!=1 & CATE_PEA!=6 )        %>% 
   
   # Filtro areas rurales
-  
   filter(AREA!=6)                           %>%
   
   mutate(
@@ -464,16 +478,16 @@ PAR <- PAR                                  %>%
                                TRUE                               ~ "Ns/Nc"),
                      levels=c( "Sin aportes", "Con aportes", "Ns/Nc")),    
     
-   #Precariedad por registraciÃ³n
+   #Precariedad por registración
     PRECAREG= factor(case_when( B26==4        ~ "No registrado",        # Se incluyen a los que responden "contrato verbal"
                                 B26 %in% 1:3  ~ "Registrado", 
                                 TRUE      ~  "Ns/Nc"),
                levels=c("No registrado", "Registrado", "Ns/Nc")),  
     
    #Precariedad por acceso al sistema de salud
-    PRECASALUD= "Ns/Nc" ,                                   #No encontrÃ© nada de salud en la EPHC trimestral 2019
+    PRECASALUD= "Ns/Nc" ,                                   #No encontré nada de salud en la EPHC trimestral 2019
     
-   #Conteo de expersiones de precariedad con generaciÃ³n de binarias
+   #Conteo de expersiones de precariedad con generación de binarias
    
    PRECAPT_binaria= case_when(PRECAPT=="Part-time involuntario"~ 1 ,         
                               TRUE   ~ 0), 
@@ -490,18 +504,18 @@ PAR <- PAR                                  %>%
    
    PRECACOUNT2= PRECAPT_binaria + PRECASALUD_binaria,   
    
-    #TamaÃ±o establecimiento       
+    #Tamaño establecimiento       
     TAMA= factor(case_when( 
       #1. 10 o menos
-      TAMA_PEA %in% 1:3    ~ "PequeÃ±o",
+      TAMA_PEA %in% 1:3    ~ "Pequeño",
       #2. 11 a 50
       TAMA_PEA %in% 4:6    ~ "Mediano",
       #3. Mas de 51
       TAMA_PEA %in% 7:9    ~ "Grande",       
       TRUE  ~ "Ns/Nc"),
-      levels= c("PequeÃ±o", "Mediano", "Grande", "Ns/Nc")),
+      levels= c("Pequeño", "Mediano", "Grande", "Ns/Nc")),
     
-    #CalificaciÃ³n del puesto
+    #Calificación del puesto
     CALIF= factor(case_when( #1. Baja
       B01REC == 9          ~ "Baja",
       #2. Media
@@ -511,7 +525,7 @@ PAR <- PAR                                  %>%
       TRUE  ~ "Ns/Nc"),
       levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
     
-    #Ingreso de la ocupaciÃ³n principal
+    #Ingreso de la ocupación principal
     ING=as.numeric(E01AIMDE), 
    ING=case_when(
      ING==0 ~ NA_real_, 
@@ -524,14 +538,13 @@ PAR <- PAR                                  %>%
 
 #### Bolivia #### 
 
-CarpetaBol <- paste0(Carpeta, "Bolivia/ECE_1T2019.SAV")
-BOL <- read_sav(CarpetaBol)
 
+variables <- c("trimestre", "s2_22", "fact_trim", "s2_18", "condact", "phrs", "s2_57",  
+               "s2_21",  "s2_26", "cob_op", "yprilab", "s2_64", "area", "s2_36a")  
 
-variables <- c("s2_22", "fact_trim", "s2_18", "condact", "phrs", "s2_57",  
-               "s2_21",  "s2_26", "cob_op", "yprilab", "s2_64", "area", "s2_36a")                                            
+BOL <- readRDS("Bases/Bolivia_1a4T2019.RDS")
 
-BOL$s2_18[is.na(BOL$s2_18)] = 0         #Saco NA de variable para categoria ocupacional
+BOL$s2_18[is.na(BOL$s2_18)] = 0         #Saco NAs de variable para categoria ocupacional
 BOL$s2_22[is.na(BOL$s2_22)] = 0
 
 BOL <- BOL                                 %>% 
@@ -548,6 +561,7 @@ BOL <- BOL                                 %>%
   mutate(
     
     ANO= 2019,
+    PERIODO=trimestre,
     
     PAIS="Bolivia",
     
@@ -577,12 +591,12 @@ BOL <- BOL                                 %>%
     
     
     #Precariedad por contrato de tiempo limitado
-    PRECATEMP= factor(case_when( s2_21 %in% 1:2     ~ "Temporal",              #'Firmo contrato con fecha de vencimiento o tÃ©rmino' o 'No firmo contrato pero tiene compromiso por obra o trabajo terminado'
+    PRECATEMP= factor(case_when( s2_21 %in% 1:2     ~ "Temporal",              #'Firmo contrato con fecha de vencimiento o término' o 'No firmo contrato pero tiene compromiso por obra o trabajo terminado'
                                  s2_21 %in% 3:5            ~ "No temporal",
                                  TRUE  ~ "Ns/Nc"), 
                       levels= c("Temporal", "No temporal", "Ns/Nc")),  
     
-    #Precariedad por registraciÃ³n
+    #Precariedad por registración
     PRECAREG= factor(case_when( s2_21  %in% c(2, 3, 5)     ~ "No registrado",        
                                 s2_21  %in% c(1, 4)          ~ "Registrado", 
                                 TRUE                      ~  "Ns/Nc"),
@@ -595,12 +609,12 @@ BOL <- BOL                                 %>%
                      levels=c( "Sin aportes", "Con aportes", "Ns/Nc")),                  
     
     #Precariedad por acceso al sistema de salud
-    PRECASALUD= factor(case_when( s2_36a==2 ~ "Sin cobertura",                #En su ocupaciÃ³n usted tiene: Seguro de Salud
+    PRECASALUD= factor(case_when( s2_36a==2 ~ "Sin cobertura",                #En su ocupación usted tiene: Seguro de Salud
                                   s2_36a==1 ~ "Con cobertura",     ## OJO: la variable solo esta disponible para asalariados asi qeu no sirve
                                   TRUE   ~  "Ns/Nc"), 
                   levels=c("Sin cobertura", "Con cobertura", "Ns/Nc")),                                     
     
-    #Conteo de expersiones de precariedad con generaciÃ³n de binarias
+    #Conteo de expersiones de precariedad con generación de binarias
     
     PRECAPT_binaria= case_when(PRECAPT=="Part-time involuntario"~ 1 ,         
                                TRUE   ~ 0), 
@@ -618,18 +632,18 @@ BOL <- BOL                                 %>%
     
     PRECACOUNT2= PRECAPT_binaria + PRECASALUD_binaria,
     
-    #TamaÃ±o establecimiento
+    #Tamaño establecimiento
     TAMA= factor(case_when( 
       #1. 10 o menos
-     s2_26 %in% 1:10    ~ "PequeÃ±o",
+     s2_26 %in% 1:10    ~ "Pequeño",
       #2. 11 a 50
      s2_26  %in% 11:50    ~ "Mediano",
       #3. Mas de 50
      s2_26 > 50        ~ "Grande",
       TRUE            ~ "Ns/Nc"),
-      levels= c("PequeÃ±o", "Mediano", "Grande", "Ns/Nc")),
+      levels= c("Pequeño", "Mediano", "Grande", "Ns/Nc")),
     
-    #CalificaciÃ³n del puesto
+    #Calificación del puesto
     CALIF= factor(case_when( #1. Baja
      cob_op == 9              ~ "Baja",
       #2. Media
@@ -639,7 +653,7 @@ BOL <- BOL                                 %>%
       TRUE                    ~  "Ns/Nc"), 
       levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
      
-     #Ingreso de la ocupaciÃ³n principal
+     #Ingreso de la ocupación principal
      ING=yprilab, 
      ING=case_when(
       ING==0 ~ NA_real_, 
@@ -648,21 +662,33 @@ BOL <- BOL                                 %>%
 
 #### Peru ####
 
-CarpetaPer <- paste0(Carpeta, "Peru/enaho01a-2019-500.dta")
-PER <- read_dta(CarpetaPer)
-
 variables <- c("p507", "p510", "fac500", "p507", "ocu500", "p513t", "p521a", "p510a1", "p521",
                "p511a", "p512a", "p512b", "p505", "p523", "p524a1", "estrato", "p558a1", "p558a2", 
-               "p558a3", "p558a4", "p558a5")            
+               "p558a3", "p558a4", "p558a5") 
+
+PER1 <- read_dta("Bases/Peru_1T2019.dta")
+PER1 <- PER1 %>% select(variables) %>%mutate(PERIODO=1)
+
+PER2 <- read_dta("Bases/Peru_2T2019.dta")
+PER2 <- PER2 %>% select(variables) %>%mutate(PERIODO=2)
+
+PER3 <- read_dta("Bases/Peru_3T2019.dta")
+PER3 <- PER3 %>% select(variables) %>%mutate(PERIODO=3)
+
+PER4 <- read_dta("Bases/Peru_4T2019.dta")
+PER4 <- PER4 %>% select(variables) %>%mutate(PERIODO=4)
+
+PER <- bind_rows(PER1, PER2, PER3, PER4)
+remove(PER1, PER2, PER3, PER4)
+           
 
 PER$p510[is.na(PER$p510)] = 0         #Saco NA de variable p510 para no perder a los cuentapropistas cuando cruzo p507 y p510 en los filter
 
 PER <- PER                                  %>% 
-  select(variables)                         %>%  
-  
+
   # Filtro sector publico y servicio domestico
   
-  filter(p507!=6 &  p510!=1 & p510!=2 )    %>%       # Trabajador del hogar, FFAA y AdministraciÃ³n pÃºblica. 
+  filter(p507!=6 &  p510!=1 & p510!=2 )    %>%       # Trabajador del hogar, FFAA y Administración pública. 
   
   # Filtro areas rurales 
   
@@ -712,7 +738,7 @@ PER <- PER                                  %>%
                         TRUE              ~  "Ns/Nc"),
                      levels=c( "Sin aportes", "Con aportes", "Ns/Nc")), 
     
-    #Precariedad por registraciÃ³n
+    #Precariedad por registración
     PRECAREG= factor(case_when( p511a==7 ~ "No registrado",
                          p511a %in% c(1:6, 8)  ~ "Registrado",                    # p551a==7 : No tiene contrato
                          TRUE      ~  "Ns/Nc"),
@@ -721,7 +747,7 @@ PER <- PER                                  %>%
     #Precariedad por acceso al sistema de salud
     PRECASALUD= "Ns/Nc",                                
     
-    #Conteo de expersiones de precariedad con generaciÃ³n de binarias
+    #Conteo de expersiones de precariedad con generación de binarias
     
     PRECAPT_binaria= case_when(PRECAPT=="Part-time involuntario"~ 1 ,         
                                TRUE   ~ 0), 
@@ -738,19 +764,19 @@ PER <- PER                                  %>%
     
     PRECACOUNT2= PRECAPT_binaria + PRECASALUD_binaria,
     
-    #TamaÃ±o establecimiento
+    #Tamaño establecimiento
     TAMA= factor(case_when( 
       #1. 10 o menos
-      p512a==1 & p512b<11         ~ "PequeÃ±o",               ## ATENCION: para tamaÃ±o pequeÃ±o hay que subdividir el primer estrato entre mayores y menores de 20 personas usando la variable p512b
+      p512a==1 & p512b<11         ~ "Pequeño",               ## ATENCION: para tamaño pequeño hay que subdividir el primer estrato entre mayores y menores de 20 personas usando la variable p512b
       #2. 11 a 49                                             # La variable p512b no tiene muchos NA asi que todo bien
       p512a==1 & p512b %in% 11:20 ~ "Mediano",
       p512a==2                    ~ "Mediano",                
       #3. Mas de 50
       p512a %in% 3:5              ~ "Grande",
       TRUE                        ~ "Ns/Nc"),
-      levels= c("PequeÃ±o", "Mediano", "Grande", "Ns/Nc")),
+      levels= c("Pequeño", "Mediano", "Grande", "Ns/Nc")),
     
-    #CalificaciÃ³n del puesto
+    #Calificación del puesto
     CALIF= factor(case_when( 
       #1. Baja
       p505 %in% 900:999        ~ "Baja",                  ## CIOU-88 a tres digitos         
@@ -761,7 +787,7 @@ PER <- PER                                  %>%
       TRUE                     ~  "Ns/Nc"), 
       levels= c("Baja", "Media", "Alta", "Ns/Nc")), 
     
-    #Ingreso de la ocupaciÃ³n principal
+    #Ingreso de la ocupación principal
     ING=case_when(
       p523==1       ~ p524a1 * 20,                      # El dato de ingreso de ocupacion principal esta en jornal, semana, quincenal o mes
       p523==2       ~ p524a1 * 4,                       # dependiendo como cobre el encuestado. Lo mensualice suponiendo que la persona trabaja todo el mes
@@ -777,7 +803,7 @@ Base <-   bind_rows(CHI, URU, BRA, PAR, BOL, PER)
 
 Resultados <- Base                                          %>%      
   filter(COND=="Ocupado" & CALIF!="Ns/Nc" & TAMA!="Ns/Nc")   %>%
-  group_by(PAIS, TAMA, CALIF)                                %>%
+  group_by(PAIS, PERIODO, TAMA, CALIF)                                %>%
   summarise('periodo'                              = mean(ANO),
             'ocupados'                       = sum(WEIGHT, na.rm=TRUE),
             'tasa.asalarizacion'                   = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE)/sum(WEIGHT[CATOCUP=="Asalariados" | CATOCUP=="No Asalariados"], na.rm=TRUE),
@@ -818,12 +844,18 @@ Resultados <- Base                                          %>%
 #Resultados <-  Resultados[,c(1:5, 16, 17, 6:15, 18)]
 Resultados[is.na(Resultados)] <- 0
 
+Resultados <- Resultados %>%                        
+  group_by(Pais, grupos.tamanio, grupos.calif) %>%
+  summarise_each(funs(mean)) %>%
+  select(-PERIODO)
+
+
 Resultados   <-  Resultados  %>% 
   mutate(tamanio.calif= paste(grupos.tamanio, " - ", grupos.calif, sep=""),
          tamanio.calif2 = case_when(
-           tamanio.calif == "PequeÃ±o - Baja"  ~ "1) PequeÃ±o - Baja",
-           tamanio.calif == "PequeÃ±o - Media" ~ "2) PequeÃ±o - Media",
-           tamanio.calif == "PequeÃ±o - Alta" ~ "3) PequeÃ±o - Alta",
+           tamanio.calif == "Pequeño - Baja"  ~ "1) Pequeño - Baja",
+           tamanio.calif == "Pequeño - Media" ~ "2) Pequeño - Media",
+           tamanio.calif == "Pequeño - Alta" ~ "3) Pequeño - Alta",
            tamanio.calif == "Mediano - Baja" ~ "4) Mediano - Baja",
            tamanio.calif == "Mediano - Media" ~ "5) Mediano - Media",
            tamanio.calif == "Mediano - Alta" ~ "6) Mediano - Alta",
@@ -862,7 +894,7 @@ Grafico <-  Resultados  %>%
              label = scales::percent(particip.ocup))) +
   geom_col(position = "stack")+
   geom_text(position = position_stack(vjust = .5),size=3)+
-  labs(title = "DistribuciÃ³n del empleo segÃºn grupos")+
+  labs(title = "Distribución del empleo según grupos")+
   theme_tufte()+
   theme(legend.position = "left",
         legend.direction = "vertical",
@@ -877,7 +909,7 @@ Grafico <-  Resultados  %>%
         panel.grid.major.x = element_line(colour = "grey"))+
   scale_fill_manual(values = paleta)+
   scale_y_continuous(labels = scales::percent)+
-  guides(fill=guide_legend(title="TamaÃ±o - CalificaciÃ³n")) +
+  guides(fill=guide_legend(title="Tamaño - Calificación")) +
   ggsave(paste0(Carpeta, "grupos_calificacion_tamanio.jpg"),width = 10,height = 8)
 
 
