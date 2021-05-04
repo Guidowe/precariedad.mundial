@@ -832,7 +832,7 @@ Resultados <- Base                                          %>%
             'promedio.ing.oc.prin.asal'            = weighted.mean(ING[CATOCUP=="Asalariados"], WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE),
             'promedio.ing.oc.prin.noasal'          = weighted.mean(ING[CATOCUP=="No Asalariados"], WEIGHT[CATOCUP=="No Asalariados"], na.rm=TRUE))  %>%
   ungroup()                                                                    %>%
-  group_by(PAIS)                                                               %>%                         
+  group_by(PAIS, PERIODO)                                                      %>%                         
   mutate('particip.ocup'           = ocupados/sum(ocupados),
          'particip.asal'           = asalariados/sum(asalariados),
          'particip.noasal'         = no.asalariados/sum(no.asalariados))       %>%  
