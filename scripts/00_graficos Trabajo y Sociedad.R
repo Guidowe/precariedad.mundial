@@ -26,10 +26,10 @@ paleta3 <- c(azul[1],
 
 #####Carga de datos#####
 
-Paises <- read.xlsx("data/Prod y Salarios2.xlsx",sheet = "Paises")
+Paises <- read.xlsx("Fuentes Complementarias/Prod y Salarios2.xlsx",sheet = "Paises")
 
 
-Salarios_UMN <- read.xlsx("data/Prod y Salarios2.xlsx",
+Salarios_UMN <- read.xlsx("Fuentes Complementarias/Prod y Salarios2.xlsx",
                           sheet = "salario nominal - UMN"
                           ) %>% 
   rename(ANO4 = X1)%>%
@@ -38,7 +38,7 @@ Salarios_UMN <- read.xlsx("data/Prod y Salarios2.xlsx",
                values_to = "Salario.UMN") %>% 
   mutate(nombre.pais = str_replace_all(nombre.pais,"[[:punct:] ]+",replacement = " "))
 
-IPC_2005 <- read.xlsx("data/Prod y Salarios2.xlsx",
+IPC_2005 <- read.xlsx("Fuentes Complementarias/Prod y Salarios2.xlsx",
                           sheet = "IPC (2005)") %>% 
   rename(ANO4 = X1)%>%
   pivot_longer(cols = 2:ncol(.),
@@ -47,7 +47,7 @@ IPC_2005 <- read.xlsx("data/Prod y Salarios2.xlsx",
   mutate(nombre.pais = str_replace_all(nombre.pais,"[[:punct:] ]+",replacement = " "))
 
 
-PPA_WB <- read.csv("data/PPA.csv") %>%
+PPA_WB <- read.csv("Fuentes Complementarias/PPA.csv") %>%
   rename(COD.OCDE = Country.Code) %>% 
   filter(Classification.Code == "PPPGlob",Series.Code == 9020000) %>%
   pivot_longer(cols = 7:ncol(.),
@@ -76,23 +76,23 @@ Estimacion_GW <- Salarios_UMN %>%
 
 ####Salarios y productividad### Laupa y Dami
 
-Salarios <- read.xlsx("data/Prod y Salarios2.xlsx",sheet = 1) %>% 
-  rename(nombre.pais = X1,
-         COD.OCDE = LOCATION)
+# Salarios <- read.xlsx("data/Prod y Salarios2.xlsx",sheet = 1) %>% 
+#   rename(nombre.pais = X1,
+#          COD.OCDE = LOCATION)
 
 
-Productividad <- read.xlsx("data/Prod y Salarios2.xlsx",
-                           sheet = 2,startRow = 2) %>% 
+Productividad <- read.xlsx("Fuentes Complementarias/Prod y Salarios2.xlsx",
+                           sheet = "Prod Relativa_Total e IND") %>% 
   rename(COD.OCDE = LOCATION, name = label.x) 
 
 
-PPA <- read.xlsx("data/Prod y Salarios2.xlsx",
-                           sheet = 3) %>% 
-  rename(ANO4 = Coeficientes) %>% 
-  pivot_longer(cols = 2:ncol(.),
-               names_to = "COD.OCDE",
-               values_to = "PPA") %>% 
-  left_join(Paises) 
+# PPA <- read.xlsx("data/Prod y Salarios2.xlsx",
+#                            sheet = 3) %>% 
+#   rename(ANO4 = Coeficientes) %>% 
+#   pivot_longer(cols = 2:ncol(.),
+#                names_to = "COD.OCDE",
+#                values_to = "PPA") %>% 
+#   left_join(Paises) 
 
 #Procesamiento de Encuestas#
 #Argentina y USA#
@@ -209,7 +209,9 @@ salarios.prod.GW <- Estimacion_GW %>%
   ungroup() %>% 
   filter(!nombre.pais %in%  c("Corea del Sur","Irlanda")) %>% 
   filter(ANO4  %in%  2017:2018) %>% 
-  left_join(Productividad %>% select(COD.OCDE,`Prod.relativa.a.EEUU.-.TOTAL`)) %>% 
+  left_join(Productividad %>% select(COD.OCDE,
+                                     `Prod.relativa.a.EEUU.-.TOTAL`,
+                                     `VAB.pr.corrientes.por.ocupado.-.TOTAL.-2017`)) %>% 
   mutate(salario.PPA = Salario.UMN/PPA.BENCHMARK.2017.EXTRAPOLADO) %>% 
   filter(!is.na(salario.PPA)) %>% 
   group_by(ANO4) %>% 
@@ -218,7 +220,7 @@ salarios.prod.GW <- Estimacion_GW %>%
 
 salarios.prod.2017 <- salarios.prod.GW %>% 
   filter(ANO4==2017) %>% 
-  select(nombre.pais,Color,Salario.UMN,PPA.BENCHMARK.2017,salario.PPA,salario.relativo.usa,`Prod.relativa.a.EEUU.-.TOTAL`)
+  select(nombre.pais,Color,Salario.UMN,PPA.BENCHMARK.2017,salario.PPA,salario.relativo.usa,`VAB.pr.corrientes.por.ocupado.-.TOTAL.-2017`,`Prod.relativa.a.EEUU.-.TOTAL`)
 
 ggplot(salarios.prod.2017,
        aes(x=salario.relativo.usa,
@@ -681,6 +683,73 @@ write.xlsx(list("Grafico 9" = data.graf.PPA,
            file = "Resultados/Salarios Encuestas PPA.xlsx")  
 
 
+####Clustering#####
+salarios.p.cluster <- salarios.prod.2017 %>% 
+  ungroup() %>% 
+  select(nombre.pais,
+         salario.PPA,
+         productividad.PPA = `VAB.pr.corrientes.por.ocupado.-.TOTAL.-2017`) %>% 
+  left_join(Paises %>% select(nombre.pais, Pais = COD.ENCUESTAS))
+
+perfiles.p.cluster <- EUROPA_USA_ARG %>% 
+  left_join(Paises %>% rename(Pais = COD.ENCUESTAS)) %>% 
+  filter((ANO4 == 2018 & !(Pais %in% c("DE")))|
+           ANO4 == 2017 & Pais %in% c("DE")) %>% 
+  ungroup() %>% 
+  group_by(Pais) %>% 
+  summarise(P1.pequeño.baja = sum(particip.ocup[grupos.tamanio=="Pequeño" & grupos.calif=="Baja"]),
+            P9.grande.alta = sum(particip.ocup[grupos.tamanio=="Grande" & grupos.calif=="Alta"]))
+
+data.cluster <- left_join(perfiles.p.cluster,
+                          salarios.p.cluster) %>% 
+  select(Pais,nombre.pais,everything())
+
+data.cluster.scaled <- scale(x = data.cluster %>% 
+               select(3:ncol(.)))
+
+# Asignación de semilla para resultados reproducibles
+set.seed(2)
+# K-means clustering con K = 3 y 20 asignaciones aleatorias de clústeres iniciales 
+k.means.paises <- kmeans(x = data.cluster.scaled,
+                  centers = 3, nstart = 20)
+
+# Suma de cuadrados intra-clúster individual
+k.means.paises$withinss
+
+data.cluster.asignado <- data.cluster %>% 
+  mutate(cluster.asignado = paste0("Cluster: ",                            
+           k.means.paises$cluster))
+
+
+data.spider.graf <- data.frame(data.cluster.scaled) %>% 
+  mutate(nombre.pais = data.cluster.asignado$nombre.pais,
+         cluster.asignado = paste0("Cluster: ", 
+           data.cluster.asignado$cluster.asignado)) %>% 
+  pivot_longer(.,cols = 1:(ncol(.)-2),
+               names_to = "Indicador",
+               values_to = "Valor")
+
+
+  
+ggplot(data.spider.graf,
+       aes(x = Indicador, 
+           y = Valor,
+           colour = nombre.pais,
+           group = nombre.pais,
+           label = nombre.pais)) + 
+  geom_text_repel(data = data.spider.graf %>% 
+                    filter(Indicador== "productividad.PPA")) +
+  labs(x = "",y = "")+
+  geom_point() +
+  #geom_polygon(fill = NA) +
+  geom_line() +
+  coord_polar() + 
+  theme_minimal()+
+  theme(legend.position = "none")+
+  facet_wrap(~cluster.asignado)
+  
+
+ 
 ####Animaciones#####
 library(gganimate)
 library(gifski)

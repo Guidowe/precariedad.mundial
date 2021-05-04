@@ -33,11 +33,6 @@ resultados.todos <-
   
 
 tabla <-  resultados.todos %>% 
-  # ungroup() %>% 
-  # mutate(
-  #    across(
-  #    .cols = 7:ncol(.),
-  #    .fns = ~round(.x, digits = 2))) %>%
   ungroup()
   
 

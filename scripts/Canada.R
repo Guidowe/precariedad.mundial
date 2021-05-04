@@ -1,8 +1,29 @@
 library(tidyverse)
 library(foreign)
-
+###Levanto bases 2019###
 # canada <- read.csv("../bases/Canada/pub1219.csv")
-canada<-readRDS(file = "Bases/canada_122019.RDS")
+#canada<-readRDS(file = "Bases/canada_122019.RDS")
+
+archivos<- list.files("../bases/Canada/")
+
+rutas <- data.frame(
+  ruta = list.files("../bases/Canada/",recursive = T))
+
+rutas.base.2019 <- rutas %>% 
+  filter(str_detect(ruta,pattern = "19"),
+         str_detect(ruta,pattern = "pub"),
+         str_detect(ruta,pattern = "csv"))
+
+canada2019 <- data.frame()
+for(base in rutas.base.2019$ruta){
+
+
+canada<- read.csv(file = paste0('../bases/Canada/',base))
+
+
+
+
+
 
 ####Canada####
 canada.cat<- canada %>% 
@@ -83,7 +104,18 @@ canada.asalariados.tasas <- canada.cat %>%
                                         empleo.no.temporal))
 
 canada.resultado <- canada.ocupados.distrib %>%
-  left_join(canada.asalariados.tasas)%>% 
+  left_join(canada.asalariados.tasas) 
+
+
+canada2019 <- bind_rows(canada2019,canada.resultado)
+
+}
+
+canada2019 <- canada2019 %>%
+  group_by(grupos.calif,grupos.tamanio) %>% 
+  summarise(periodo = 2019, 
+            across(.cols = 4:ncol(.)-2,.fns = mean))  %>% 
+  ungroup() %>% 
   mutate(Pais = "Canada",
          tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
          tamanio.calif = factor(tamanio.calif,
