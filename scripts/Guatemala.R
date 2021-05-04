@@ -7,6 +7,19 @@ library(foreign)
 #saveRDS(guatemala,file = "Bases/guatemala_2017.RDS")
 guatemala<-readRDS(file = "Bases/guatemala_2017.RDS")
 
+
+guatemala1.2019<- read.spss('../bases/Guatemala/2019 ENEI 1 Mayo - Personas.sav',
+                      reencode = "UTF-8",use.value.labels = F,
+                      to.data.frame = T) %>%
+  mutate(periodo = 201901)
+guatemala2.2019<- read.spss('../bases/Guatemala/2019 ENEI 2 Noviembre - Personas.sav',
+                      reencode = "UTF-8",use.value.labels = F,
+                      to.data.frame = T) %>%
+  mutate(periodo = 201902) %>%
+  mutate(AREA = .REA)
+
+guatemala <- bind_rows(guatemala1.2019,guatemala2.2019)
+
 ####Guatemala####
 # table(guatemala$P04C02B_1D)
 # table(guatemala$P04C05)
@@ -15,7 +28,7 @@ guatemala<-readRDS(file = "Bases/guatemala_2017.RDS")
 #table(guatemala$OCUPADOS,useNA = "always")
 
 guatemala.cat <- guatemala %>% 
-  mutate(FACTOR = Factor_expansion) %>% 
+#  mutate(FACTOR = Factor_expansion) %>% 
   filter(AREA == 1) %>%  #area urbana
   filter(OCUPADOS == 1) %>%  #Ocupados
   filter(!(P04C06 %in% c(1,4))) %>% # Spriv s/ serv domestico
@@ -64,10 +77,11 @@ guate.ocupados.distrib <-  guatemala.cat  %>%
       x = P04C10[P04C06 == 2 ],
       w = FACTOR[P04C06 == 2],na.rm = T)
   ) %>% 
-  ungroup() %>% 
+  group_by(periodo) %>% 
   mutate(particip.ocup = ocupados/sum(ocupados),
          particip.asal = asalariados/sum(asalariados),
-         particip.no.asal= no.asalariados/sum(no.asalariados))
+         particip.no.asal= no.asalariados/sum(no.asalariados)) %>% 
+  ungroup()
 
 guat.asalariados.tasas <- guatemala.cat %>% 
   filter(P04C06 == 2) %>% # Asalariado
@@ -94,7 +108,11 @@ guat.asalariados.tasas <- guatemala.cat %>%
                                         empleo.no.temporal))
 
 guate.resultado <- guate.ocupados.distrib %>%
-  left_join(guat.asalariados.tasas )%>% 
+  left_join(guat.asalariados.tasas) %>% 
+  group_by(grupos.calif,grupos.tamanio) %>% 
+  summarise(periodo = 2019, 
+            across(.cols = 4:ncol(.)-2,.fns = mean))  %>% 
+  ungroup() %>% 
   mutate(Pais = "Guatemala",
          tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
          tamanio.calif = factor(tamanio.calif,

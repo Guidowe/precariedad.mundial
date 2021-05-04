@@ -277,7 +277,7 @@ EUROPA_USA_ARG %>%
   guides(fill=guide_legend(title=str_wrap("Tamaño - Calificación",10),
                            nrow = 1))
 
-ggsave("Resultados/Precariedad asalariados.jpg",width = 15.59,height = 9)
+ggsave("Resultados/America/Precariedad asalariados.jpg",width = 15.59,height = 9)
 
 
 

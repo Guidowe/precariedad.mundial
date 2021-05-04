@@ -131,5 +131,5 @@ canada2019 <- canada2019 %>%
                                     "Grande - Alta"))) %>% 
   arrange(tamanio.calif)
 
-saveRDS(canada.resultado,file = "Resultados/Canada.RDS")  
+saveRDS(canada2019,file = "Resultados/Canada.RDS")  
 
