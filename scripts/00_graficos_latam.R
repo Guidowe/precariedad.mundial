@@ -210,85 +210,14 @@ filter(Pais != "Estados Unidos") %>%
 
 ggsave("Resultados/America/tasas seguridad social.jpg",width = 15.59,height = 8)
 
-graf.todos %>% 
-  filter(indicador == "Empleo temporal") %>% 
-  ggplot(.,
-         aes(x = Pais, y = valor,
-             fill = indicador,group = indicador,
-             label = round(valor,2))) +
-  geom_col(position = "dodge")+
-  #geom_text(position = position_dodge(),size=2.5,angle = 90)+
-  #labs(title = "Expresiones de la precariedad según perfiles y paises. Año 2018")+
-  theme_tufte()+
-  theme(legend.position = "bottom",
-        legend.direction = "horizontal",
-        legend.key.size = unit(0.2,"cm"),
-        #legend.spacing.x  = unit(0.4,"cm"),
-        legend.title = element_blank(),
-        #legend.text = element_text(size = 17),
-        axis.title = element_blank(),
-        axis.text.x = element_text(angle = 90,vjust = .5),
-        axis.ticks.x = element_blank(),
-        panel.spacing = unit(1,"cm"),
-        panel.grid.major.y = element_line(colour = "grey"),
-        panel.grid.minor.y = element_line(colour = "grey30"),
-        panel.grid.minor.x = element_line(colour = "grey"),
-        panel.grid.major.x = element_line(colour = "grey"),
-        text = element_text(size = 17))+
-  scale_y_continuous(labels = scales::percent)+
-  scale_fill_manual(values = "blue")+
-  facet_wrap(~tamanio.calif)+
-  guides(fill=guide_legend(keywidth = 0.8))
 
-ggsave("Resultados/America/Empleo temporal.jpg",width = 15.59,height = 8)
-
-
-#########1 o mas precariedad########
-EUROPA_USA_ARG %>% 
-  left_join(Paises %>% rename(Pais = COD.ENCUESTAS)) %>% 
-  filter((ANO4 == 2018 & !(Pais %in% c("DE")))|
-           ANO4 == 2017 & Pais %in% c("DE")) %>% 
-  ggplot(.,
-         aes(x = tamanio.calif, y = tasa.1.asalariados,
-             fill = tamanio.calif,group = tamanio.calif,
-             label = scales::percent(tasa.1.asalariados,accuracy = 1))) +
-  geom_col(position = "dodge")+
-  geom_text(position = position_dodge(),size=4)+
-  # labs(title = "Tasa de precariedad. Año 2018",
-  #      subtitle = "Una o más expresiones de precariedad. Total Asalariados")+
-  theme_tufte()+
-  theme(legend.position = "bottom",
-        legend.direction = "horizontal",
-        #legend.title  = element_text(size = 8),
-        #legend.text  = element_text(size = 8),
-        axis.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        text = element_text(size = 16),
-        panel.spacing = unit(1,"cm"),
-        panel.grid.major.y = element_line(colour = "grey"),
-        panel.grid.minor.y = element_line(colour = "grey30"),
-        panel.grid.minor.x = element_line(colour = "grey"),
-        panel.grid.major.x = element_line(colour = "grey"))+
-  scale_fill_manual(values = paleta)+
-  scale_y_continuous(labels = scales::percent)+
-  facet_wrap(~reorder(COD.ESPANIOL,desc(Orden)))+
-  #guides(fill=guide_legend(title="Tamaño - Calificación"))
-  guides(fill=guide_legend(title=str_wrap("Tamaño - Calificación",10),
-                           nrow = 1))
-
-ggsave("Resultados/America/Precariedad asalariados.jpg",width = 15.59,height = 9)
-
-
-
-###########INGRESOS##################
+###########Primas salariales##################
 America %>%
  ggplot(.,
          aes(x = tamanio.calif, y = prima.salario.medio,
              fill = tamanio.calif,group = tamanio.calif)) +
   geom_col(position = "dodge")+
   geom_hline(mapping = aes(yintercept = 1),size = 1)+
- # labs(title = "Promedio de deciles de pertenencia de los asalariados según grupos. Año 2018")+
   theme_tufte()+
   theme(legend.position = "bottom",
         legend.direction = "horizontal",
@@ -308,7 +237,7 @@ America %>%
 
 ggsave("Resultados/America/Ingreso Asalariados.png",width = 15.59,height = 9)
 
-########Salarios perfiles###########
+########Salarios PPA encuestas###########
  data.graf.PPA <- America %>% 
   select(Pais,tamanio.calif,periodo,promedio.ing.oc.prin) %>% 
   left_join(Paises %>% rename(Pais = nombre.pais)) %>%
@@ -388,87 +317,3 @@ ggsave("Resultados/America/Ingreso Asalariados.png",width = 15.59,height = 9)
 #            file = "Resultados/Salarios Encuestas PPA.xlsx")  
 # 
 # 
-# ####Animaciones#####
-# library(gganimate)
-# library(gifski)
-# 
-# anim <- EUROPA_USA_ARG %>% 
-#   mutate(ANO4 = as.numeric(round(ANO4))) %>% 
-#   left_join(Paises %>% rename(Pais = COD.ENCUESTAS)) %>% 
-#   # filter((ANO4 == 2018 & !(Pais %in% c("DE")))|
-#   #          ANO4 == 2017 & Pais %in% c("DE")) %>% 
-#   ggplot(.,
-#          aes(x = COD.ESPANIOL, y = particip.ocup,
-#              fill = tamanio.calif,group = tamanio.calif,
-#              label = scales::percent(particip.ocup))) +
-#   geom_col(position = "stack")+
-#   geom_text(position = position_stack(vjust = .5),size=3)+
-#   #  labs(title = "Distribución del empleo según grupos")+
-#   theme_tufte()+
-#   theme(legend.position = "bottom",
-#         legend.direction = "horizontal",
-#         legend.title = element_blank(),
-#         axis.title = element_blank(),
-#         text = element_text(size = 15),
-#         axis.text.x = element_text(angle = 45),
-#         #panel.spacing = unit(1,"cm"),
-#         panel.grid.major.y = element_line(colour = "grey"),
-#         panel.grid.minor.y = element_line(colour = "grey30"),
-#         panel.grid.minor.x = element_line(colour = "grey"),
-#         panel.grid.major.x = element_line(colour = "grey"))+
-#   scale_fill_manual(values = paleta)+
-#   scale_y_continuous(labels = scales::percent)+
-#   labs(title = 'Year: {round(frame_time)}') +
-#   transition_time(ANO4)  +
-#   ease_aes('linear')
-# 
-# a <- animate(anim, nframes = 12, fps = 1,width = 1000, renderer = gifski_renderer())
-# anim_save("Resultados/Perfiles.gif",animation = a)
-# 
-# salarios.prod.anim <- Salarios_UMN %>% 
-#    left_join(Paises) %>% 
-#    left_join(PPA)  %>% 
-#    filter(!is.na(Salario.UMN),Salario.UMN!= 0,
-#           !is.na(PPA),PPA != 0) %>% 
-#    mutate(salario.PPP = Salario.UMN/PPA) %>% 
-#    group_by(ANO4) %>% 
-#    mutate(Salario_USA_100 = salario.PPP/salario.PPP[nombre.pais=="Estados Unidos"]*100,
-#           rank = min_rank(-Salario_USA_100) * 1) %>%
-#    ungroup()
-# 
-# 
-# 
-# anim2 <- salarios.prod.anim %>% 
-#   filter(ANO4 %in% 2015:2016) %>% 
-#   ungroup() %>% 
-#   mutate(ANO4 = as.numeric(round(ANO4))) %>% 
-#   ggplot(.,
-#          aes(x = desc(rank),
-#              y = Salario_USA_100,
-#              fill = nombre.pais,group = nombre.pais,
-#              label = round(Salario_USA_100,1))) +
-#   geom_col(position = "dodge")+
-#   geom_text(aes(y = 0, label = paste(nombre.pais, "")), vjust = 0.2, hjust = 1) +
-#   labs(title = "Evolución del salario relativo en Paridad de Poder Adquisitivo",
-#        subtitle = "Estados Unidos  = 100")+
-#   theme_minimal()+
-#   theme(
-#     axis.ticks.y = element_blank(), 
-#     axis.text.y = element_blank(), 
-#     axis.title.x = element_blank(), 
-#     axis.title.y = element_blank(), 
-#     plot.margin = margin(1,1,1,4, "cm"),
-#     legend.position = "none")+
-#   coord_flip(clip = "off", expand = TRUE) +
-#   labs(title = 'Year: {round(frame_time)}') +
-#   transition_time(ANO4)  +
-#   ease_aes("cubic-in-out") +
-#   view_follow()# permitir que los ejes cambien
-# 
-#   #transition_states(states = ANO4, transition_length = 4, state_length = 1) + 
-#   #labs(title = 'Year: {round(closest_state)}')
-#   
-# 
-#  b<- animate(anim2, nframes = 2, fps = 1,duration = 3,
-#          width = 1000, renderer = gifski_renderer())
-# anim_save("Resultados/Salario_Nacional.gif",animation = b)
