@@ -31,7 +31,6 @@ library(RVerbalExpressions)
 # 
 # saveRDS(colombia2019,file = "Bases/colombia_2019.RDS")
 colombia<-readRDS(file = "Bases/colombia_2019.RDS")
-
 ####Colombia####
 ##Miro variables##
 # table(colombia$CLASE)
@@ -88,10 +87,13 @@ co.tasa.asalariz <- co.categ %>%
 
 
 co.ocupados.distrib  <- co.categ %>% 
+  mutate(uno = 1) %>% 
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(ocupados = sum(fexp,na.rm = T),
             asalariados = sum(fexp[P6430 %in% 1],na.rm = T),
+            ocupados_muestral = n(),
+            asalariados_muestral = sum(uno[P6430 %in% 1],na.rm = T),
             no.asalariados = sum(fexp[P6430 != 1],na.rm = T),
             tasa.asalarizacion = asalariados/ocupados,
             promedio.ing.oc.prin=weighted.mean(
@@ -112,6 +114,33 @@ co.ocupados.distrib  <- co.categ %>%
   group_by(grupos.calif,grupos.tamanio) %>% 
   summarise(periodo = 2019, 
             across(.cols = 4:ncol(.)-2,.fns = mean))  
+
+co.ocupados.distrib.agregado  <- co.categ %>% 
+  group_by(periodo) %>% 
+  summarise(ocupados = sum(fexp,na.rm = T),
+            asalariados = sum(fexp[P6430 %in% 1],na.rm = T),
+            no.asalariados = sum(fexp[P6430 != 1],na.rm = T),
+            tasa.asalarizacion = asalariados/ocupados,
+            promedio.ing.oc.prin=weighted.mean(
+              x = INGLABO,
+              w = fexp,na.rm = T),
+            promedio.ing.oc.prin.noasal=weighted.mean(
+              x = INGLABO[P6430 != 1],
+              w = fexp[P6430 != 1],na.rm = T),
+            promedio.ing.oc.prin.asal=weighted.mean(
+              x = INGLABO[P6430 == 1],
+              w = fexp[P6430 == 1],na.rm = T)
+  ) %>% 
+  group_by(periodo) %>% 
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.no.asal= no.asalariados/sum(no.asalariados))%>% 
+  ungroup() %>% 
+  #group_by(grupos.calif,grupos.tamanio) %>% 
+  summarise(periodo = 2019, 
+            across(.cols = 2:ncol(.)-2,.fns = mean))  
+
+
 
 co.asalariados.tasas <- co.categ %>% 
   filter(P6430 %in% 1) %>% # Asalariad S.priv
@@ -142,6 +171,34 @@ co.asalariados.tasas <- co.categ %>%
             across(.cols = 4:ncol(.)-2,.fns = mean))  
 
 
+co.asalariados.tasas.agregado <- co.categ %>% 
+  filter(P6430 %in% 1) %>% # Asalariad S.priv
+  #filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(periodo) %>% 
+  summarise(
+    seguridad.social.si = sum(fexp[seguridad.social=="Si"],na.rm = T),
+    seguridad.social.no = sum(fexp[seguridad.social=="No"],na.rm = T),
+    registrados =sum(fexp[registracion=="Si"],na.rm = T),
+    no.registrados =sum(fexp[registracion=="No"],na.rm = T),
+    empleo.temporal =sum(fexp[tiempo.determinado=="Si"],na.rm = T),
+    empleo.no.temporal =sum(fexp[tiempo.determinado=="No"],na.rm = T),
+    part.involun = sum(fexp[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(fexp[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(fexp[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime.asal = part.involun/(part.involun+
+                                        part.volunt+
+                                        full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp.asal = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal)) %>% 
+  ungroup() %>% 
+  #group_by(grupos.calif,grupos.tamanio) %>% 
+  summarise(periodo = 2019, 
+            across(.cols = 2:ncol(.)-2,.fns = mean))
+
 co.resultado <- co.ocupados.distrib %>% 
   left_join(co.asalariados.tasas) %>% 
   mutate(Pais = "Colombia",
@@ -159,5 +216,11 @@ co.resultado <- co.ocupados.distrib %>%
                                     "Grande - Alta"))) %>% 
   arrange(tamanio.calif)
 
+co.resultado.agregado <- co.ocupados.distrib.agregado %>% 
+  left_join(co.asalariados.tasas.agregado) %>% 
+  mutate(Pais = "Colombia",
+         tamanio.calif = "Total")
+
 saveRDS(co.resultado,file = "Resultados/Colombia.RDS")  
+saveRDS(co.resultado.agregado,file = "Resultados/Colombia_agregado.RDS")  
 

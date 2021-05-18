@@ -4,6 +4,16 @@ library(tidyverse)
 library(stringr)
 library(ggrepel)
 library(ggthemes)
+###funciones####
+reorder_within <- function(x, by, within, fun = mean, sep = " - ", ...) {
+  new_x <- paste(x, within, sep = sep)
+  stats::reorder(new_x, by, FUN = fun)
+}
+
+scale_x_reordered <- function(..., sep = " - ") {
+  reg <- paste0(sep, ".+$")
+  ggplot2::scale_x_discrete(labels = function(x) gsub(reg, "", x), ...)
+}
 
 ########PALETA#####
 azul <- colorspace::diverge_hcl(n = 12,h = c(255,330),
@@ -45,7 +55,7 @@ Salarios_UMN <- read.xlsx("Fuentes Complementarias/Prod y Salarios.xlsx",
                values_to = "Salario.UMN") %>%
   mutate(nombre.pais = str_replace_all(nombre.pais,"[[:punct:] ]+",replacement = " "))
  
-IPC_2005 <- read.xlsx("Fuentes Complementarias/Prod y Salarios2.xlsx",
+IPC_2005 <- read.xlsx("Fuentes Complementarias/Prod y Salarios.xlsx",
                           sheet = "IPC (2005)") %>%
   rename(ANO4 = X1)%>%
   pivot_longer(cols = 2:ncol(.),
@@ -60,6 +70,27 @@ PPA_WB <- read.csv("Fuentes Complementarias/PPA.csv") %>%
                names_to = "Año",
                values_to = "PPA.BENCHMARK.2017") %>%
   mutate(ANO4 = as.numeric(str_extract(Año,"[[:digit:]]{4}")))
+names(PPA_WB)[1] <- "Country"
+
+IPC_2005$nombre.pais[IPC_2005$nombre.pais == "Perú"] <- "Peru"
+
+PPA_WB_IPC <- IPC_2005 %>% 
+  left_join(Paises) %>% 
+  left_join(PPA_WB %>% select(COD.OCDE,ANO4,PPA.BENCHMARK.2017))  %>%
+  mutate(PPA.BENCHMARK.2017 = as.numeric(as.character(PPA.BENCHMARK.2017))) %>%
+  group_by(ANO4) %>%
+  mutate(IPC_2005_USA = IPC_2005[nombre.pais == "Estados Unidos"]) %>%
+  group_by(nombre.pais) %>%
+  mutate(PPA.BENCHMARK.2017.EXTRAPOLADO =
+           case_when(!is.na(PPA.BENCHMARK.2017)~PPA.BENCHMARK.2017,
+                     is.na(PPA.BENCHMARK.2017)~
+                       PPA.BENCHMARK.2017[ANO4 == 2017]*
+                       (IPC_2005/IPC_2005[ANO4 == 2017])/
+                       (IPC_2005_USA/IPC_2005_USA[ANO4 == 2017])
+           )) %>% 
+  ungroup()
+
+  
 
 Estimacion_GW <- Salarios_UMN %>%
   left_join(IPC_2005) %>%
@@ -238,82 +269,41 @@ America %>%
 ggsave("Resultados/America/Ingreso Asalariados.png",width = 15.59,height = 9)
 
 ########Salarios PPA encuestas###########
+America$Pais[America$Pais =="Canada"] <- "Canadá"
+America$Pais[America$Pais =="Mexico"] <- "México"
+
  data.graf.PPA <- America %>% 
-  select(Pais,tamanio.calif,periodo,promedio.ing.oc.prin) %>% 
+  mutate(periodo = case_when(Pais != "El Salvador" ~ 2019,
+                             TRUE ~ periodo)) %>% 
+  select(Pais,tamanio.calif,periodo,promedio.ing.oc.prin.asal) %>% 
   left_join(Paises %>% rename(Pais = nombre.pais)) %>%
-  left_join(Estimacion_GW %>% select(periodo = ANO4,
-                                     Pais = nombre.pais,
-                                     PPA.BENCHMARK.2017.EXTRAPOLADO))  
-  #   #group_by(tamanio.calif) %>% 
-#   mutate(ing.perfil9.usa.100 = 100*ingreso.mensual.ppa.gw/
-#       ingreso.mensual.ppa.gw[COD.ENCUESTAS=="USA" & tamanio.calif=="Grande - Alta"]
-#   ) %>% 
-#   select(ANO4,nombre.pais,COD.ESPANIOL,Orden,tamanio.calif,
-#          ingreso.mensual.ppa.gw,ing.perfil9.usa.100)
-# 
-# #   ggplot(data.graf.PPA,
-# #          aes(x = COD.ESPANIOL, y = ing.usa.calif.100,
-# #              fill = tamanio.calif,group = tamanio.calif,
-# #              label = round(ing.usa.calif.100,1))) +
-# #   geom_col(position = "dodge")+
-# #   geom_text(position = position_dodge(),size=2.5)+
-# #   labs(title = "Salario relativo en PPA. Año 2014. Perfil 9 de USA=100")+
-# #   theme_tufte()+
-# #   theme(legend.position = "none",
-# #         legend.direction = "vertical",
-# #         axis.title = element_blank(),
-# #         axis.text.x = element_text(angle = 90),
-# #         axis.ticks.x = element_blank(),
-# #         panel.spacing = unit(1,"cm"),
-# #         panel.grid.major.y = element_line(colour = "grey"),
-# #         panel.grid.minor.y = element_line(colour = "grey30"),
-# #         panel.grid.minor.x = element_line(colour = "grey"),
-# #         panel.grid.major.x = element_line(colour = "grey"))+
-# #   scale_fill_manual(values = paleta)+
-# #   scale_y_continuous(limits = c(0,101),breaks = c(20,40,60,80,100))+
-# #   facet_wrap(~tamanio.calif)
-# #   
-# # ggsave("Resultados/PPA USA 100.png",scale = 2)
-#   
-# 
-# ggplot(data.graf.PPA,
-#        aes(x = reorder(COD.ESPANIOL,desc(Orden)), y = ing.perfil9.usa.100,
-#            fill = tamanio.calif,group = tamanio.calif,
-#            label = round(ing.perfil9.usa.100,1))) +
-#   geom_col(position = "dodge")+
-#   geom_text(position = position_dodge(),size=4)+
-#   #labs(title = "Salario relativo en PPA. Año 2014. Perfil 9 de USA=100")+
-#   theme_tufte()+
-#   theme(legend.position = "none",
-#         legend.direction = "vertical",
-#         axis.title = element_blank(),
-#         #axis.text.x = element_text(angle = 90,size = 16,face = "bold"),
-#         axis.text.x = element_text(angle = 90,size = 18),
-#         axis.ticks.x = element_blank(),
-#         panel.spacing = unit(1,"cm"),
-#         text = element_text(size = 17),
-#         panel.grid.major.y = element_line(colour = "grey"),
-#         panel.grid.minor.y = element_line(colour = "grey30"),
-#         panel.grid.minor.x = element_line(colour = "grey"),
-#         panel.grid.major.x = element_line(colour = "grey"))+
-#   scale_fill_manual(values = paleta)+
-#   scale_y_continuous(limits = c(0,101),breaks = c(20,40,60,80,100))+
-#   facet_wrap(~tamanio.calif)
-# 
-# ggsave("Resultados/PPA BENCHMARK 2017_USA 100.jpg",width = 15.59,height = 9)
-# 
-# 
-# 
-# 
-# 
-# 
-# cuadro_ingresos <- ingresos.todos %>% 
-#    select(ANO4,COD.ENCUESTAS,nombre.pais,COD.ESPANIOL,grupos.calif,grupos.tamanio,decil.m.promedio,
-#          ingreso.mensual.prom,PPA.BENCHMARK.2017,Ingreso.mensual.PPA = ingreso.mensual.ppa.gw)
-# 
-# 
-# write.xlsx(list("Grafico 9" = data.graf.PPA,
-#                 "Ingresos Deciles Evol" = cuadro_ingresos),
-#            file = "Resultados/Salarios Encuestas PPA.xlsx")  
-# 
-# 
+  left_join(PPA_WB_IPC %>% select(periodo = ANO4,COD.OCDE,PPA.BENCHMARK.2017.EXTRAPOLADO)) %>% 
+  mutate(salario.PPA = promedio.ing.oc.prin.asal/PPA.BENCHMARK.2017.EXTRAPOLADO) 
+
+
+  
+ ggplot(data.graf.PPA,
+         aes(x = reorder_within(Pais,salario.PPA,tamanio.calif),
+             y = salario.PPA,
+             fill = tamanio.calif,group = tamanio.calif)) +
+  geom_col(position = "dodge")+
+  scale_x_reordered()+
+ # geom_text(position = position_dodge(),size=2.5)+
+  labs(title = "Salario PPA. Año 2019")+
+  theme_tufte()+
+  theme(legend.position = "none",
+        legend.direction = "vertical",
+        axis.title = element_blank(),
+        axis.text.x = element_text(angle = 90),
+        axis.ticks.x = element_blank(),
+        panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_fill_manual(values = paleta)+
+  facet_grid(~tamanio.calif, scales = "free")
+ggsave("Resultados/America/salarios ppa encuestas.png",width = 15.59,height = 9)
+ 
+# write.xlsx(data.graf.PPA,"Resultados/America/Cuadros/salarios_encuestas_ppa.xlsx")
+            
