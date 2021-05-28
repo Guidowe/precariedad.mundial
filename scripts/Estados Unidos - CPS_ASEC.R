@@ -188,6 +188,17 @@ usa.ocupados.distrib <-  usa.cat  %>%
          particip.asal = asalariados/sum(asalariados),
          particip.no.asal= no.asalariados/sum(no.asalariados))
 
+usa.ocupados.distrib.agregado <-  usa.cat  %>% 
+  group_by(periodo) %>% 
+  summarise(
+    ocupados = sum(FACTOR,na.rm = T),
+    asalariados = sum(FACTOR[Categoria  == "Asalariados"],na.rm = T),
+    no.asalariados = sum(FACTOR[Categoria  != "Asalariados"],na.rm = T),
+    tasa.asalarizacion = asalariados/ocupados) %>% 
+  group_by(periodo) %>% 
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.no.asal= no.asalariados/sum(no.asalariados))
 
 
 usa.asalariados.tasas <- usa.cat %>% 
@@ -211,8 +222,24 @@ usa.asalariados.tasas <- usa.cat %>%
                                                    seguridad.social.no))
 
 
-
-set.seed(999)  
+usa.asalariados.tasas.agregado <- usa.cat %>% 
+  filter(Categoria  == "Asalariados") %>% # Asalariado
+  group_by(periodo) %>% 
+  summarise(
+    seguridad.social.si = sum(FACTOR[seguridad.social=="Si"],na.rm = T),
+    seguridad.social.no = sum(FACTOR[seguridad.social=="No"],na.rm = T),
+    # registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
+    # no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
+    # empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
+    # empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime.asal = part.involun/(part.involun+
+                                        part.volunt+
+                                        full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no))
 usa.ingresos.asal <- usa.cat %>% 
   filter(INCWAGE>0,
          INCWAGE!=99999999,
@@ -223,16 +250,21 @@ usa.ingresos.asal <- usa.cat %>%
          ingreso.mensual = INCWAGE/WKSWORK1*4,
          ingreso.horario.d = ingreso.horario+runif(nrow(.),min = -.01,max =.01),
          ingreso.mens.d = ingreso.mensual+runif(nrow(.),min = -.01,max =.01)) %>% 
-  filter(INCWAGE==INCLONGJ,ingresos.no.salario.ppal== 0) %>% 
+  filter(INCWAGE==INCLONGJ,ingresos.no.salario.ppal== 0)
+
+usa.ingresos.asal.perfiles <- usa.ingresos.asal%>% 
   group_by(periodo,grupos.calif,grupos.tamanio) %>% 
   summarise(promedio.ing.oc.prin.asal = weighted.mean(x = ingreso.mensual,
                                                  w = FACTOR,na.rm = TRUE))
                      
-
+usa.ingresos.asal.agregado <- usa.ingresos.asal%>% 
+  group_by(periodo) %>% 
+  summarise(promedio.ing.oc.prin.asal = weighted.mean(x = ingreso.mensual,
+                                                      w = FACTOR,na.rm = TRUE))
 
 usa.resultado <- usa.ocupados.distrib %>%
   left_join(usa.asalariados.tasas)%>% 
-  left_join(usa.ingresos.asal)%>% 
+  left_join(usa.ingresos.asal.perfiles)%>% 
   mutate(Pais = "Estados Unidos",
          tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
          tamanio.calif = factor(tamanio.calif,
@@ -248,6 +280,12 @@ usa.resultado <- usa.ocupados.distrib %>%
                                     "Grande - Alta"))) %>% 
   arrange(tamanio.calif)
 
+usa.resultado.agregado <- usa.ocupados.distrib.agregado %>%
+  left_join(usa.asalariados.tasas.agregado)%>% 
+  left_join(usa.ingresos.asal.agregado)%>% 
+  mutate(Pais = "Estados Unidos")
+
 saveRDS(usa.resultado,file = "Resultados/Estados Unidos.RDS")  
+saveRDS(usa.resultado.agregado,file = "Resultados/Estados Unidos_agregado.RDS")  
 
 

@@ -1,7 +1,6 @@
 library(tidyverse)
-####Data####
+####Data Perfiles####
 load("Resultados/ResultadosFacu.RDATA")
-
 argentina<- readRDS("Resultados/Argentina.RDS")
 canada <- readRDS("Resultados/Canada.RDS")
 colombia <- readRDS("Resultados/Colombia.RDS")
@@ -12,11 +11,26 @@ estados.unidos <- readRDS("Resultados/Estados Unidos.RDS")
 guatemala <- readRDS("Resultados/Guatemala.RDS")
 mexico <- readRDS("Resultados/Mexico.RDS")
 
-resultados.todos <- 
+####Data Agregada####
+load("Resultados/Resultados_agregados_Facu.RDATA")
+argentina.agregado<- readRDS("Resultados/Argentina_agregado.RDS") %>% 
+  filter(ANO4==2019) %>% 
+  rename(periodo = ANO4)
+canada.agregado <- readRDS("Resultados/Canada_agregado.RDS")
+colombia.agregado <- readRDS("Resultados/Colombia_agregado.RDS")
+costa.rica.agregado <- readRDS("Resultados/Costa Rica_agregado.RDS")
+ecuador.agregado <- readRDS("Resultados/Ecuador_agregado.RDS")
+el.salvador.agregado <- readRDS("Resultados/El Salvador_agregado.RDS")
+estados.unidos.agregado <- readRDS("Resultados/Estados Unidos_agregado.RDS")
+guatemala.agregado <- readRDS("Resultados/Guatemala_agregado.RDS")
+mexico.agregado <- readRDS("Resultados/Mexico_agregado.RDS")
+
+############Uno Perfiles#####
+perfiles <- 
   bind_rows(canada,
             colombia,
             costa.rica,
-            ecuador,
+            ecuador %>% mutate(periodo = as.numeric(periodo)),
             el.salvador,
             estados.unidos %>% filter(periodo==2018),
             guatemala,
@@ -30,13 +44,9 @@ resultados.todos <-
   ungroup() %>% 
   mutate(prima.salario.medio = promedio.ing.oc.prin.asal/salario.promedio.pais)   %>% 
   ungroup() 
-  
 
-tabla <-  resultados.todos %>% 
-  ungroup()
-  
 
-resultados <- resultados.todos %>% 
+perfiles.tidy <- perfiles %>% 
   pivot_longer(cols = 7:ncol(.),
                names_to = "Serie",
                values_to = "Valor") %>% 
@@ -54,7 +64,25 @@ resultados <- resultados.todos %>%
                                "Grande - Alta")))%>% 
   ungroup()
 
-saveRDS(resultados.todos,file = "Resultados/America.RDS")
-save(list = c("tabla","resultados"),
+##########Uno datos agregados#####
+agregado <- 
+  bind_rows(mexico.agregado,
+            argentina.agregado,
+            canada.agregado,
+            colombia.agregado,
+            costa.rica.agregado,
+            ecuador.agregado %>% mutate(periodo = as.numeric(periodo)),
+            el.salvador.agregado,
+                        estados.unidos.agregado %>% filter(periodo==2018),
+            guatemala.agregado,
+            Resultados2) %>%
+  mutate(tamanio.calif = "Total") %>% 
+  select(Pais,tamanio.calif,everything())
+
+
+####Exporto bases unificadas#####
+saveRDS(perfiles,file = "Resultados/America.RDS")
+saveRDS(agregado,file = "Resultados/America_agregado.RDS")
+save(list = c("perfiles","perfiles.tidy","agregado"),
      file = "Precariedad.app/datashiny.RDATA")
 

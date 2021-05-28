@@ -1,24 +1,19 @@
 library(tidyverse)
 library(foreign)
-# guatemala<- read.spss('../bases/Guatemala/2017 guatemala.sav',
+
+# guatemala1.2019<- read.spss('../bases/Guatemala/2019 ENEI 1 Mayo - Personas.sav',
 #                       reencode = "UTF-8",use.value.labels = F,
-#                       to.data.frame = T) %>% 
-#   mutate(periodo = 2017)
-#saveRDS(guatemala,file = "Bases/guatemala_2017.RDS")
-guatemala<-readRDS(file = "Bases/guatemala_2017.RDS")
-
-
-guatemala1.2019<- read.spss('../bases/Guatemala/2019 ENEI 1 Mayo - Personas.sav',
-                      reencode = "UTF-8",use.value.labels = F,
-                      to.data.frame = T) %>%
-  mutate(periodo = 201901)
-guatemala2.2019<- read.spss('../bases/Guatemala/2019 ENEI 2 Noviembre - Personas.sav',
-                      reencode = "UTF-8",use.value.labels = F,
-                      to.data.frame = T) %>%
-  mutate(periodo = 201902) %>%
-  mutate(AREA = .REA)
-
-guatemala <- bind_rows(guatemala1.2019,guatemala2.2019)
+#                       to.data.frame = T) %>%
+#   mutate(periodo = 201901)
+# guatemala2.2019<- read.spss('../bases/Guatemala/2019 ENEI 2 Noviembre - Personas.sav',
+#                       reencode = "UTF-8",use.value.labels = F,
+#                       to.data.frame = T) %>%
+#   mutate(periodo = 201902) %>%
+#   mutate(AREA = .REA)
+# 
+# guatemala <- bind_rows(guatemala1.2019,guatemala2.2019)
+# saveRDS(guatemala, "Bases/guatemala_2019.RDS")
+guatemala<-readRDS(file = "Bases/guatemala_2019.RDS")
 
 ####Guatemala####
 # table(guatemala$P04C02B_1D)
@@ -83,10 +78,58 @@ guate.ocupados.distrib <-  guatemala.cat  %>%
          particip.no.asal= no.asalariados/sum(no.asalariados)) %>% 
   ungroup()
 
+
+guate.ocupados.distrib.agregado <-  guatemala.cat  %>% 
+  group_by(periodo) %>% 
+  summarise(
+    ocupados = sum(FACTOR,na.rm = T),
+    asalariados = sum(FACTOR[P04C06 == 2 ],na.rm = T),
+    no.asalariados = sum(FACTOR[P04C06 != 2],na.rm = T),
+    tasa.asalarizacion = asalariados/ocupados,
+    promedio.ing.oc.prin=weighted.mean(
+      x = P04C10,
+      w = FACTOR,na.rm = T),
+    promedio.ing.oc.prin.noasal=weighted.mean(
+      x = P04C10[P04C06 != 2],
+      w = FACTOR[P04C06 != 2],na.rm = T),
+    promedio.ing.oc.prin.asal=weighted.mean(
+      x = P04C10[P04C06 == 2 ],
+      w = FACTOR[P04C06 == 2],na.rm = T)
+  ) %>% 
+  group_by(periodo) %>% 
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.no.asal= no.asalariados/sum(no.asalariados)) %>% 
+  ungroup()
+
+
 guat.asalariados.tasas <- guatemala.cat %>% 
   filter(P04C06 == 2) %>% # Asalariado
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
+  summarise(
+    seguridad.social.si = sum(FACTOR[seguridad.social=="Si"],na.rm = T),
+    seguridad.social.no = sum(FACTOR[seguridad.social=="No"],na.rm = T),
+    registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
+    no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
+    empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
+    empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime.asal = part.involun/(part.involun+
+                                        part.volunt+
+                                        full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp.asal = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal))
+
+guat.asalariados.tasas.agregado <- guatemala.cat %>% 
+  filter(P04C06 == 2) %>% # Asalariado
+  group_by(periodo) %>% 
   summarise(
     seguridad.social.si = sum(FACTOR[seguridad.social=="Si"],na.rm = T),
     seguridad.social.no = sum(FACTOR[seguridad.social=="No"],na.rm = T),
@@ -128,7 +171,15 @@ guate.resultado <- guate.ocupados.distrib %>%
                                     "Grande - Alta"))) %>% 
   arrange(tamanio.calif)
 
+guate.resultado.agregado <- guate.ocupados.distrib.agregado %>%
+  left_join(guat.asalariados.tasas.agregado) %>% 
+  summarise(periodo = 2019, 
+            across(.cols = 2:ncol(.),.fns = mean))  %>% 
+  ungroup() %>% 
+  mutate(Pais = "Guatemala")
+
 saveRDS(guate.resultado,file = "Resultados/Guatemala.RDS")  
+saveRDS(guate.resultado.agregado,file = "Resultados/Guatemala_agregado.RDS")  
 
 
 

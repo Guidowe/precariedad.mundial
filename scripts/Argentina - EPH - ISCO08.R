@@ -258,5 +258,5 @@ arg.resultado.agregado <- arg.ocupados.distrib.agregado %>%
          tamanio.calif = "Total")
 
 saveRDS(arg.resultado,file = "Resultados/Argentina.RDS")
-saveRDS(arg.resultado,file = "Resultados/Argentina_agregado.RDS")
+saveRDS(arg.resultado.agregado,file = "Resultados/Argentina_agregado.RDS")
 #write.xlsx(comparacion,"Resultados/America/Cuadros/argentina_cno_isco.xlsx")

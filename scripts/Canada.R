@@ -15,6 +15,7 @@ rutas.base.2019 <- rutas %>%
          str_detect(ruta,pattern = "csv"))
 
 canada2019 <- data.frame()
+canada2019.agregado <- data.frame()
 for(base in rutas.base.2019$ruta){
 
 
@@ -83,7 +84,28 @@ canada.ocupados.distrib <-  canada.cat %>%
          particip.asal = asalariados/sum(asalariados),
          particip.no.asal= no.asalariados/sum(no.asalariados))
 
-
+canada.ocupados.distrib.agregado <-  canada.cat %>% 
+#  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(periodo) %>% 
+  summarise(
+    ocupados = sum(FACTOR,na.rm = T),
+    asalariados = sum(FACTOR[COWMAIN == 2],na.rm = T),
+    no.asalariados = sum(FACTOR[COWMAIN != 2],na.rm = T),
+    tasa.asalarizacion = asalariados/ocupados,
+    promedio.ing.oc.prin=weighted.mean(
+      x = ing.mensual,
+      w = FACTOR,na.rm = T),
+    promedio.ing.oc.prin.noasal=weighted.mean(
+      x = ing.mensual[COWMAIN != 2],
+      w = FACTOR[COWMAIN != 2],na.rm = T),
+    promedio.ing.oc.prin.asal=weighted.mean(
+      x = ing.mensual[COWMAIN == 2],
+      w = FACTOR[COWMAIN == 2],na.rm = T)
+  ) %>% 
+  ungroup() %>% 
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.no.asal= no.asalariados/sum(no.asalariados))
 
 canada.asalariados.tasas <- canada.cat %>% 
   filter(COWMAIN == 2) %>% # Asalariado
@@ -105,11 +127,37 @@ canada.asalariados.tasas <- canada.cat %>%
     tasa.temp.asal = empleo.temporal/(empleo.temporal+
                                         empleo.no.temporal))
 
+
+canada.asalariados.tasas.agregado <- canada.cat %>% 
+  filter(COWMAIN == 2) %>% # Asalariado
+#  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(periodo) %>% 
+  summarise(
+    registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
+    no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
+    empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
+    empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime.asal = part.involun/(part.involun+
+                                        part.volunt+
+                                        full.time),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp.asal = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal))
+
+
+
 canada.resultado <- canada.ocupados.distrib %>%
   left_join(canada.asalariados.tasas) 
 
+canada.resultado.agregado <- canada.ocupados.distrib.agregado %>%
+  left_join(canada.asalariados.tasas.agregado) 
 
 canada2019 <- bind_rows(canada2019,canada.resultado)
+canada2019.agregado <- bind_rows(canada2019.agregado,canada.resultado.agregado)
 
 }
 
@@ -135,5 +183,14 @@ canada2019 <- canada2019 %>%
                                     "Grande - Alta"))) %>% 
   arrange(tamanio.calif)
 
+
+canada2019.agregado <- canada2019.agregado %>%
+  #group_by(grupos.calif,grupos.tamanio) %>% 
+  summarise(periodo = 2019, 
+            across(.cols = 2:ncol(.),.fns = mean))  %>% 
+  ungroup() %>% 
+  mutate(Pais = "Canada") 
+
 saveRDS(canada2019,file = "Resultados/Canada.RDS")  
+saveRDS(canada2019.agregado,file = "Resultados/Canada_agregado.RDS")  
 
