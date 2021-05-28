@@ -1,21 +1,43 @@
+library(tidyverse)
+library(foreign)
+library(stringr)
 # ecuador <- read.spss("../bases/Ecuador/enemdu_persona_201912.sav",
 #                      reencode = "UTF-8",use.value.labels = F,
 #                      to.data.frame = T)
 # saveRDS(ecuador,file = "Bases/ecuador_122019.RDS")
-
 ecuador<-readRDS(file = "Bases/ecuador_122019.RDS")
+
+
+archivos<- list.files("../bases/Ecuador/")
+
+rutas <- data.frame(
+  ruta = list.files("../bases/Ecuador/",recursive = T))
+
+rutas.base.2019 <- rutas %>% 
+  filter(str_detect(ruta,pattern = "sav"))
+
+ecuador2019 <- data.frame()
+for(base in rutas.base.2019$ruta){
+  
+  
+  ecuador<- read.spss(file = paste0('../bases/Ecuador/',base),
+                     reencode = "UTF-8",use.value.labels = F,
+                                           to.data.frame = T)
+  
+  
+  
 
 
 
 ####Ecuador####
 ##Miro variables##
-# prueba.salario <- ecuador %>% 
+# prueba.salario <- ecuador %>%
 #   filter(p42 == 2,ingrl!= 0,ingrl!= 999999)
 # 
-# prueba.salario %>% 
+# prueba.salario %>%
 #   ggplot(aes(x = ingrl)) +
 #   geom_histogram()
-# table(prueba.salario$ingrl)
+# salarios<- data.frame(table(prueba.salario$ingrl))
 # table(ecuador$area)
 # table(ecuador2$area)
 # table(ecuador$p27)
@@ -92,7 +114,7 @@ ec.ocupados.distrib  <- ec.categ %>%
       x = p66[p42== 2 & (!(ingrl %in% c(0,999999)))],
       w = fexp[p42== 2 & (!(ingrl %in% c(0,999999)))],na.rm = T)
   ) %>% 
-  ungroup() %>% 
+  group_by() %>% 
   mutate(particip.ocup = ocupados/sum(ocupados),
          particip.asal = asalariados/sum(asalariados),
          particip.no.asal= no.asalariados/sum(no.asalariados))
@@ -144,7 +166,31 @@ ec.resultado <- ec.ocupados.distrib %>%
                                     "Grande - Alta"))) %>% 
   arrange(tamanio.calif)
 
-saveRDS(ec.resultado,file = "Resultados/Ecuador.RDS")  
+ecuador2019 <- bind_rows(ecuador2019,ec.resultado)
+
+}
+
+ecuador2019 <- ecuador2019 %>%
+  group_by(grupos.calif,grupos.tamanio) %>% 
+  summarise(periodo = 2019, 
+            across(.cols = 4:ncol(.)-2,.fns = mean))  %>% 
+  ungroup() %>% 
+  mutate(Pais = "Ecuador",
+         tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
+         tamanio.calif = factor(tamanio.calif,
+                                levels = 
+                                  c("Pequeño - Baja",
+                                    "Pequeño - Media",
+                                    "Pequeño - Alta",
+                                    "Mediano - Baja",
+                                    "Mediano - Media", 
+                                    "Mediano - Alta",
+                                    "Grande - Baja",
+                                    "Grande - Media",
+                                    "Grande - Alta"))) %>% 
+  arrange(tamanio.calif)
+
+saveRDS(ecuador2019,file = "Resultados/Ecuador.RDS")  
 
 
 

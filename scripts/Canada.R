@@ -36,6 +36,8 @@ canada.cat<- canada %>%
     # registracion =  case_when(r419 %in% 1:6 ~ "Si",
     #                           r419 %in% 7:8 ~ "No"),
     registracion = NA,
+    UHRSMAIN = UHRSMAIN/10,
+    HRLYEARN = HRLYEARN/100,
     ing.mensual =  HRLYEARN*UHRSMAIN*4.25,
     part.time.inv = case_when(UHRSMAIN < 35 & WHYPT  %in%  6:7 ~ "Part Involunt",
                               UHRSMAIN < 35 & !(WHYPT  %in% 6:7) ~ "Part Volunt",
@@ -110,6 +112,8 @@ canada.resultado <- canada.ocupados.distrib %>%
 canada2019 <- bind_rows(canada2019,canada.resultado)
 
 }
+
+#canada2019 <- readRDS("Resultados/Canada_trimestral.RDS")
 
 canada2019 <- canada2019 %>%
   group_by(grupos.calif,grupos.tamanio) %>% 

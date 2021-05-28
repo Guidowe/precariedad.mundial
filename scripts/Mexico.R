@@ -1,5 +1,6 @@
 library(tidyverse)
 library(foreign)
+########################Carga de datos############################################
 # mexico.basico <- read_csv("../bases/Mexico/1t2019/sdemt119.csv")
 # mexico.ampliado <- read_csv("../bases/Mexico/1t2019/coe1t119.csv")
 # mexico.ampliado2 <- read_csv("../bases/Mexico/1t2019/coe2t119.csv")
@@ -12,11 +13,11 @@ library(foreign)
 # mexico <- mexico.basico %>%
 #    left_join(mex.variables.ampliado) %>%
 #    left_join(mex.variables.ampliado2)
-# saveRDS(mexico,file = "Bases/mexico_T31019.RDS")
+# saveRDS(mexico,file = "Bases/mexico_T12019.RDS")
 
-mexico<-readRDS(file = "Bases/mexico_T32019.RDS")
-
-####Mexico####
+mexico<-readRDS(file = "Bases/mexico_T12019.RDS")
+load("Fuentes Complementarias/crosstable_sinco2011_isco08.rda")
+####################Exploracion bases############################################
 #Miro algunas variables#
 # codigos.ocup <- data.frame(unique(mexico$p3))
 # 
@@ -34,8 +35,27 @@ mexico<-readRDS(file = "Bases/mexico_T32019.RDS")
 # check <- data.frame(table(mexico$tip_con,mexico$pre_asa),use_na = "always")
 #table(mexico$P3M4,useNA = "always")
 
-#Proceso#
-mex.cat <- mexico %>% 
+############################Crosswalk isco#########################################
+sample.isco <- function(df) {
+  sample(df$cod.destination,size = 1)
+}
+
+mexico.cross <- crosstable_sinco2011_isco08 %>% 
+  select(P3 = cod.origin,cod.destination) %>%
+  dplyr::add_row(P3 = NA) %>% 
+  group_by(P3) %>%
+  tidyr::nest()
+
+base_join  <- mexico %>% 
+ left_join(mexico.cross,by = "P3")
+
+set.seed(9999)
+base_join_sample <- base_join %>%
+  mutate(isco.08 = purrr::map(data, sample.isco))  %>%
+  select(-data) %>% # Elimino la columna creada para el sorteo
+  mutate(isco.08 = as.character(isco.08))
+#######################Categorias#############################################
+mex.cat <- base_join_sample %>% 
   rename_all(.funs = tolower) %>% 
   filter(t_loc != 4) %>%  #Localidades mayores a 2500
   filter(clase2 == 1) %>%  #Ocupados
@@ -61,17 +81,44 @@ mex.cat <- mexico %>%
     tiempo.determinado = case_when(
       tip_con %in% 1:3 ~ "No",
       TRUE   ~ "Si"),
-    grupos.calif =   ### CORREGIR
+    grupos.calif =   
       case_when(
-        substr(p3,1,1) %in% 1:3 ~ "Alta",
-        substr(p3,1,1) %in% 4:8 ~ "Media",
-        substr(p3,1,1) %in% 9 ~ "Baja")
+        str_sub(isco.08,1,1) %in% 1:3 ~ "Alta",
+        str_sub(isco.08,1,1) %in% 4:8 ~ "Media",
+        str_sub(isco.08,1,1) %in% 9 ~ "Baja")
   ) 
+
+
+################################Resultados#############################################
 
 mex.ocupados.distrib <-  mex.cat  %>% 
   mutate(p6b2 = as.numeric(p6b2)) %>% 
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
+  summarise(
+    ocupados = sum(FACTOR,na.rm = T),
+    asalariados = sum(FACTOR[pos_ocu == 1],na.rm = T),
+    no.asalariados = sum(FACTOR[pos_ocu != 1],na.rm = T),
+    tasa.asalarizacion = asalariados/ocupados,
+    promedio.ing.oc.prin=weighted.mean(
+      x = p6b2[p6b2 != 999999],
+      w = FACTOR[p6b2 != 999999],na.rm = T),
+    promedio.ing.oc.prin.noasal=weighted.mean(
+      x = p6b2[pos_ocu!= 1 & p6b2!= 999999],
+      w = FACTOR[pos_ocu!= 1 & p6b2!= 999999],na.rm = T),
+    promedio.ing.oc.prin.asal=weighted.mean(
+      x = p6b2[pos_ocu== 1 & p6b2!= 999999],
+      w = FACTOR[pos_ocu== 1 & p6b2!= 999999],na.rm = T)
+  ) %>% 
+  ungroup() %>% 
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.no.asal= no.asalariados/sum(no.asalariados))
+
+mex.ocupados.distrib.agregado <-  mex.cat  %>% 
+  mutate(p6b2 = as.numeric(p6b2)) %>% 
+#  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(periodo) %>% 
   summarise(
     ocupados = sum(FACTOR,na.rm = T),
     asalariados = sum(FACTOR[pos_ocu == 1],na.rm = T),
@@ -117,6 +164,32 @@ mex.asalariados.tasas <- mex.cat %>%
     tasa.temp.asal = empleo.temporal/(empleo.temporal+
                                         empleo.no.temporal))
 
+
+mex.asalariados.tasas.agregado <- mex.cat %>% 
+  filter(pos_ocu == 1) %>% # Asalariado
+#  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(periodo) %>% 
+  summarise(
+    seguridad.social.si = sum(FACTOR[seguridad.social=="Si"],na.rm = T),
+    seguridad.social.no = sum(FACTOR[seguridad.social=="No"],na.rm = T),
+    registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
+    no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
+    empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
+    empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime.asal = part.involun/(part.involun+
+                                        part.volunt+
+                                        full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp.asal = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal))
+
+
 mex.resultado <- mex.ocupados.distrib %>%
   left_join(mex.asalariados.tasas) %>% 
   mutate(Pais = "Mexico",
@@ -134,4 +207,11 @@ mex.resultado <- mex.ocupados.distrib %>%
                                         "Grande - Alta"))) %>% 
   arrange(tamanio.calif)
 
+mex.resultado.agregado <- mex.ocupados.distrib.agregado %>% 
+  left_join(mex.asalariados.tasas.agregado) %>% 
+  mutate(Pais = "Mexico",
+         tamanio.calif = "Total")
+################################Exportacion################################
+
+saveRDS(mex.resultado.agregado,file = "Resultados/Mexico_agregado.RDS")  
 saveRDS(mex.resultado,file = "Resultados/Mexico.RDS")  
