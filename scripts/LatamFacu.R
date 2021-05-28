@@ -1,13 +1,10 @@
 
 # COSAS PARA HACER
 
-# Ordenar bases dentro de GitHub
+# Armar pool de bases y calcular todo como promedio desde ahí
 
 # Calcular absolutos part-time voluntario e involuntario
 
-# Estimar para todos los trimestres 2019 y sacar promedio anual
-
-# En peru da contraintuitivo tasas.temp ---> ver paises en los que la misma variable define PRECATEMP y PRECAREG
 
 #### Intro ####
 
@@ -865,6 +862,90 @@ Resultados   <-  Resultados  %>%
 
 
 save(Resultados, file = "C:/Users/facun/Documents/GitHub/precariedad.mundial/Resultados/ResultadosFacu.RDATA")
+
+
+
+#### Resultados sin desagregar por perfiles ####
+
+
+Resultados2 <- Base                                          %>%      
+  filter(COND=="Ocupado" & CALIF!="Ns/Nc" & TAMA!="Ns/Nc")   %>%
+  group_by(PAIS, PERIODO)                                %>%
+  summarise('periodo'                              = mean(ANO),
+            'ocupados'                       = sum(WEIGHT, na.rm=TRUE),
+            'tasa.asalarizacion'                   = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE)/sum(WEIGHT[CATOCUP=="Asalariados" | CATOCUP=="No Asalariados"], na.rm=TRUE),
+            'asalariados'                           = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE),
+            'tasa.partime.asal'                    = sum(WEIGHT[PRECAPT=="Part-time involuntario" & CATOCUP=="Asalariados"], na.rm=TRUE)/
+              sum(WEIGHT[(PRECAPT=="Part-time involuntario" | PRECAPT=="Part-time voluntario" | PRECAPT=="Tiempo completo") & CATOCUP=="Asalariados"], na.rm=TRUE),         
+            'tasa.temp.asal'                       = sum(WEIGHT[PRECATEMP=="Temporal" & CATOCUP=="Asalariados"], na.rm=TRUE)/
+              sum(WEIGHT[(PRECATEMP=="Temporal" | PRECATEMP=="No temporal") & CATOCUP=="Asalariados"], na.rm=TRUE), 
+            'tasa.no.registro'                     = sum(WEIGHT[PRECAREG=="No registrado" & CATOCUP=="Asalariados"], na.rm=TRUE)/
+              sum(WEIGHT[(PRECAREG=="Registrado" | PRECAREG=="No registrado") & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'tasa.seguridad.social'                = sum(WEIGHT[PRECASEG=="Sin aportes" & CATOCUP=="Asalariados"], na.rm=TRUE)/
+              sum(WEIGHT[(PRECASEG=="Sin aportes" | PRECASEG=="Con aportes") & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'registrados'                          = sum(WEIGHT[PRECAREG=="Registrado" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'no.registrados'                       = sum(WEIGHT[PRECAREG=="No registrado" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'tasa.1.asalariados'                   = sum(WEIGHT[PRECACOUNT==1 | PRECACOUNT==2 | PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
+            'tasa.2.asalariados'                   = sum(WEIGHT[PRECACOUNT==2 | PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
+            'tasa.3.asalariados'                   = sum(WEIGHT[PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
+            'no.asalariados'                       = sum(WEIGHT[CATOCUP=="No Asalariados"], na.rm=TRUE),              
+            'tasa.parttime.noasal'                 = sum(WEIGHT[PRECAPT=="Part-time involuntario"  & CATOCUP=="No Asalariados"], na.rm=TRUE)/
+              sum(WEIGHT[(PRECAPT=="Part-time involuntario" | PRECAPT=="Part-time voluntario") & CATOCUP=="No Asalariados"], na.rm=TRUE),
+            'tasa.salud.noasal'                    = sum(WEIGHT[PRECASALUD=="Sin cobertura" & CATOCUP=="No Asalariados"], na.rm=TRUE)/
+              sum(WEIGHT[(PRECASALUD=="Sin cobertura" | PRECASALUD=="Con cobertura") & CATOCUP=="No Asalariados"], na.rm=TRUE),
+            'tasa.seguridad.social.tcp'            = sum(WEIGHT[PRECASEG=="Sin aportes" & CATOCUP=="No Asalariados"], na.rm=TRUE)/
+              sum(WEIGHT[(PRECASEG=="Sin aportes" | PRECASEG=="Con aportes") & CATOCUP=="No Asalariados"], na.rm=TRUE),
+            'promedio.ing.oc.prin'                 = weighted.mean(ING[CATOCUP=="Asalariados" | CATOCUP=="No Asalariados"], WEIGHT[CATOCUP=="Asalariados" | CATOCUP=="No Asalariados"], na.rm=TRUE),
+            'promedio.ing.oc.prin.asal'            = weighted.mean(ING[CATOCUP=="Asalariados"], WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE),
+            'promedio.ing.oc.prin.noasal'          = weighted.mean(ING[CATOCUP=="No Asalariados"], WEIGHT[CATOCUP=="No Asalariados"], na.rm=TRUE))  %>%
+  ungroup()                                                                    %>%
+  rename(Pais=PAIS)
+
+#Resultados <-  Resultados[,c(1:5, 16, 17, 6:15, 18)]
+Resultados2[is.na(Resultados2)] <- 0
+
+Resultados2 <- Resultados2 %>%                        
+  group_by(Pais) %>%
+  summarise_each(funs(mean)) %>%
+  select(-PERIODO)
+
+save(Resultados2, file = "C:/Users/facun/Documents/GitHub/precariedad.mundial/Resultados/Resultados_agregados_Facu.RDATA")
+
+
+
+
+#### Cuento cantidad de casos sin ponderar en cada perfil ####
+
+Casos  <- Base                                               %>%      
+  filter(COND=="Ocupado" & CALIF!="Ns/Nc" & TAMA!="Ns/Nc")   %>%
+  group_by(PAIS, PERIODO, TAMA, CALIF)                       %>%
+  summarise('casos' = n())                                   %>%
+  ungroup()                                                  %>% 
+  group_by(PAIS, TAMA, CALIF)                                %>%  
+  summarise_each(funs(mean))                                 %>%
+  ungroup()                                                  %>% 
+  select(-PERIODO)                                           %>% 
+  group_by(PAIS)                                             %>%                         
+  mutate('porcentaje'           = casos/sum(casos))          %>% 
+  ungroup()                                                  %>% 
+  mutate(tamanio.calif= paste(TAMA, " - ", CALIF, sep=""),
+         tamanio.calif = case_when(
+           tamanio.calif == "Pequeño - Baja"  ~ "1) Pequeño - Baja",
+           tamanio.calif == "Pequeño - Media" ~ "2) Pequeño - Media",
+           tamanio.calif == "Pequeño - Alta" ~ "3) Pequeño - Alta",
+           tamanio.calif == "Mediano - Baja" ~ "4) Mediano - Baja",
+           tamanio.calif == "Mediano - Media" ~ "5) Mediano - Media",
+           tamanio.calif == "Mediano - Alta" ~ "6) Mediano - Alta",
+           tamanio.calif == "Grande - Baja" ~ "7) Grande - Baja",
+           tamanio.calif == "Grande - Media" ~ "8) Grande - Media",
+           tamanio.calif == "Grande - Alta" ~ "9) Grande - Alta"))   %>% 
+  filter(PAIS!="Brasil")
+
+ggplot(Casos, aes(x=PAIS, y=casos)) +
+  geom_col(position = "dodge") +
+  facet_wrap(~tamanio.calif) +
+  labs(title = "Cantidad de casos sin ponderar")
+  
 
 ####Graficos ####
 
