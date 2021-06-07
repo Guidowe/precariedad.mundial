@@ -1,10 +1,14 @@
 
 # COSAS PARA HACER
 
-# Armar pool de bases y calcular todo como promedio desde ahí
+# Ingresos Peru (hecho)
+# Arreglar metadata (hecho)
 
-# Calcular absolutos part-time voluntario e involuntario
+# Variable precariedad tcp Chile
+# Ver la otra variable ingreso de Paraguay
+# Revisar variable precariedad tcp Paraguay (da 99%)
 
+# Rearmar bases para guardarlas en formato R en Github
 
 #### Intro ####
 
@@ -52,10 +56,11 @@ CHI <- CHI                                  %>%
     
         #Categoria Ocupacional                                        
     CATOCUP=factor(case_when(
-      cise %in% c(1, 2, 7)     ~ "No Asalariados", 
+      cise %in% c(1, 7)        ~ "Resto",
+      cise == 2                ~ "Cuenta propia",
       cise == 3                ~ "Asalariados",       
       TRUE                     ~ "Ns/Nc"),
-      levels= c("No Asalariados", "Asalariados", "Ns/Nc")),
+      levels= c("Asalariados", "Cuenta propia", "Resto", "Ns/Nc")),
     
     #Condicion de actividad
     COND= factor(case_when(
@@ -176,10 +181,11 @@ URU <- URU                                          %>%
     
     #Categoria Ocupacional                                         
     CATOCUP=factor(case_when(
-      f73 %in% 3:7 ~ "No Asalariados", 
-      f73 ==   1   ~ "Asalariados",       
+      f73==5 | f73==6           ~ "Cuenta propia",
+      f73==3 | f73==4 | f73==7 | f73==8    ~ "Resto", 
+      f73==1 | f73==2          ~ "Asalariados",       
       TRUE  ~ "Ns/Nc"),
-      levels= c("No Asalariados", "Asalariados", "Ns/Nc")),
+      levels= c("Asalariados", "Cuenta propia", "Resto", "Ns/Nc")),
     
     #Condicion de actividad
     COND= factor(case_when(
@@ -203,8 +209,8 @@ URU <- URU                                          %>%
     
     PRECASEG= factor(case_when( f82==2 & CATOCUP=="Asalariados"  ~ "Sin aportes",       # No aporta a caja de jubilaciones (PARA ASALARIADOS)
                                 f82==1 & CATOCUP=="Asalariados"  ~  "Con aportes",   
-                                f263==2 & CATOCUP=="No Asalariados" ~ "Sin aportes",    # Negocio registrado en impuestos o seguridad social
-                                f263==1 & CATOCUP=="No Asalariados" ~ "Con aportes",                         
+                                f263==2 & CATOCUP=="Cuenta propia" ~ "Sin aportes",    # Negocio registrado en impuestos o seguridad social
+                                f263==1 & CATOCUP=="Cuenta propia" ~ "Con aportes",                         
                                 TRUE      ~  "Ns/Nc"),
                      levels=c( "Sin aportes", "Con aportes", "Ns/Nc")),  
     
@@ -311,14 +317,14 @@ BRA <- BRA                                              %>%
     
     #Categoria Ocupacional                                         
     CATOCUP=factor(case_when(
-      VD4009== "Conta-própria"                  | 
+      VD4009== "Conta-própria"                ~ "Cuenta propia", 
       VD4009== "Trabalhador familiar auxiliar" |
-      VD4009== "Empregador"                          ~ "No Asalariados", 
+      VD4009== "Empregador"                          ~ "Resto", 
 
       VD4009=="Empregado no setor privado com carteira de trabalho assinada" |
       VD4009=="Empregado no setor privado sem carteira de trabalho assinada"    ~ "Asalariados",       
       TRUE  ~ "Ns/Nc"),
-      levels= c("No Asalariados", "Asalariados", "Ns/Nc")),
+      levels= c("Asalariados", "Cuenta propia", "Resto", "Ns/Nc")),
     
     #Condicion de actividad
     COND= factor(case_when(                             
@@ -445,10 +451,11 @@ PAR <- PAR                                  %>%
     
     #Categoria Ocupacional                                         
     CATOCUP=factor(case_when(
-      CATE_PEA %in% 3:5 ~ "No Asalariados", 
-      CATE_PEA ==   2   ~ "Asalariados",       
-      TRUE              ~ "Ns/Nc"),
-      levels= c("No Asalariados", "Asalariados", "Ns/Nc")),
+      CATE_PEA ==   4       ~ "Cuenta propia", 
+      CATE_PEA ==   2       ~ "Asalariados", 
+      CATE_PEA %in% c(3, 5) ~ "Resto", 
+      TRUE                  ~ "Ns/Nc"),
+      levels= c("Asalariados", "Cuenta propia", "Resto", "Ns/Nc")),
     
     #Condicion de actividad
     COND= factor(case_when(
@@ -567,10 +574,11 @@ BOL <- BOL                                 %>%
     
     #Categoria Ocupacional                                         
     CATOCUP=factor(case_when(
-      s2_18 %in%  c(2, 3, 5, 6)         ~ "No Asalariados", 
-      s2_18 %in%  c(1, 4)   ~ "Asalariados",       
-      TRUE  ~ "Ns/Nc"),
-      levels= c("No Asalariados", "Asalariados", "Ns/Nc")),
+      s2_18 == 2                        ~ "Cuenta propia", 
+      s2_18 %in%  c(3, 4, 5, 6, 7)      ~ "Resto", 
+      s2_18 == 1                        ~ "Asalariados",       
+      TRUE                              ~ "Ns/Nc"),
+      levels= c("Asalariados", "Cuenta propia", "Resto", "Ns/Nc")),
     
     #Condicion de actividad
     COND= factor(case_when(
@@ -660,8 +668,8 @@ BOL <- BOL                                 %>%
 #### Peru ####
 
 variables <- c("p507", "p510", "fac500", "p507", "ocu500", "p513t", "p521a", "p510a1", "p521",
-               "p511a", "p512a", "p512b", "p505", "p523", "p524a1", "estrato", "p558a1", "p558a2", 
-               "p558a3", "p558a4", "p558a5") 
+               "p511a", "p512a", "p512b", "p505", "p523", "p524e1", "estrato", "p558a1", "p558a2", 
+               "p558a3", "p558a4", "p558a5", "p530a") 
 
 PER1 <- read_dta("Bases/Peru_1T2019.dta")
 PER1 <- PER1 %>% select(variables) %>%mutate(PERIODO=1)
@@ -678,7 +686,7 @@ PER4 <- PER4 %>% select(variables) %>%mutate(PERIODO=4)
 PER <- bind_rows(PER1, PER2, PER3, PER4)
 remove(PER1, PER2, PER3, PER4)
            
-
+PER$p507[is.na(PER$p507)] = 0  
 PER$p510[is.na(PER$p510)] = 0         #Saco NA de variable p510 para no perder a los cuentapropistas cuando cruzo p507 y p510 en los filter
 
 PER <- PER                                  %>% 
@@ -702,10 +710,11 @@ PER <- PER                                  %>%
     
     #Categoria ocupacional
     CATOCUP=factor(case_when(
-      p507 %in% c(1, 2, 5, 7)    ~ "No Asalariados", 
+      p507 == 2                  ~ "Cuenta propia", 
+      p507 %in% c(1, 5, 7)       ~ "Resto", 
       p507 %in% 3:4              ~ "Asalariados",       
       TRUE                       ~ "Ns/Nc"),
-      levels= c("No Asalariados", "Asalariados", "Ns/Nc")),
+      levels= c("Asalariados", "Cuenta propia", "Resto", "Ns/Nc")),
     
     #Condicion de actividad
     COND= factor(case_when(
@@ -786,53 +795,79 @@ PER <- PER                                  %>%
     
     #Ingreso de la ocupación principal
     ING=case_when(
-      p523==1       ~ p524a1 * 20,                      # El dato de ingreso de ocupacion principal esta en jornal, semana, quincenal o mes
-      p523==2       ~ p524a1 * 4,                       # dependiendo como cobre el encuestado. Lo mensualice suponiendo que la persona trabaja todo el mes
-      p523==3       ~ p524a1 * 2,                       # lo mismo que trabajo en la semana de referencia
-      p523==4       ~ p524a1))              %>% 
+      CATOCUP=="Asalariados" & p523==1       ~ p524e1 * 20,                      # ASALARIADOS: el dato de ingreso de ocupacion principal esta en jornal, semana, quincenal o mes
+      CATOCUP=="Asalariados" & p523==2       ~ p524e1 * 4,                       # dependiendo como cobre el encuestado. Lo mensualice suponiendo que la persona trabaja todo el mes
+      CATOCUP=="Asalariados" & p523==3       ~ p524e1 * 2,                       # lo mismo que trabajo en la semana de referencia
+      CATOCUP=="Asalariados" & p523==4       ~ p524e1, 
+      CATOCUP!="Asalariados"                 ~ p530a )) %>%                       
   select(variables2) 
 
 
-#### Resultados ####
+
+#### Join de todas las bases y modificaciones generales ####
 
 Base <-   bind_rows(CHI, URU, BRA, PAR, BOL, PER)
 
+#Paso todos los TCP a tamaño pequeño
+
+Base <- Base %>% 
+  mutate(
+    TAMA=factor(case_when(
+      CATOCUP== "Cuenta propia" ~ "Pequeño", 
+      TRUE                      ~ as.character(TAMA)), 
+      levels= c("Pequeño", "Mediano", "Grande", "Ns/Nc")))
+    
+#### Resultados ####
 
 Resultados <- Base                                          %>%      
-  filter(COND=="Ocupado" & CALIF!="Ns/Nc" & TAMA!="Ns/Nc")   %>%
-  group_by(PAIS, PERIODO, TAMA, CALIF)                                %>%
+  filter(COND=="Ocupado" & CALIF!="Ns/Nc" & TAMA!="Ns/Nc" & CATOCUP!="Resto" & CATOCUP!= "Ns/Nc")   %>%
+  group_by(PAIS, PERIODO, TAMA, CALIF)                     %>%
   summarise('periodo'                              = mean(ANO),
-            'ocupados'                       = sum(WEIGHT, na.rm=TRUE),
-            'tasa.asalarizacion'                   = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE)/sum(WEIGHT[CATOCUP=="Asalariados" | CATOCUP=="No Asalariados"], na.rm=TRUE),
-            'asalariados'                           = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE),
-            'tasa.partime.asal'                    = sum(WEIGHT[PRECAPT=="Part-time involuntario" & CATOCUP=="Asalariados"], na.rm=TRUE)/
-              sum(WEIGHT[(PRECAPT=="Part-time involuntario" | PRECAPT=="Part-time voluntario" | PRECAPT=="Tiempo completo") & CATOCUP=="Asalariados"], na.rm=TRUE),         
-            'tasa.temp.asal'                       = sum(WEIGHT[PRECATEMP=="Temporal" & CATOCUP=="Asalariados"], na.rm=TRUE)/
-              sum(WEIGHT[(PRECATEMP=="Temporal" | PRECATEMP=="No temporal") & CATOCUP=="Asalariados"], na.rm=TRUE), 
-            'tasa.no.registro'                     = sum(WEIGHT[PRECAREG=="No registrado" & CATOCUP=="Asalariados"], na.rm=TRUE)/
-              sum(WEIGHT[(PRECAREG=="Registrado" | PRECAREG=="No registrado") & CATOCUP=="Asalariados"], na.rm=TRUE),
-            'tasa.seguridad.social'                = sum(WEIGHT[PRECASEG=="Sin aportes" & CATOCUP=="Asalariados"], na.rm=TRUE)/
-              sum(WEIGHT[(PRECASEG=="Sin aportes" | PRECASEG=="Con aportes") & CATOCUP=="Asalariados"], na.rm=TRUE),
-            'registrados'                          = sum(WEIGHT[PRECAREG=="Registrado" & CATOCUP=="Asalariados"], na.rm=TRUE),
-            'no.registrados'                       = sum(WEIGHT[PRECAREG=="No registrado" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'ocupados'                             = sum(WEIGHT, na.rm=TRUE),
+            'asalariados'                          = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE),
+            'tcp'                                  = sum(WEIGHT[CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'tasa.asalarizacion'                   = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE)/sum(WEIGHT[CATOCUP=="Asalariados" | CATOCUP=="Cuenta propia"], na.rm=TRUE),
+
+            'seguridad.social.si.asal'             = sum(WEIGHT[PRECASEG=="Con aportes" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'seguridad.social.no.asal'             = sum(WEIGHT[PRECASEG=="Sin aportes" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'registrados.asal'                     = sum(WEIGHT[PRECAREG=="Registrado" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'no.registrados.asal'                  = sum(WEIGHT[PRECAREG=="No registrado" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'empleo.temporal.asal'                 = sum(WEIGHT[PRECATEMP=="Temporal" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'empleo.no.temporal.asal'              = sum(WEIGHT[PRECATEMP=="No temporal" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'part.involun.asal'                    = sum(WEIGHT[PRECAPT=="Part-time involuntario" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'part.volunt.asal'                     = sum(WEIGHT[PRECAPT=="Part-time voluntario" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'full.time.asal'                       = sum(WEIGHT[PRECAPT=="Tiempo completo" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            
+            'seguridad.social.si.tcp'              = sum(WEIGHT[PRECASEG=="Con aportes" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'seguridad.social.no.tcp'              = sum(WEIGHT[PRECASEG=="Sin aportes" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'registrados.tcp'                      = sum(WEIGHT[PRECAREG=="Registrado" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'no.registrados.tcp'                   = sum(WEIGHT[PRECAREG=="No registrado" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'empleo.temporal.tcp'                  = sum(WEIGHT[PRECATEMP=="Temporal" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'empleo.no.temporal.tcp'               = sum(WEIGHT[PRECATEMP=="No temporal" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'part.involun.tcp'                     = sum(WEIGHT[PRECAPT=="Part-time involuntario" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'part.volunt.tcp'                      = sum(WEIGHT[PRECAPT=="Part-time voluntario" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'full.time.tcp'                        = sum(WEIGHT[PRECAPT=="Tiempo completo" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            
             'tasa.1.asalariados'                   = sum(WEIGHT[PRECACOUNT==1 | PRECACOUNT==2 | PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
             'tasa.2.asalariados'                   = sum(WEIGHT[PRECACOUNT==2 | PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
             'tasa.3.asalariados'                   = sum(WEIGHT[PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
-            'no.asalariados'                       = sum(WEIGHT[CATOCUP=="No Asalariados"], na.rm=TRUE),              
-            'tasa.parttime.noasal'                 = sum(WEIGHT[PRECAPT=="Part-time involuntario"  & CATOCUP=="No Asalariados"], na.rm=TRUE)/
-              sum(WEIGHT[(PRECAPT=="Part-time involuntario" | PRECAPT=="Part-time voluntario") & CATOCUP=="No Asalariados"], na.rm=TRUE),
-            'tasa.salud.noasal'                    = sum(WEIGHT[PRECASALUD=="Sin cobertura" & CATOCUP=="No Asalariados"], na.rm=TRUE)/
-              sum(WEIGHT[(PRECASALUD=="Sin cobertura" | PRECASALUD=="Con cobertura") & CATOCUP=="No Asalariados"], na.rm=TRUE),
-            'tasa.seguridad.social.tcp'            = sum(WEIGHT[PRECASEG=="Sin aportes" & CATOCUP=="No Asalariados"], na.rm=TRUE)/
-              sum(WEIGHT[(PRECASEG=="Sin aportes" | PRECASEG=="Con aportes") & CATOCUP=="No Asalariados"], na.rm=TRUE),
-            'promedio.ing.oc.prin'                 = weighted.mean(ING[CATOCUP=="Asalariados" | CATOCUP=="No Asalariados"], WEIGHT[CATOCUP=="Asalariados" | CATOCUP=="No Asalariados"], na.rm=TRUE),
+            'promedio.ing.oc.prin'                 = weighted.mean(ING[CATOCUP=="Asalariados" | CATOCUP=="Cuenta propia"], WEIGHT[CATOCUP=="Asalariados" | CATOCUP=="Cuenta propia"], na.rm=TRUE),
             'promedio.ing.oc.prin.asal'            = weighted.mean(ING[CATOCUP=="Asalariados"], WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE),
-            'promedio.ing.oc.prin.noasal'          = weighted.mean(ING[CATOCUP=="No Asalariados"], WEIGHT[CATOCUP=="No Asalariados"], na.rm=TRUE))  %>%
+            'promedio.ing.oc.prin.tcp'             = weighted.mean(ING[CATOCUP=="Cuenta propia"], WEIGHT[CATOCUP=="Cuenta propia"], na.rm=TRUE))  %>%
   ungroup()                                                                    %>%
+  mutate(   'tasa.partime.asal'                    = part.involun.asal/(part.involun.asal + part.volunt.asal + full.time.asal), 
+            'tasa.seguridad.social.asal'           = seguridad.social.no.asal/(seguridad.social.si.asal+seguridad.social.no.asal),
+            'tasa.no.registro.asal'                = no.registrados.asal/(no.registrados.asal+registrados.asal),
+            'tasa.temp.asal'                       = part.involun.asal/(part.involun.asal+part.volunt.asal+part.volunt.asal),
+         
+            'tasa.partime.tcp'                     = part.involun.tcp/(part.involun.tcp + part.volunt.tcp + full.time.tcp), 
+            'tasa.seguridad.social.tcp'            = seguridad.social.no.tcp/(seguridad.social.si.tcp+seguridad.social.no.tcp),
+            'tasa.no.registro.tcp'                 = no.registrados.tcp/(no.registrados.tcp+registrados.tcp),
+            'tasa.temp.tcp'                        = part.involun.tcp/(part.involun.tcp+part.volunt.tcp+part.volunt.tcp)) %>%          
   group_by(PAIS, PERIODO)                                                      %>%                         
   mutate('particip.ocup'           = ocupados/sum(ocupados),
          'particip.asal'           = asalariados/sum(asalariados),
-         'particip.noasal'         = no.asalariados/sum(no.asalariados))       %>%  
+         'particip.tcp'         = tcp/sum(tcp))                                %>%  
   ungroup()                                                                    %>%
   rename(Pais=PAIS, 
     grupos.tamanio=TAMA, 
@@ -863,6 +898,8 @@ Resultados   <-  Resultados  %>%
 
 save(Resultados, file = "C:/Users/facun/Documents/GitHub/precariedad.mundial/Resultados/ResultadosFacu.RDATA")
 
+write_xlsx(Resultados, file = "C:/Users/facun/Documents/GitHub/precariedad.mundial/Resultados/ResultadosFacu.xlsx")
+
 
 
 #### Resultados sin desagregar por perfiles ####
@@ -872,36 +909,49 @@ Resultados2 <- Base                                          %>%
   filter(COND=="Ocupado" & CALIF!="Ns/Nc" & TAMA!="Ns/Nc")   %>%
   group_by(PAIS, PERIODO)                                %>%
   summarise('periodo'                              = mean(ANO),
-            'ocupados'                       = sum(WEIGHT, na.rm=TRUE),
-            'tasa.asalarizacion'                   = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE)/sum(WEIGHT[CATOCUP=="Asalariados" | CATOCUP=="No Asalariados"], na.rm=TRUE),
-            'asalariados'                           = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE),
-            'tasa.partime.asal'                    = sum(WEIGHT[PRECAPT=="Part-time involuntario" & CATOCUP=="Asalariados"], na.rm=TRUE)/
-              sum(WEIGHT[(PRECAPT=="Part-time involuntario" | PRECAPT=="Part-time voluntario" | PRECAPT=="Tiempo completo") & CATOCUP=="Asalariados"], na.rm=TRUE),         
-            'tasa.temp.asal'                       = sum(WEIGHT[PRECATEMP=="Temporal" & CATOCUP=="Asalariados"], na.rm=TRUE)/
-              sum(WEIGHT[(PRECATEMP=="Temporal" | PRECATEMP=="No temporal") & CATOCUP=="Asalariados"], na.rm=TRUE), 
-            'tasa.no.registro'                     = sum(WEIGHT[PRECAREG=="No registrado" & CATOCUP=="Asalariados"], na.rm=TRUE)/
-              sum(WEIGHT[(PRECAREG=="Registrado" | PRECAREG=="No registrado") & CATOCUP=="Asalariados"], na.rm=TRUE),
-            'tasa.seguridad.social'                = sum(WEIGHT[PRECASEG=="Sin aportes" & CATOCUP=="Asalariados"], na.rm=TRUE)/
-              sum(WEIGHT[(PRECASEG=="Sin aportes" | PRECASEG=="Con aportes") & CATOCUP=="Asalariados"], na.rm=TRUE),
-            'registrados'                          = sum(WEIGHT[PRECAREG=="Registrado" & CATOCUP=="Asalariados"], na.rm=TRUE),
-            'no.registrados'                       = sum(WEIGHT[PRECAREG=="No registrado" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'ocupados'                             = sum(WEIGHT, na.rm=TRUE),
+            'asalariados'                          = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE),
+            'tcp'                                  = sum(WEIGHT[CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'tasa.asalarizacion'                   = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE)/sum(WEIGHT[CATOCUP=="Asalariados" | CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            
+            'seguridad.social.si.asal'             = sum(WEIGHT[PRECASEG=="Con aportes" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'seguridad.social.no.asal'             = sum(WEIGHT[PRECASEG=="Sin aportes" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'registrados.asal'                     = sum(WEIGHT[PRECAREG=="Registrado" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'no.registrados.asal'                  = sum(WEIGHT[PRECAREG=="No registrado" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'empleo.temporal.asal'                 = sum(WEIGHT[PRECATEMP=="Temporal" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'empleo.no.temporal.asal'              = sum(WEIGHT[PRECATEMP=="No temporal" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'part.involun.asal'                    = sum(WEIGHT[PRECAPT=="Part-time involuntario" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'part.volunt.asal'                     = sum(WEIGHT[PRECAPT=="Part-time voluntario" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            'full.time.asal'                       = sum(WEIGHT[PRECAPT=="Tiempo completo" & CATOCUP=="Asalariados"], na.rm=TRUE),
+            
+            'seguridad.social.si.tcp'              = sum(WEIGHT[PRECASEG=="Con aportes" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'seguridad.social.no.tcp'              = sum(WEIGHT[PRECASEG=="Sin aportes" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'registrados.tcp'                      = sum(WEIGHT[PRECAREG=="Registrado" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'no.registrados.tcp'                   = sum(WEIGHT[PRECAREG=="No registrado" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'empleo.temporal.tcp'                  = sum(WEIGHT[PRECATEMP=="Temporal" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'empleo.no.temporal.tcp'               = sum(WEIGHT[PRECATEMP=="No temporal" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'part.involun.tcp'                     = sum(WEIGHT[PRECAPT=="Part-time involuntario" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'part.volunt.tcp'                      = sum(WEIGHT[PRECAPT=="Part-time voluntario" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            'full.time.tcp'                        = sum(WEIGHT[PRECAPT=="Tiempo completo" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
+            
             'tasa.1.asalariados'                   = sum(WEIGHT[PRECACOUNT==1 | PRECACOUNT==2 | PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
             'tasa.2.asalariados'                   = sum(WEIGHT[PRECACOUNT==2 | PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
             'tasa.3.asalariados'                   = sum(WEIGHT[PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
-            'no.asalariados'                       = sum(WEIGHT[CATOCUP=="No Asalariados"], na.rm=TRUE),              
-            'tasa.parttime.noasal'                 = sum(WEIGHT[PRECAPT=="Part-time involuntario"  & CATOCUP=="No Asalariados"], na.rm=TRUE)/
-              sum(WEIGHT[(PRECAPT=="Part-time involuntario" | PRECAPT=="Part-time voluntario") & CATOCUP=="No Asalariados"], na.rm=TRUE),
-            'tasa.salud.noasal'                    = sum(WEIGHT[PRECASALUD=="Sin cobertura" & CATOCUP=="No Asalariados"], na.rm=TRUE)/
-              sum(WEIGHT[(PRECASALUD=="Sin cobertura" | PRECASALUD=="Con cobertura") & CATOCUP=="No Asalariados"], na.rm=TRUE),
-            'tasa.seguridad.social.tcp'            = sum(WEIGHT[PRECASEG=="Sin aportes" & CATOCUP=="No Asalariados"], na.rm=TRUE)/
-              sum(WEIGHT[(PRECASEG=="Sin aportes" | PRECASEG=="Con aportes") & CATOCUP=="No Asalariados"], na.rm=TRUE),
-            'promedio.ing.oc.prin'                 = weighted.mean(ING[CATOCUP=="Asalariados" | CATOCUP=="No Asalariados"], WEIGHT[CATOCUP=="Asalariados" | CATOCUP=="No Asalariados"], na.rm=TRUE),
+            'promedio.ing.oc.prin'                 = weighted.mean(ING[CATOCUP=="Asalariados" | CATOCUP=="Cuenta propia"], WEIGHT[CATOCUP=="Asalariados" | CATOCUP=="Cuenta propia"], na.rm=TRUE),
             'promedio.ing.oc.prin.asal'            = weighted.mean(ING[CATOCUP=="Asalariados"], WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE),
-            'promedio.ing.oc.prin.noasal'          = weighted.mean(ING[CATOCUP=="No Asalariados"], WEIGHT[CATOCUP=="No Asalariados"], na.rm=TRUE))  %>%
+            'promedio.ing.oc.prin.tcp'             = weighted.mean(ING[CATOCUP=="Cuenta propia"], WEIGHT[CATOCUP=="Cuenta propia"], na.rm=TRUE))  %>%
   ungroup()                                                                    %>%
+  mutate(   'tasa.partime.asal'                    = part.involun.asal/(part.involun.asal + part.volunt.asal + full.time.asal), 
+            'tasa.seguridad.social.asal'           = seguridad.social.no.asal/(seguridad.social.si.asal+seguridad.social.no.asal),
+            'tasa.no.registro.asal'                = no.registrados.asal/(no.registrados.asal+registrados.asal),
+            'tasa.temp.asal'                       = part.involun.asal/(part.involun.asal+part.volunt.asal+part.volunt.asal),
+            
+            'tasa.partime.tcp'                     = part.involun.tcp/(part.involun.tcp + part.volunt.tcp + full.time.tcp), 
+            'tasa.seguridad.social.tcp'            = seguridad.social.no.tcp/(seguridad.social.si.tcp+seguridad.social.no.tcp),
+            'tasa.no.registro.tcp'                 = no.registrados.tcp/(no.registrados.tcp+registrados.tcp),
+            'tasa.temp.tcp'                        = part.involun.tcp/(part.involun.tcp+part.volunt.tcp+part.volunt.tcp)) %>% 
   rename(Pais=PAIS)
 
-#Resultados <-  Resultados[,c(1:5, 16, 17, 6:15, 18)]
 Resultados2[is.na(Resultados2)] <- 0
 
 Resultados2 <- Resultados2 %>%                        
@@ -911,7 +961,7 @@ Resultados2 <- Resultados2 %>%
 
 save(Resultados2, file = "C:/Users/facun/Documents/GitHub/precariedad.mundial/Resultados/Resultados_agregados_Facu.RDATA")
 
-
+write.xlsx(Resultados2, file= "C:/Users/facun/Documents/GitHub/precariedad.mundial/Resultados/Resultados_agregados_Facu.xlsx")
 
 
 #### Cuento cantidad de casos sin ponderar en cada perfil ####
@@ -946,6 +996,10 @@ ggplot(Casos, aes(x=PAIS, y=casos)) +
   facet_wrap(~tamanio.calif) +
   labs(title = "Cantidad de casos sin ponderar")
   
+
+
+
+
 
 ####Graficos ####
 
