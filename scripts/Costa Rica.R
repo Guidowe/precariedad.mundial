@@ -22,7 +22,7 @@ cr.categ <- costarica %>%
   filter(ZONA == 1) %>% #Urbano
   filter(CondAct %in% 1) %>% #Ocupados
   filter(SecInsPri %in% 3) %>% # Spriv
-  filter(PosiEmpPri != 11) %>% # No serv domestico
+  filter(PosiEmpPri %in% c(12,22)) %>% # Asalariados y TCP sin  serv domestico
   #    filter(PosiEmpPri == 12) %>% # Asalariad
   mutate(
     seguridad.social =  case_when(E10A == 1 ~ "Si",
@@ -44,12 +44,10 @@ cr.categ <- costarica %>%
         C10 %in% 1:9 ~ "Pequeño", # 1 a 9
         C10 %in% 10:11 ~ "Mediano", # 10 a 30
         C10 %in% 12 ~ "Mediano", #  30 a 100
-        C10 %in% 13 ~ "Grande")) #  + de  100
-
-cr.tasa.asalariz <- cr.categ %>% 
-  summarise(total.ocupados = sum(FACTOR,na.rm = T),
-            total.asal = sum(FACTOR[PosiEmpPri == 12]),
-            tasa.asalarizacion = total.asal/total.ocupados) 
+        C10 %in% 13 ~ "Grande"), #  + de  100
+    grupos.tamanio =
+      case_when( PosiEmpPri == 22 ~ "Pequeño",
+                 TRUE ~ grupos.tamanio))
 
 cr.ocupados.distrib  <- cr.categ %>% 
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
@@ -57,12 +55,12 @@ cr.ocupados.distrib  <- cr.categ %>%
   summarise(
     ocupados = sum(FACTOR,na.rm = T),
     asalariados = sum(FACTOR[PosiEmpPri == 12],na.rm = T),
-    no.asalariados = sum(FACTOR[PosiEmpPri != 12],na.rm = T),
+    tcp = sum(FACTOR[PosiEmpPri != 12],na.rm = T),
     tasa.asalarizacion = asalariados/ocupados,
     promedio.ing.oc.prin=weighted.mean(
       x = ipnt,
       w = FACTOR,na.rm = T),
-    promedio.ing.oc.prin.noasal=weighted.mean(
+    promedio.ing.oc.prin.tcp=weighted.mean(
       x = ipnt[PosiEmpPri!= 12],
       w = FACTOR[PosiEmpPri!= 12],na.rm = T),
     promedio.ing.oc.prin.asal=weighted.mean(
@@ -72,7 +70,7 @@ cr.ocupados.distrib  <- cr.categ %>%
   ungroup() %>% 
   mutate(particip.ocup = ocupados/sum(ocupados),
          particip.asal = asalariados/sum(asalariados),
-         particip.no.asal= no.asalariados/sum(no.asalariados))
+         particip.tcp= tcp/sum(tcp))
 
 
 cr.ocupados.distrib.agregado  <- cr.categ %>% 
@@ -80,12 +78,12 @@ cr.ocupados.distrib.agregado  <- cr.categ %>%
   summarise(
     ocupados = sum(FACTOR,na.rm = T),
     asalariados = sum(FACTOR[PosiEmpPri == 12],na.rm = T),
-    no.asalariados = sum(FACTOR[PosiEmpPri != 12],na.rm = T),
+    tcp = sum(FACTOR[PosiEmpPri != 12],na.rm = T),
     tasa.asalarizacion = asalariados/ocupados,
     promedio.ing.oc.prin=weighted.mean(
       x = ipnt,
       w = FACTOR,na.rm = T),
-    promedio.ing.oc.prin.noasal=weighted.mean(
+    promedio.ing.oc.prin.tcp=weighted.mean(
       x = ipnt[PosiEmpPri!= 12],
       w = FACTOR[PosiEmpPri!= 12],na.rm = T),
     promedio.ing.oc.prin.asal=weighted.mean(
@@ -95,7 +93,7 @@ cr.ocupados.distrib.agregado  <- cr.categ %>%
   ungroup() %>% 
   mutate(particip.ocup = ocupados/sum(ocupados),
          particip.asal = asalariados/sum(asalariados),
-         particip.no.asal= no.asalariados/sum(no.asalariados))
+         particip.tcp= tcp/sum(tcp))
 
 
 cr.asalariados.tasas <- cr.categ %>% 
@@ -112,15 +110,44 @@ cr.asalariados.tasas <- cr.categ %>%
     part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
     part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
     full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
-    tasa.partime.asal = part.involun/(part.involun+
+    tasa.partime = part.involun/(part.involun+
                                         part.volunt+
                                         full.time),
     tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
                                                    seguridad.social.no),
     tasa.no.registro = no.registrados/(registrados+
                                          no.registrados),
-    tasa.temp.asal = empleo.temporal/(empleo.temporal+
-                                        empleo.no.temporal))
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".asal"), .cols = 4:ncol(.))
+
+
+cr.tcp.tasas <- cr.categ %>% 
+  filter(PosiEmpPri == 22) %>% # TCP
+  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(grupos.calif,grupos.tamanio,periodo) %>% 
+  summarise(
+    seguridad.social.si = sum(FACTOR[seguridad.social=="Si"],na.rm = T),
+    seguridad.social.no = sum(FACTOR[seguridad.social=="No"],na.rm = T),
+    registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
+    no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
+    empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
+    empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime = part.involun/(part.involun+
+                                   part.volunt+
+                                   full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                   empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".tcp"), .cols = 4:ncol(.))
 
 cr.asalariados.tasas.agregado <- cr.categ %>% 
   filter(PosiEmpPri == 12) %>% # Asalariad
@@ -136,18 +163,49 @@ cr.asalariados.tasas.agregado <- cr.categ %>%
     part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
     part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
     full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
-    tasa.partime.asal = part.involun/(part.involun+
+    tasa.partime = part.involun/(part.involun+
                                         part.volunt+
                                         full.time),
     tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
                                                    seguridad.social.no),
     tasa.no.registro = no.registrados/(registrados+
                                          no.registrados),
-    tasa.temp.asal = empleo.temporal/(empleo.temporal+
-                                        empleo.no.temporal))
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".asal"), .cols = 2:ncol(.))
+
+
+cr.tcp.tasas.agregado <- cr.categ %>% 
+  filter(PosiEmpPri == 22) %>% # TCP
+  #  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(periodo) %>% 
+  summarise(
+    seguridad.social.si = sum(FACTOR[seguridad.social=="Si"],na.rm = T),
+    seguridad.social.no = sum(FACTOR[seguridad.social=="No"],na.rm = T),
+    registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
+    no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
+    empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
+    empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime = part.involun/(part.involun+
+                                   part.volunt+
+                                   full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                   empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".tcp"), .cols = 2:ncol(.))
+
 
 cr.resultado <- cr.ocupados.distrib %>%
   left_join(cr.asalariados.tasas)%>% 
+  left_join(cr.tcp.tasas)%>% 
   mutate(Pais = "Costa Rica",
          tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
          tamanio.calif = factor(tamanio.calif,
@@ -165,6 +223,7 @@ cr.resultado <- cr.ocupados.distrib %>%
 
 cr.resultado.agregado <- cr.ocupados.distrib.agregado %>%
   left_join(cr.asalariados.tasas.agregado)%>% 
+  left_join(cr.tcp.tasas.agregado)%>% 
   mutate(Pais = "Costa Rica")
 
 saveRDS(cr.resultado,file = "Resultados/Costa Rica.RDS")  

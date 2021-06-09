@@ -1,3 +1,4 @@
+rm(list = ls())
 library(tidyverse)
 ####Data Perfiles####
 load("Resultados/ResultadosFacu.RDATA")
@@ -35,7 +36,7 @@ perfiles <-
             estados.unidos %>% filter(periodo==2018),
             guatemala,
             mexico,
-            Resultados  %>% rename(particip.no.asal = particip.noasal),
+            Resultados,
             argentina %>% filter(periodo==2019)) %>% 
   select(Pais,tamanio.calif,tamanio.calif2,everything()) %>% 
   group_by(Pais,periodo) %>% 

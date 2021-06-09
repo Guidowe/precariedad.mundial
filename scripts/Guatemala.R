@@ -26,7 +26,7 @@ guatemala.cat <- guatemala %>%
 #  mutate(FACTOR = Factor_expansion) %>% 
   filter(AREA == 1) %>%  #area urbana
   filter(OCUPADOS == 1) %>%  #Ocupados
-  filter(!(P04C06 %in% c(1,4))) %>% # Spriv s/ serv domestico
+  filter(P04C06 %in% c(2,5)) %>% # Spriv s/ serv domestico, Asal y TCP (no agrícola)
   # filter(P04C06 == 2) %>% # Asalariado
   mutate(
     horas.semana = P04C28A+P04C28B+P04C28C+P04C28D+P04C28E+P04C28F+P04C28G,
@@ -49,7 +49,9 @@ guatemala.cat <- guatemala %>%
       case_when(
         P04C05 %in% 1:9 ~ "Pequeño", # 1 a 9
         P04C05 %in% 10:50 ~ "Mediano", # 10 a 50
-        P04C05 >51  ~ "Grande")
+        P04C05 >51  ~ "Grande"),
+    grupos.tamanio = case_when(P04C06 == 5 ~ "Pequeño",
+                               TRUE ~ grupos.tamanio)
   ) 
 
 #summary(guatemala.cat$horas.semana)
@@ -60,13 +62,13 @@ guate.ocupados.distrib <-  guatemala.cat  %>%
   summarise(
     ocupados = sum(FACTOR,na.rm = T),
     asalariados = sum(FACTOR[P04C06 == 2 ],na.rm = T),
-    no.asalariados = sum(FACTOR[P04C06 != 2],na.rm = T),
+    tcp = sum(FACTOR[P04C06 != 2],na.rm = T),
     tasa.asalarizacion = asalariados/ocupados,
     promedio.ing.oc.prin=weighted.mean(
       x = P04C10,
       w = FACTOR,na.rm = T),
-    promedio.ing.oc.prin.noasal=weighted.mean(
-      x = P04C10[P04C06 != 2],
+    promedio.ing.oc.prin.tcp=weighted.mean(
+      x = P04C22[P04C06 != 2],
       w = FACTOR[P04C06 != 2],na.rm = T),
     promedio.ing.oc.prin.asal=weighted.mean(
       x = P04C10[P04C06 == 2 ],
@@ -75,7 +77,7 @@ guate.ocupados.distrib <-  guatemala.cat  %>%
   group_by(periodo) %>% 
   mutate(particip.ocup = ocupados/sum(ocupados),
          particip.asal = asalariados/sum(asalariados),
-         particip.no.asal= no.asalariados/sum(no.asalariados)) %>% 
+         particip.tcp= tcp/sum(tcp)) %>% 
   ungroup()
 
 
@@ -84,13 +86,13 @@ guate.ocupados.distrib.agregado <-  guatemala.cat  %>%
   summarise(
     ocupados = sum(FACTOR,na.rm = T),
     asalariados = sum(FACTOR[P04C06 == 2 ],na.rm = T),
-    no.asalariados = sum(FACTOR[P04C06 != 2],na.rm = T),
+    tcp = sum(FACTOR[P04C06 != 2],na.rm = T),
     tasa.asalarizacion = asalariados/ocupados,
-    promedio.ing.oc.prin=weighted.mean(
+    promedio.ing.oc.prin=weighted.mean( ##Erronea, o 1 u otra variable###
       x = P04C10,
       w = FACTOR,na.rm = T),
-    promedio.ing.oc.prin.noasal=weighted.mean(
-      x = P04C10[P04C06 != 2],
+    promedio.ing.oc.prin.tcp=weighted.mean(
+      x = P04C22[P04C06 != 2],
       w = FACTOR[P04C06 != 2],na.rm = T),
     promedio.ing.oc.prin.asal=weighted.mean(
       x = P04C10[P04C06 == 2 ],
@@ -99,7 +101,7 @@ guate.ocupados.distrib.agregado <-  guatemala.cat  %>%
   group_by(periodo) %>% 
   mutate(particip.ocup = ocupados/sum(ocupados),
          particip.asal = asalariados/sum(asalariados),
-         particip.no.asal= no.asalariados/sum(no.asalariados)) %>% 
+         particip.tcp = tcp/sum(tcp)) %>% 
   ungroup()
 
 
@@ -117,15 +119,44 @@ guat.asalariados.tasas <- guatemala.cat %>%
     part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
     part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
     full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
-    tasa.partime.asal = part.involun/(part.involun+
+    tasa.partime = part.involun/(part.involun+
                                         part.volunt+
                                         full.time),
     tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
                                                    seguridad.social.no),
     tasa.no.registro = no.registrados/(registrados+
                                          no.registrados),
-    tasa.temp.asal = empleo.temporal/(empleo.temporal+
-                                        empleo.no.temporal))
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal)) %>% 
+    ungroup() %>% 
+    rename_with(~str_c(.,".asal"), .cols = 4:ncol(.))
+
+guat.tcp.tasas <- guatemala.cat %>% 
+  filter(P04C06 != 2) %>% # TCP
+  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(grupos.calif,grupos.tamanio,periodo) %>% 
+  summarise(
+    seguridad.social.si = sum(FACTOR[seguridad.social=="Si"],na.rm = T),
+    seguridad.social.no = sum(FACTOR[seguridad.social=="No"],na.rm = T),
+    registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
+    no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
+    empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
+    empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime = part.involun/(part.involun+
+                                        part.volunt+
+                                        full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".tcp"), .cols = 4:ncol(.))
+
 
 guat.asalariados.tasas.agregado <- guatemala.cat %>% 
   filter(P04C06 == 2) %>% # Asalariado
@@ -140,21 +171,51 @@ guat.asalariados.tasas.agregado <- guatemala.cat %>%
     part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
     part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
     full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
-    tasa.partime.asal = part.involun/(part.involun+
+    tasa.partime = part.involun/(part.involun+
                                         part.volunt+
                                         full.time),
     tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
                                                    seguridad.social.no),
     tasa.no.registro = no.registrados/(registrados+
                                          no.registrados),
-    tasa.temp.asal = empleo.temporal/(empleo.temporal+
-                                        empleo.no.temporal))
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal)) %>% 
+  rename_with(~str_c(.,".asal"), .cols = 2:ncol(.))
+
+
+guat.tcp.tasas.agregado <- guatemala.cat %>% 
+  filter(P04C06 != 2) %>% # TCP
+  group_by(periodo) %>% 
+  summarise(
+    seguridad.social.si = sum(FACTOR[seguridad.social=="Si"],na.rm = T),
+    seguridad.social.no = sum(FACTOR[seguridad.social=="No"],na.rm = T),
+    registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
+    no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
+    empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
+    empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime = part.involun/(part.involun+
+                                   part.volunt+
+                                   full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                   empleo.no.temporal)) %>% 
+  rename_with(~str_c(.,".tcp"), .cols = 2:ncol(.))
+
 
 guate.resultado <- guate.ocupados.distrib %>%
   left_join(guat.asalariados.tasas) %>% 
+  left_join(guat.tcp.tasas) %>% 
+  ungroup() %>% 
   group_by(grupos.calif,grupos.tamanio) %>% 
   summarise(periodo = 2019, 
-            across(.cols = 4:ncol(.)-2,.fns = mean))  %>% 
+            across(.cols = 4:ncol(.)-2,
+                   .fns = mean,na.rm = TRUE))  %>% 
   ungroup() %>% 
   mutate(Pais = "Guatemala",
          tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
@@ -173,6 +234,7 @@ guate.resultado <- guate.ocupados.distrib %>%
 
 guate.resultado.agregado <- guate.ocupados.distrib.agregado %>%
   left_join(guat.asalariados.tasas.agregado) %>% 
+  left_join(guat.tcp.tasas.agregado) %>% 
   summarise(periodo = 2019, 
             across(.cols = 2:ncol(.),.fns = mean))  %>% 
   ungroup() %>% 

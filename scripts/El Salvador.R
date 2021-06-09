@@ -13,7 +13,8 @@ elsalvador<-readRDS(file = "Bases/elsalvador_2016.RDS")
 # eph::calculate_tabulates(base = elsalvador,
 #                          x = "r421",weights = "fac00",add.totals = "row")  
 # table(elsalvador$r420)
-# table(elsalvador$r418)
+ table(elsalvador$r418)
+
 # table(elsalvador$actpr2012)
 # table(elsalvador$area)
 #table(elsalvador$r420,elsalvador$r418) #La pregunta de sector solo se hace a asalariados
@@ -21,7 +22,8 @@ elsalvador<-readRDS(file = "Bases/elsalvador_2016.RDS")
 el.salvador.cat<- elsalvador %>% 
   filter(area == 1) %>%  #Urbano
   filter(actpr2012 == 10) %>%  #Ocupados
-  filter(!((r418 %in%  6:7) & (r420 != 1)),r418 != 9) %>% # Spriv s/ serv domestico
+  filter(r418  %in%  c(2,3,6,7,8)) %>% #  TCP y asal s/ serv domestico
+  filter(!((r418 %in%  6:7) & (r420 != 1))) %>% #  Saco S.Pub para asal
   # filter(r418 == 6:7) %>% # Asalariado
   mutate(
     periodo = edicion,
@@ -46,9 +48,12 @@ el.salvador.cat<- elsalvador %>%
       case_when(
         r421 %in% 1:9 ~ "Pequeño", # 1 a 9
         r421 %in% 10:50 ~ "Mediano", # 10 a 50
-        r421 %in% 51:997  ~ "Grande"
+        r421 %in% 51:997  ~ "Grande"),
+    grupos.tamanio = 
+      case_when(r418 %in% 2:3 ~ "Pequeño",
+                TRUE ~ grupos.tamanio)
       )
-  ) 
+   
 
 
 # unique(el.salvador.cat$part.time.inv)
@@ -60,49 +65,49 @@ elsa.ocupados.distrib <-  el.salvador.cat  %>%
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
     ocupados = sum(FACTOR,na.rm = T),
-    asalariados = sum(FACTOR[r418 %in%  6:7],na.rm = T),
-    no.asalariados = sum(FACTOR[!(r418 %in%  6:7)],na.rm = T),
+    asalariados = sum(FACTOR[r418 %in%  6:8],na.rm = T),
+    tcp = sum(FACTOR[!(r418 %in%  6:8)],na.rm = T),
     tasa.asalarizacion = asalariados/ocupados,
     promedio.ing.oc.prin=weighted.mean(
       x = money,
       w = FACTOR,na.rm = T),
-    promedio.ing.oc.prin.noasal=weighted.mean(
-      x = money[!(r418 %in%  6:7)],
-      w = FACTOR[!(r418 %in%  6:7)],na.rm = T),
+    promedio.ing.oc.prin.tcp=weighted.mean(
+      x = money[!(r418 %in%  6:8)],
+      w = FACTOR[!(r418 %in%  6:8)],na.rm = T),
     promedio.ing.oc.prin.asal=weighted.mean(
-      x = money[r418 %in%  6:7],
-      w = FACTOR[r418 %in%  6:7],na.rm = T)
+      x = money[r418 %in%  6:8],
+      w = FACTOR[r418 %in%  6:8],na.rm = T)
   ) %>% 
   ungroup() %>% 
   mutate(particip.ocup = ocupados/sum(ocupados),
          particip.asal = asalariados/sum(asalariados),
-         particip.no.asal= no.asalariados/sum(no.asalariados))
+         particip.tcp = tcp/sum(tcp))
 
 elsa.ocupados.distrib.agregado <-  el.salvador.cat  %>% 
   group_by(periodo) %>% 
   summarise(
     ocupados = sum(FACTOR,na.rm = T),
-    asalariados = sum(FACTOR[r418 %in%  6:7],na.rm = T),
-    no.asalariados = sum(FACTOR[!(r418 %in%  6:7)],na.rm = T),
+    asalariados = sum(FACTOR[r418 %in%  6:8],na.rm = T),
+    tcp = sum(FACTOR[!(r418 %in%  6:8)],na.rm = T),
     tasa.asalarizacion = asalariados/ocupados,
     promedio.ing.oc.prin=weighted.mean(
       x = money,
       w = FACTOR,na.rm = T),
-    promedio.ing.oc.prin.noasal=weighted.mean(
-      x = money[!(r418 %in%  6:7)],
-      w = FACTOR[!(r418 %in%  6:7)],na.rm = T),
+    promedio.ing.oc.prin.tcp=weighted.mean(
+      x = money[!(r418 %in%  6:8)],
+      w = FACTOR[!(r418 %in%  6:8)],na.rm = T),
     promedio.ing.oc.prin.asal=weighted.mean(
-      x = money[r418 %in%  6:7],
-      w = FACTOR[r418 %in%  6:7],na.rm = T)
+      x = money[r418 %in%  6:8],
+      w = FACTOR[r418 %in%  6:8],na.rm = T)
   ) %>% 
   ungroup() %>% 
   mutate(particip.ocup = ocupados/sum(ocupados),
          particip.asal = asalariados/sum(asalariados),
-         particip.no.asal= no.asalariados/sum(no.asalariados))
+         particip.tcp= tcp/sum(tcp))
 
 
 elsa.asalariados.tasas <- el.salvador.cat %>% 
-  filter(r418 %in%  6:7) %>% # Asalariado
+  filter(r418 %in%  6:8) %>% # Asalariado
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
@@ -115,17 +120,48 @@ elsa.asalariados.tasas <- el.salvador.cat %>%
     part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
     part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
     full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
-    tasa.partime.asal = part.involun/(part.involun+
+    tasa.partime = part.involun/(part.involun+
                                         part.volunt+
                                         full.time),
     tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
                                                    seguridad.social.no),
     tasa.no.registro = no.registrados/(registrados+
                                          no.registrados),
-    tasa.temp.asal = empleo.temporal/(empleo.temporal+
-                                        empleo.no.temporal))
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".asal"), .cols = 4:ncol(.))
+
+
+elsa.tcp.tasas <- el.salvador.cat %>% 
+  filter(!(r418 %in%  6:8)) %>% # TCP
+  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(grupos.calif,grupos.tamanio,periodo) %>% 
+  summarise(
+    seguridad.social.si = sum(FACTOR[seguridad.social=="Si"],na.rm = T),
+    seguridad.social.no = sum(FACTOR[seguridad.social=="No"],na.rm = T),
+    registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
+    no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
+    empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
+    empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime = part.involun/(part.involun+
+                                   part.volunt+
+                                   full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                   empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".tcp"), .cols = 4:ncol(.))
+
+
 elsa.asalariados.tasas.agregado <- el.salvador.cat %>% 
-  filter(r418 %in%  6:7) %>% # Asalariado
+  filter(r418 %in%  6:8) %>% # Asalariado
   group_by(periodo) %>% 
   summarise(
     seguridad.social.si = sum(FACTOR[seguridad.social=="Si"],na.rm = T),
@@ -137,19 +173,47 @@ elsa.asalariados.tasas.agregado <- el.salvador.cat %>%
     part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
     part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
     full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
-    tasa.partime.asal = part.involun/(part.involun+
+    tasa.partime = part.involun/(part.involun+
                                         part.volunt+
                                         full.time),
     tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
                                                    seguridad.social.no),
     tasa.no.registro = no.registrados/(registrados+
                                          no.registrados),
-    tasa.temp.asal = empleo.temporal/(empleo.temporal+
-                                        empleo.no.temporal))
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".asal"), .cols = 2:ncol(.))
 
+
+elsa.tcp.tasas.agregado <- el.salvador.cat %>% 
+  filter(!(r418 %in%  6:8)) %>% # TCP
+  group_by(periodo) %>% 
+  summarise(
+    seguridad.social.si = sum(FACTOR[seguridad.social=="Si"],na.rm = T),
+    seguridad.social.no = sum(FACTOR[seguridad.social=="No"],na.rm = T),
+    registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
+    no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
+    empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
+    empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime = part.involun/(part.involun+
+                                   part.volunt+
+                                   full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                   empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".tcp"), .cols = 2:ncol(.))
 
 elsa.resultado <- elsa.ocupados.distrib %>%
   left_join(elsa.asalariados.tasas)%>% 
+  left_join(elsa.tcp.tasas)%>% 
   mutate(Pais = "El Salvador",
          tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
          tamanio.calif = factor(tamanio.calif,
@@ -167,6 +231,7 @@ elsa.resultado <- elsa.ocupados.distrib %>%
 
 elsa.resultado.agregado <- elsa.ocupados.distrib.agregado %>%
   left_join(elsa.asalariados.tasas.agregado)%>% 
+  left_join(elsa.tcp.tasas.agregado)%>% 
   mutate(Pais = "El Salvador")
 
 saveRDS(elsa.resultado,file = "Resultados/El Salvador.RDS")  

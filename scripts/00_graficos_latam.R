@@ -1,3 +1,5 @@
+rm(list = ls())
+
 #####Librerias#####
 library(openxlsx)
 library(tidyverse)
@@ -153,7 +155,7 @@ ggsave("Resultados/America/productividad_salarios_latam.jpg",
 #            file = "Resultados/Salarios_Productividad2017_CCNN.xlsx")  
 
 
-####PERFILES####
+####Base unificada general####
 options(scipen = 999)
 America <- perfiles %>%
   bind_rows(agregado) %>% 
@@ -170,10 +172,13 @@ America <- perfiles %>%
                                "Grande - Media",
                                "Grande - Alta",
                                "Total"))) %>% 
-  arrange(Pais,tamanio.calif)
+  arrange(Pais,tamanio.calif) %>% 
+  mutate(tasa.cp = 1- tasa.asalarizacion,
+         ing.tcp.ing.asal = promedio.ing.oc.prin.tcp/promedio.ing.oc.prin.asal)
+         
 
-
-
+#############Perfiles######
+###### Peso en empleo total#####
 America %>% 
   filter(tamanio.calif!= "Total") %>% 
   ggplot(.,
@@ -199,17 +204,107 @@ America %>%
   scale_y_continuous(labels = scales::percent)+
   guides(fill=guide_legend(title="Tamaño - Calificación"))
 
-write.xlsx(America,"Resultados/America/Resultados_America.xlsx")
+write.xlsx(America,"Resultados/America/Cuadros/Resultados_America.xlsx")
 ggsave("Resultados/America/America_calificacion_tamanio.jpg",width = 10,height = 8)
 
+###### TCP-calificacion#####
 
-####Tasas precariedad####
+America %>% 
+  filter(grupos.tamanio== "Pequeño") %>% 
+  ggplot(.,
+         aes(x = Pais, y = particip.tcp,
+             fill = tamanio.calif,group = tamanio.calif,
+             label = scales::percent(particip.tcp,accuracy = 0.01))) +
+  geom_col(position = "stack")+
+  geom_text(position = position_stack(vjust = .5),size=3)+
+  #  labs(title = "Distribución del empleo según grupos")+
+  theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        legend.title = element_text(size = 14),
+        axis.title = element_blank(),
+        text = element_text(size = 15),
+        axis.text.x = element_text(angle = 45),
+        #panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  #scale_fill_manual(values = paleta)+
+  scale_y_continuous(labels = scales::percent)+
+  guides(fill=guide_legend(title="Tamaño - Calificación"))
+
+ggsave("Resultados/America/America_calificacion_tamanio_TCP.jpg",width = 10,height = 8)
+
+###### Asalariz en P1 a P3#####
+
+America %>% 
+  filter(grupos.tamanio== "Pequeño") %>% 
+  ggplot(.,
+         aes(x = Pais, y = tasa.asalarizacion,
+             fill = tamanio.calif,group = tamanio.calif,
+             label = scales::percent(tasa.asalarizacion,accuracy = 0.1))) +
+  geom_col(position = "dodge")+
+  geom_text(position = position_dodge(width = 1),size=3)+
+  #  labs(title = "Distribución del empleo según grupos")+
+  theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        legend.title = element_text(size = 14),
+        axis.title = element_blank(),
+        text = element_text(size = 15),
+        axis.text.x = element_text(angle = 45),
+        #panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  #scale_fill_manual(values = paleta)+
+  scale_y_continuous(labels = scales::percent)+
+  guides(fill=guide_legend(title="Tamaño - Calificación"))
+
+###### TCP/ASAL - P1 a P3#####
+
+America %>%
+  filter(grupos.tamanio== "Pequeño") %>% 
+  filter(tamanio.calif!= "Total") %>% 
+  ungroup() %>% 
+  select(Pais,tamanio.calif,asalariados = tasa.asalarizacion,cuentapropistas = tasa.cp) %>% 
+  pivot_longer(cols = 3:4,names_to = "indicador",values_to = "valor") %>% 
+  ggplot(.,
+         aes(x = Pais,
+             y = valor,
+             fill = indicador,
+             group = indicador,
+             label = scales::percent(valor,accuracy = 0.1))) +
+  geom_col(position = "stack")+
+  geom_text(position = position_stack(vjust = .5),size=3)+
+  theme_tufte()+
+  scale_x_discrete(expand=c(0, 1))+
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.title  = element_blank(),
+        #legend.text  = element_text(size = 8),
+        axis.title = element_blank(),
+        axis.text.x = element_text(angle = 90),
+        axis.ticks.x = element_blank(),
+        text = element_text(size = 16),
+        panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_y_continuous(labels = scales::percent)+
+  facet_wrap(~tamanio.calif)
+
+####Precariedad asalariados#####
+###### Por perfiles####
 America %>%
 filter(tamanio.calif!= "Total") %>% 
 filter(Pais != "Estados Unidos") %>% 
   ggplot(.,
-         aes(x = Pais, y = tasa.seguridad.social,
-             label = round(tasa.seguridad.social,2))) +
+         aes(x = Pais, y = tasa.seguridad.social.asal,
+             label = round(tasa.seguridad.social.asal,2))) +
   geom_col(position = "dodge")+
   #geom_text(position = position_dodge(),size=2.5,angle = 90)+
   labs(title = "Tasa de ausencia de cobertura en la seguridad social")+
@@ -236,12 +331,14 @@ filter(Pais != "Estados Unidos") %>%
 
 ggsave("Resultados/America/tasas seguridad social.jpg",width = 15.59,height = 8)
 
+###### Agregado####
+
 America %>%
   filter(tamanio.calif== "Total") %>% 
   filter(Pais != "Estados Unidos",Pais != "Canada") %>% 
   ggplot(.,
-         aes(x = Pais, y = tasa.seguridad.social,
-             label = round(tasa.seguridad.social,2))) +
+         aes(x = reorder(Pais,tasa.seguridad.social.asal), y = tasa.seguridad.social.asal,
+             label = round(tasa.seguridad.social.asal,2))) +
   geom_col(position = "dodge")+
   #geom_text(position = position_dodge(),size=2.5,angle = 90)+
   labs(title = "Tasa de ausencia de cobertura en la seguridad social")+
@@ -267,10 +364,40 @@ America %>%
   guides(fill=guide_legend(keywidth = 0.8))
 ggsave("Resultados/America/tasas seguridad social agregado.jpg",width = 15.59,height = 8)
 
-###########Primas salariales##################
+#####INGRESOS##################
+###### TCP vs ASAL##################
 America %>%
+ filter(grupos.tamanio== "Pequeño") %>% 
  filter(tamanio.calif!= "Total") %>% 
  ggplot(.,
+         aes(x = tamanio.calif, y = ing.tcp.ing.asal,
+             fill = tamanio.calif,group = tamanio.calif)) +
+  geom_col(position = "dodge")+
+  geom_hline(mapping = aes(yintercept = 1),size = 1)+
+  theme_tufte()+
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal",
+        #legend.title  = element_text(size = 8),
+        #legend.text  = element_text(size = 8),
+        axis.title = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        text = element_text(size = 16),
+        panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  #scale_fill_manual(values = paleta)+
+  facet_wrap(~Pais)
+
+ggsave("Resultados/America/Ingresos TCP ASAL.png",width = 15.59,height = 9)
+
+###### Primas Salariales##################
+
+America %>%
+  filter(tamanio.calif!= "Total") %>% 
+  ggplot(.,
          aes(x = tamanio.calif, y = prima.salario.medio,
              fill = tamanio.calif,group = tamanio.calif)) +
   geom_col(position = "dodge")+
@@ -291,23 +418,76 @@ America %>%
         panel.grid.major.x = element_line(colour = "grey"))+
   scale_fill_manual(values = paleta)+
   facet_wrap(~Pais)
-
 ggsave("Resultados/America/Ingreso Asalariados.png",width = 15.59,height = 9)
 
-########Salarios PPA encuestas###########
+#####Salarios PPA ###########
 America$Pais[America$Pais =="Canada"] <- "Canadá"
 America$Pais[America$Pais =="Mexico"] <- "México"
+
 
  data.graf.PPA <- America %>% 
   mutate(periodo = case_when(Pais != "El Salvador" ~ 2019,
                              TRUE ~ periodo)) %>% 
-  select(Pais,tamanio.calif,periodo,promedio.ing.oc.prin.asal,salario.promedio.pais) %>% 
+  #select(Pais,tamanio.calif,periodo,promedio.ing.oc.prin.asal) %>% 
   left_join(Paises %>% rename(Pais = nombre.pais)) %>%
   left_join(PPA_WB_IPC %>% select(periodo = ANO4,COD.OCDE,PPA.BENCHMARK.2017.EXTRAPOLADO)) %>% 
-  mutate(salario.PPA = promedio.ing.oc.prin.asal/PPA.BENCHMARK.2017.EXTRAPOLADO) 
+  mutate(salario.PPA = promedio.ing.oc.prin.asal/PPA.BENCHMARK.2017.EXTRAPOLADO) %>% 
+  group_by(tamanio.calif) %>% 
+  mutate(salario.PPA.relativo.usa = salario.PPA/salario.PPA[Pais == "Estados Unidos"]) %>% 
+  ungroup()
+###### Agregados###############
+ 
+ ggplot(data.graf.PPA %>% 
+          filter(tamanio.calif == "Total"),
+        aes(x = reorder(Pais,salario.PPA),
+            y = salario.PPA)) +
+   geom_col(position = "dodge")+
+   scale_x_reordered()+
+   # geom_text(position = position_dodge(),size=2.5)+
+   labs(title = "Salario PPA - Encuestas. Año 2019")+
+   theme_tufte()+
+   theme(legend.position = "none",
+         legend.direction = "vertical",
+         axis.title = element_blank(),
+         axis.text.x = element_text(angle = 90),
+         axis.ticks.x = element_blank(),
+         panel.spacing = unit(1,"cm"),
+         panel.grid.major.y = element_line(colour = "grey"),
+         panel.grid.minor.y = element_line(colour = "grey30"),
+         panel.grid.minor.x = element_line(colour = "grey"),
+         panel.grid.major.x = element_line(colour = "grey"),
+         text = element_text(size = 15))+
+   scale_fill_manual(values = paleta)+
+   facet_grid(~tamanio.calif, scales = "free")
+ ggsave("Resultados/America/salarios ppa encuestas agregado.png",width = 15.59,height = 9)
+ 
+###### Usa = 1 en cada perfil#####
+ ggplot(data.graf.PPA %>% 
+          filter(tamanio.calif != "Total") %>% 
+          filter(Pais != "Estados Unidos",Pais != "Canadá"),
+        aes(x = reorder(Pais,salario.PPA.relativo.usa),
+            y = salario.PPA.relativo.usa,
+            fill = tamanio.calif,group = tamanio.calif)) +
+   geom_col(position = "dodge")+
+   # geom_text(position = position_dodge(),size=2.5)+
+   labs(title = "Salario PPA. Año 2019")+
+   theme_tufte()+
+   theme(legend.position = "none",
+         legend.direction = "vertical",
+         axis.title = element_blank(),
+         axis.text.x = element_text(angle = 90),
+         axis.ticks.x = element_blank(),
+         panel.spacing = unit(1,"cm"),
+         panel.grid.major.y = element_line(colour = "grey"),
+         panel.grid.minor.y = element_line(colour = "grey30"),
+         panel.grid.minor.x = element_line(colour = "grey"),
+         panel.grid.major.x = element_line(colour = "grey"))+
+   scale_fill_manual(values = paleta)+
+   facet_wrap(~tamanio.calif, scales = "fixed")
+ ggsave("Resultados/America/salarios ppa encuestas.png",width = 15.59,height = 9)
 
-
-  
+###### Escalera al cielo#####
+ 
  ggplot(data.graf.PPA %>% 
           filter(tamanio.calif != "Total"),
          aes(x = reorder_within(Pais,salario.PPA,tamanio.calif),
@@ -333,29 +513,7 @@ America$Pais[America$Pais =="Mexico"] <- "México"
 ggsave("Resultados/America/salarios ppa encuestas.png",width = 15.59,height = 9)
  
 
-ggplot(data.graf.PPA %>% 
-         filter(tamanio.calif == "Total"),
-       aes(x = reorder(Pais,salario.PPA),
-           y = salario.PPA)) +
-  geom_col(position = "dodge")+
-  scale_x_reordered()+
-  # geom_text(position = position_dodge(),size=2.5)+
-  labs(title = "Salario PPA - Encuestas. Año 2019")+
-  theme_tufte()+
-  theme(legend.position = "none",
-        legend.direction = "vertical",
-        axis.title = element_blank(),
-        axis.text.x = element_text(angle = 90),
-        axis.ticks.x = element_blank(),
-        panel.spacing = unit(1,"cm"),
-        panel.grid.major.y = element_line(colour = "grey"),
-        panel.grid.minor.y = element_line(colour = "grey30"),
-        panel.grid.minor.x = element_line(colour = "grey"),
-        panel.grid.major.x = element_line(colour = "grey"))+
-  scale_fill_manual(values = paleta)+
-  facet_grid(~tamanio.calif, scales = "free")
-ggsave("Resultados/America/salarios ppa encuestas.png",width = 15.59,height = 9)
 
 
-# write.xlsx(data.graf.PPA,"Resultados/America/Cuadros/salarios_encuestas_ppa.xlsx")
+write.xlsx(data.graf.PPA,"Resultados/America/Cuadros/Series completas.xlsx")
             

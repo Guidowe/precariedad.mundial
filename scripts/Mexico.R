@@ -62,7 +62,7 @@ mex.cat <- base_join_sample %>%
   filter((tue1  %in%  c(1,4))   |
            (tue1 == 2 & tue2 == 3)|
            (tue1 == 3 & tue3 == 5)) %>% # Spriv s/ serv domestico
-  # filter(pos_ocu == 1) %>% # Asalariado %>% 
+  filter(pos_ocu %in%  c(1,3))%>% # Asalariado o TCP 
   mutate(
     periodo = per,
     FACTOR  = fac,
@@ -70,7 +70,11 @@ mex.cat <- base_join_sample %>%
       case_when(
         emple7c %in% 1:3 ~ "Pequeño", # 1 a 10
         emple7c %in% 4:5 ~ "Mediano", # 11 a 50
-        emple7c %in% 6:5 ~ "Grande"), # + 51 
+        emple7c %in% 6:5 ~ "Grande"), # + 51
+    grupos.tamanio = 
+      case_when(
+        pos_ocu %in% 3 ~ "Pequeño",
+        TRUE ~  grupos.tamanio),
     seguridad.social =  case_when(p3m4 %in% 4 ~ "Si",
                               TRUE ~ "No"),
     registracion =  case_when(p3j %in% 1 ~ "Si",
@@ -98,12 +102,12 @@ mex.ocupados.distrib <-  mex.cat  %>%
   summarise(
     ocupados = sum(FACTOR,na.rm = T),
     asalariados = sum(FACTOR[pos_ocu == 1],na.rm = T),
-    no.asalariados = sum(FACTOR[pos_ocu != 1],na.rm = T),
+    tcp = sum(FACTOR[pos_ocu != 1],na.rm = T),
     tasa.asalarizacion = asalariados/ocupados,
     promedio.ing.oc.prin=weighted.mean(
       x = p6b2[p6b2 != 999999],
       w = FACTOR[p6b2 != 999999],na.rm = T),
-    promedio.ing.oc.prin.noasal=weighted.mean(
+    promedio.ing.oc.prin.tcp=weighted.mean(
       x = p6b2[pos_ocu!= 1 & p6b2!= 999999],
       w = FACTOR[pos_ocu!= 1 & p6b2!= 999999],na.rm = T),
     promedio.ing.oc.prin.asal=weighted.mean(
@@ -113,7 +117,7 @@ mex.ocupados.distrib <-  mex.cat  %>%
   ungroup() %>% 
   mutate(particip.ocup = ocupados/sum(ocupados),
          particip.asal = asalariados/sum(asalariados),
-         particip.no.asal= no.asalariados/sum(no.asalariados))
+         particip.tcp= tcp/sum(tcp))
 
 mex.ocupados.distrib.agregado <-  mex.cat  %>% 
   mutate(p6b2 = as.numeric(p6b2)) %>% 
@@ -122,12 +126,12 @@ mex.ocupados.distrib.agregado <-  mex.cat  %>%
   summarise(
     ocupados = sum(FACTOR,na.rm = T),
     asalariados = sum(FACTOR[pos_ocu == 1],na.rm = T),
-    no.asalariados = sum(FACTOR[pos_ocu != 1],na.rm = T),
+    tcp = sum(FACTOR[pos_ocu != 1],na.rm = T),
     tasa.asalarizacion = asalariados/ocupados,
     promedio.ing.oc.prin=weighted.mean(
       x = p6b2[p6b2 != 999999],
       w = FACTOR[p6b2 != 999999],na.rm = T),
-    promedio.ing.oc.prin.noasal=weighted.mean(
+    promedio.ing.oc.prin.tcp=weighted.mean(
       x = p6b2[pos_ocu!= 1 & p6b2!= 999999],
       w = FACTOR[pos_ocu!= 1 & p6b2!= 999999],na.rm = T),
     promedio.ing.oc.prin.asal=weighted.mean(
@@ -137,7 +141,7 @@ mex.ocupados.distrib.agregado <-  mex.cat  %>%
   ungroup() %>% 
   mutate(particip.ocup = ocupados/sum(ocupados),
          particip.asal = asalariados/sum(asalariados),
-         particip.no.asal= no.asalariados/sum(no.asalariados))
+         particip.tcp= tcp/sum(tcp))
 
 
 mex.asalariados.tasas <- mex.cat %>% 
@@ -154,15 +158,44 @@ mex.asalariados.tasas <- mex.cat %>%
     part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
     part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
     full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
-    tasa.partime.asal = part.involun/(part.involun+
+    tasa.partime = part.involun/(part.involun+
                                         part.volunt+
                                         full.time),
     tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
                                                    seguridad.social.no),
     tasa.no.registro = no.registrados/(registrados+
                                          no.registrados),
-    tasa.temp.asal = empleo.temporal/(empleo.temporal+
-                                        empleo.no.temporal))
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal)) %>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".asal"), .cols = 4:ncol(.))
+
+mex.tcp.tasas <- mex.cat %>% 
+  filter(pos_ocu == 3) %>% # TCP
+  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(grupos.calif,grupos.tamanio,periodo) %>% 
+  summarise(
+    seguridad.social.si = sum(FACTOR[seguridad.social=="Si"],na.rm = T),
+    seguridad.social.no = sum(FACTOR[seguridad.social=="No"],na.rm = T),
+    registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
+    no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
+    empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
+    empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime = part.involun/(part.involun+
+                                   part.volunt+
+                                   full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                   empleo.no.temporal)) %>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".tcp"), .cols = 4:ncol(.))
+
 
 
 mex.asalariados.tasas.agregado <- mex.cat %>% 
@@ -179,19 +212,47 @@ mex.asalariados.tasas.agregado <- mex.cat %>%
     part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
     part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
     full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
-    tasa.partime.asal = part.involun/(part.involun+
+    tasa.partime = part.involun/(part.involun+
                                         part.volunt+
                                         full.time),
     tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
                                                    seguridad.social.no),
     tasa.no.registro = no.registrados/(registrados+
                                          no.registrados),
-    tasa.temp.asal = empleo.temporal/(empleo.temporal+
-                                        empleo.no.temporal))
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                        empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".asal"), .cols = 2:ncol(.))
 
+mex.tcp.tasas.agregado <- mex.cat %>% 
+  filter(pos_ocu == 3) %>% # TCP
+  #  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(periodo) %>% 
+  summarise(
+    seguridad.social.si = sum(FACTOR[seguridad.social=="Si"],na.rm = T),
+    seguridad.social.no = sum(FACTOR[seguridad.social=="No"],na.rm = T),
+    registrados =sum(FACTOR[registracion=="Si"],na.rm = T),
+    no.registrados =sum(FACTOR[registracion=="No"],na.rm = T),
+    empleo.temporal =sum(FACTOR[tiempo.determinado=="Si"],na.rm = T),
+    empleo.no.temporal =sum(FACTOR[tiempo.determinado=="No"],na.rm = T),
+    part.involun = sum(FACTOR[part.time.inv=="Part Involunt"],na.rm = T),
+    part.volunt = sum(FACTOR[part.time.inv=="Part Volunt"],na.rm = T),
+    full.time = sum(FACTOR[part.time.inv=="Full Time"],na.rm = T),
+    tasa.partime = part.involun/(part.involun+
+                                   part.volunt+
+                                   full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                   empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".tcp"), .cols = 2:ncol(.))
 
 mex.resultado <- mex.ocupados.distrib %>%
   left_join(mex.asalariados.tasas) %>% 
+  left_join(mex.tcp.tasas) %>% 
   mutate(Pais = "Mexico",
          tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
          tamanio.calif = factor(tamanio.calif,
@@ -209,6 +270,7 @@ mex.resultado <- mex.ocupados.distrib %>%
 
 mex.resultado.agregado <- mex.ocupados.distrib.agregado %>% 
   left_join(mex.asalariados.tasas.agregado) %>% 
+  left_join(mex.tcp.tasas.agregado) %>% 
   mutate(Pais = "Mexico",
          tamanio.calif = "Total")
 ################################Exportacion################################
