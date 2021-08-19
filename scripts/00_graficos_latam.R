@@ -31,7 +31,10 @@ paleta <- c(azul,
             naranja,
             verde)
 
-paleta3 <- c(azul[1],
+paleta3 <- c(azul[3],
+             naranja[3],
+             verde[3])
+paleta1 <- c(azul[1],
              naranja[1],
              verde[1])
 ###############################Data Encuestas#########################
@@ -160,6 +163,8 @@ options(scipen = 999)
 America <- perfiles %>%
   bind_rows(agregado) %>% 
   mutate(
+    grupos.calif = factor(grupos.calif,
+                          levels = c("Alta","Media","Baja")),
     tamanio.calif = factor(tamanio.calif,
                            levels = 
                              c("Pequeño - Baja",
@@ -425,7 +430,7 @@ America$Pais[America$Pais =="Canada"] <- "Canadá"
 America$Pais[America$Pais =="Mexico"] <- "México"
 
 
- data.graf.PPA <- America %>% 
+data.graf.PPA <- America %>% 
   mutate(periodo = case_when(Pais != "El Salvador" ~ 2019,
                              TRUE ~ periodo)) %>% 
   #select(Pais,tamanio.calif,periodo,promedio.ing.oc.prin.asal) %>% 
@@ -437,7 +442,7 @@ America$Pais[America$Pais =="Mexico"] <- "México"
   ungroup()
 ###### Agregados###############
  
- ggplot(data.graf.PPA %>% 
+ggplot(data.graf.PPA %>% 
           filter(tamanio.calif == "Total"),
         aes(x = reorder(Pais,salario.PPA),
             y = salario.PPA)) +
@@ -485,6 +490,83 @@ America$Pais[America$Pais =="Mexico"] <- "México"
    scale_fill_manual(values = paleta)+
    facet_wrap(~tamanio.calif, scales = "fixed")
  ggsave("Resultados/America/salarios ppa encuestas.png",width = 15.59,height = 9)
+
+###### Distribucion de distancias####
+ggplot(data.graf.PPA %>% 
+          filter(tamanio.calif != "Total") %>% 
+          filter(Pais != "Estados Unidos",Pais != "Canadá"),
+        aes(x = reorder(Pais,salario.PPA.relativo.usa),
+            y = salario.PPA.relativo.usa,
+            color = tamanio.calif,group = tamanio.calif)) +
+   geom_point(position = "dodge",size = 5)+
+   # geom_text(position = position_dodge(),size=2.5)+
+   labs(title = "Salario relativo a un mismo perfil en EUA. Año 2019")+
+   theme_tufte()+
+   theme(legend.position = "left",
+         legend.direction = "vertical",
+         axis.title = element_blank(),
+         axis.text.x = element_text(angle = 90),
+         axis.ticks.x = element_blank(),
+         panel.spacing = unit(1,"cm"),
+         panel.grid.major.y = element_line(colour = "grey"),
+         panel.grid.minor.y = element_line(colour = "grey30"),
+         panel.grid.minor.x = element_line(colour = "grey"),
+         panel.grid.major.x = element_line(colour = "grey"))+
+   scale_color_manual(values = paleta)
+ 
+ggsave("Resultados/America/salarios relativos a mismo perfil.png",
+       width = 15.59,height = 9)
+
+
+ggplot(data.graf.PPA %>% 
+         filter(tamanio.calif != "Total") %>% 
+         filter(Pais != "Estados Unidos",Pais != "Canadá"),
+       aes(x = reorder(Pais,salario.PPA.relativo.usa),
+           y = salario.PPA.relativo.usa,
+           color = grupos.tamanio,shape = grupos.calif)) +
+  geom_point(position = "dodge",size = 5,alpha = 0.7)+
+  # geom_text(position = position_dodge(),size=2.5)+
+  labs(title = "Salario relativo a un mismo perfil en EUA. Año 2019")+
+  theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        axis.title = element_blank(),
+        axis.text.x = element_text(angle = 90),
+        axis.ticks.x = element_blank(),
+        panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_color_manual(values = rev(paleta3))+
+  guides(color=guide_legend(title="Tamaño"),
+         shape=guide_legend(title="Calificación"))
+
+# con_numeros <-  data.graf.PPA %>%
+#   filter(tamanio.calif != "Total") %>% 
+#   arrange(Pais,tamanio.calif) %>% 
+#   mutate(Perfil = rep_len(1:9,length.out = nrow(.))) 
+#  
+# ggplot(con_numeros %>% 
+#          filter(Pais != "Estados Unidos",Pais != "Canadá"),
+#        aes(x = reorder(Pais,salario.PPA.relativo.usa),
+#            y = salario.PPA.relativo.usa,label = Perfil,
+#            color = tamanio.calif,group = tamanio.calif)) +
+#   #geom_point(position = "dodge",size = 5)+
+#   geom_text(size=5)+
+#   labs(title = "Salario relativo a un mismo perfil en EUA. Año 2019")+
+#   theme_tufte()+
+#   theme(legend.position = "none",
+#         legend.direction = "vertical",
+#         axis.title = element_blank(),
+#         axis.text.x = element_text(angle = 90),
+#         axis.ticks.x = element_blank(),
+#         panel.spacing = unit(1,"cm"),
+#         panel.grid.major.y = element_line(colour = "grey"),
+#         panel.grid.minor.y = element_line(colour = "grey30"),
+#         panel.grid.minor.x = element_line(colour = "grey"),
+#         panel.grid.major.x = element_line(colour = "grey"))+
+#   scale_color_manual(values = paleta)
 
 ###### Escalera al cielo#####
  

@@ -14,8 +14,8 @@
   
 ####bases de datos#####
 ####ARGENTINA#####
-Base_ARG0814 <- readRDS("../bases/EPH2008_2014.RDS")  
-Base_ARG1719 <- readRDS("../bases/EPH2016_2019.RDS")  
+Base_ARG0814 <- readRDS("../bases/Argentina/EPH2008_2014.RDS")  
+Base_ARG1719 <- readRDS("../bases/Argentina/EPH2016_2019.RDS")  
   
 ####ARG Variables####
 Variables1719  <- c("CODUSU","NRO_HOGAR","COMPONENTE","ANO4","TRIMESTRE" ,"AGLOMERADO","H15",
@@ -55,7 +55,7 @@ salario_medio <- bases_bind %>%
                                       ANO4  %in%  2003:2015 ~ as.integer(PONDERA))) %>% 
   rename(ingreso.mensual = P21) %>% 
   filter(ingreso.mensual!= 0) %>% 
-  group_by(ANO4) %>% 
+  group_by(ANO4,PP07H) %>% 
   summarise(Promedio_anual = weighted.mean(ingreso.mensual,PONDERA_SALARIOS))
 
 openxlsx::write.xlsx(list("Salario Medio Spriv" = salario_medio),
@@ -181,7 +181,7 @@ gc()
 # gc()
 
 #saveRDS(Base_Usa_sampleada,"../bases/Base_Usa_sampleada.RDS")
-Base_Usa_sampleada<- readRDS("../bases/Base_Usa_sampleada.RDS")
+Base_Usa_sampleada<- readRDS("../bases/Estados Unidos/Base_Usa_sampleada.RDS")
 
 # Chequeo.todo.joya <- Base_Usa_sampleada %>% 
 #   filter(Census!= 0,!(ISCO.1.digit %in% 0:10))
@@ -628,16 +628,16 @@ ingresos.asec.asalariados.calif <- Base.USA.ingresos.ASEC.decil %>%
             ingreso.horario.prom = weighted.mean(x = ingreso.horario,
                                                  w = ASECWT),
             ingreso.horario.mediana = median(ingreso.horario),
-            ingreso.h.coef.variacion = w.cv(ingreso.horario,
-                                            ASECWT),
+            # ingreso.h.coef.variacion = w.cv(ingreso.horario,
+            #                                 ASECWT),
             decil.h.promedio = weighted.mean(Decil.ing.hora,ASECWT,na.rm = T),
             ingreso.mensual.prom = weighted.mean(x = ingreso.mensual,
                                                  w = ASECWT),
             ingreso.mensual.via.decil = weighted.mean(x = ing.prom.decil,
                                                       w = ASECWT),
             ingreso.mensual.mediana = median(ingreso.mensual),
-            ingreso.m.coef.variacion = w.cv(ingreso.mensual,
-                                            ASECWT),
+            # ingreso.m.coef.variacion = w.cv(ingreso.mensual,
+            #                                 ASECWT),
             decil.m.promedio = weighted.mean(Decil.ing.mens,ASECWT,na.rm = T)) %>% 
   ungroup() %>% 
   mutate(Particip_emp = total/sum(total)*100) %>% 
@@ -652,7 +652,10 @@ eph.ocup.privados$PP3E_TOT[eph.ocup.privados$PP3E_TOT == 0] <- NA
 set.seed(68150)
 EPH.ingresos.deciles <- eph.ocup.privados %>%
   filter(Categoria =="Asalariados", ingreso.mensual>0) %>% 
-  mutate(ingreso.horario = ingreso.mensual/30*7/PP3E_TOT,
+  mutate(ingreso.mensual.corregido = case_when(
+    ANO4 == 2014 & PP07H == 1 ~ ingreso.mensual*1.41, #Correcion EPH SIPA
+    ANO4 == 2014 & PP07H == 2 ~ ingreso.mensual),
+        ingreso.horario = ingreso.mensual/30*7/PP3E_TOT,
          ingreso.mensual.d = ingreso.mensual+runif(nrow(.),min = -.01,max =.01),
          ingreso.horario.d = ingreso.horario+runif(nrow(.),min = -.01,max =.01)) %>% 
   group_by(Pais,ANO4,TRIMESTRE) %>% 
@@ -676,17 +679,19 @@ ingresos.eph.asalariados.calif <- EPH.ingresos.deciles %>%
             ingreso.horario.prom = weighted.mean(x = ingreso.horario,
                                                  w = PONDERA_SALARIOS,na.rm = T),
             ingreso.horario.mediana = median(ingreso.horario,na.rm = T),
-            ingreso.h.coef.variacion = w.cv(ingreso.horario[!is.na(ingreso.horario)],
-                                            PONDERA_SALARIOS[!is.na(ingreso.horario)]),
+            # ingreso.h.coef.variacion = w.cv(ingreso.horario[!is.na(ingreso.horario)],
+            #                                 PONDERA_SALARIOS[!is.na(ingreso.horario)]),
             decil.h.promedio = weighted.mean(Decil.ing.hora,
                                              PONDERA_SALARIOS,na.rm = T),
             ingreso.mensual.prom = weighted.mean(x = ingreso.mensual,
                                                  w = PONDERA_SALARIOS,na.rm = T),
+            ingreso.mensual.corregido.prom = weighted.mean(x = ingreso.mensual.corregido,
+                                                 w = PONDERA_SALARIOS,na.rm = T),
             ingreso.mensual.via.decil = weighted.mean(x = ing.prom.decil,
                                                       w = PONDERA_SALARIOS,na.rm = T),
             ingreso.mensual.mediana = median(ingreso.mensual,na.rm = T),
-            ingreso.m.coef.variacion = w.cv(ingreso.mensual,
-                                            PONDERA_SALARIOS/1000000),
+            # ingreso.m.coef.variacion = w.cv(ingreso.mensual,
+            #                                 PONDERA_SALARIOS/1000000),
             decil.m.promedio = weighted.mean(Decil.ing.mens,
                                              PONDERA_SALARIOS,na.rm = T)) %>% 
   ungroup() %>% 
@@ -716,15 +721,15 @@ ingresos.eph.ocupados.calif <- EPH.ingresos.deciles.ocupados %>%
             ingreso.horario.prom = weighted.mean(x = ingreso.horario,
                                                  w = PONDERA_SALARIOS,na.rm = T),
             ingreso.horario.mediana = median(ingreso.horario,na.rm = T),
-            ingreso.h.coef.variacion = w.cv(ingreso.horario[!is.na(ingreso.horario)],
-                                            PONDERA_SALARIOS[!is.na(ingreso.horario)]),
+            # ingreso.h.coef.variacion = w.cv(ingreso.horario[!is.na(ingreso.horario)],
+            #                                 PONDERA_SALARIOS[!is.na(ingreso.horario)]),
             decil.h.promedio = weighted.mean(Decil.ing.hora,
                                              PONDERA_SALARIOS,na.rm = T),
             ingreso.mensual.prom = weighted.mean(x = ingreso.mensual,
                                                  w = PONDERA_SALARIOS,na.rm = T),
             ingreso.mensual.mediana = median(ingreso.mensual,na.rm = T),
-            ingreso.m.coef.variacion = w.cv(ingreso.mensual,
-                                            PONDERA_SALARIOS/1000000),
+            # ingreso.m.coef.variacion = w.cv(ingreso.mensual,
+            #                                 PONDERA_SALARIOS/1000000),
             decil.m.promedio = weighted.mean(Decil.ing.mens,
                                              PONDERA_SALARIOS,na.rm = T)) %>% 
   ungroup() %>% 
