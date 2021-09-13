@@ -32,3 +32,6 @@ ggplot(data.graf.bigotes,
         panel.grid.minor.x = element_line(colour = "grey"),
         panel.grid.major.x = element_line(colour = "grey"))
 
+ggsave("Resultados/America/America_bigotes.jpg",width = 5,height = 4)
+
+
