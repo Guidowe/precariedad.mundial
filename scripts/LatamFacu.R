@@ -690,14 +690,10 @@ PER$p507[is.na(PER$p507)] = 0
 PER$p510[is.na(PER$p510)] = 0         #Saco NA de variable p510 para no perder a los cuentapropistas cuando cruzo p507 y p510 en los filter
 
 PER <- PER                                  %>% 
-
   # Filtro sector publico y servicio domestico
-  
-  filter(p507!=6 &  p510!=1 & p510!=2 )    %>%       # Trabajador del hogar, FFAA y Administración pública. 
-  
-  # Filtro areas rurales 
-  
-  filter(estrato!=7 &  estrato!=8)         %>%    
+    filter(p507!=6 &  p510!=1 & p510!=2 )    %>%       # Trabajador del hogar, FFAA y Administración pública. 
+    # Filtro areas rurales 
+    filter(estrato!=7 &  estrato!=8)         %>%    
   
   mutate(                                             
     
@@ -816,8 +812,16 @@ Base <- Base %>%
       CATOCUP== "Cuenta propia" ~ "Pequeño", 
       TRUE                      ~ as.character(TAMA)), 
       levels= c("Pequeño", "Mediano", "Grande", "Ns/Nc")))
+
+
+# Guardo la base
+
+save(Base, file = "Bases/Bases_Latam_procesadas_Facu.Rds")
     
 #### Resultados ####
+
+#Si es necesario abro la base ya procesada
+load("Bases/Bases_Latam_procesadas_Facu.Rds")
 
 Resultados <- Base                                          %>%      
   filter(COND=="Ocupado" & CALIF!="Ns/Nc" & TAMA!="Ns/Nc" & CATOCUP!="Resto" & CATOCUP!= "Ns/Nc")   %>%
