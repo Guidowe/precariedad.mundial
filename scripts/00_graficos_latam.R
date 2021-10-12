@@ -46,7 +46,35 @@ periodos <- unique(agregado[c("Pais","periodo")])
 
 ###############################Fuentes complementarias#########################
 Paises <- read.xlsx("Fuentes Complementarias/Prod y Salarios.xlsx",
-                    sheet = "Paises_Latam")
+                    sheet = "Paises_Latam") 
+Paises %>%
+  filter(Color == "Si") %>% 
+  select(COD.OCDE)
+
+Paises <- Paises %>% 
+  mutate(
+    Cluster = case_when(
+    COD.OCDE %in% c("BOL","ECU","SLV") ~ "Cluster 1",
+    COD.OCDE %in% c("GTM","PRY","PER") ~ "Cluster 2",
+    COD.OCDE %in% c("BRA","URY","MEX","CHL","ARG","CRI","COL") ~ "Cluster 3",
+    COD.OCDE %in% c("USA") ~ "EE.UU.",
+    ),
+    Orden = case_when(
+      COD.OCDE %in% c("BOL")~ 1,
+      COD.OCDE %in% c("ECU")~ 2,
+      COD.OCDE %in% c("SLV")~ 3,
+      COD.OCDE %in% c("GTM")~ 4,
+      COD.OCDE %in% c("PRY")~ 5,
+      COD.OCDE %in% c("PER")~ 6,
+      COD.OCDE %in% c("ARG")~ 7,
+      COD.OCDE %in% c("BRA")~ 8,
+      COD.OCDE %in% c("CHL")~ 9,
+      COD.OCDE %in% c("COL")~ 10,
+      COD.OCDE %in% c("CRI")~ 11,
+      COD.OCDE %in% c("MEX")~ 12,
+      COD.OCDE %in% c("URY")~ 13))
+
+Paises$nombre.pais[Paises$nombre.pais== "México"]<- "Mexico"
 
 Productividad <- read.xlsx("Fuentes Complementarias/Prod y Salarios.xlsx",
                            sheet = "Prod Relativa_Total e IND",
@@ -179,17 +207,19 @@ America <- perfiles %>%
                                "Total"))) %>% 
   arrange(Pais,tamanio.calif) %>% 
   mutate(tasa.cp = 1- tasa.asalarizacion,
-         ing.tcp.ing.asal = promedio.ing.oc.prin.tcp/promedio.ing.oc.prin.asal)
+         ing.tcp.ing.asal = promedio.ing.oc.prin.tcp/promedio.ing.oc.prin.asal) %>% 
+  left_join(Paises %>% select(Pais = nombre.pais,Orden,Cluster))
          
 
 #############Perfiles######
 ###### Peso en empleo total#####
 America %>% 
-  filter(tamanio.calif!= "Total") %>% 
+  filter(tamanio.calif!= "Total",Pais!= "Canada") %>% 
   ggplot(.,
-         aes(x = Pais, y = particip.ocup,
+         aes(x = reorder(Pais,Orden), y = particip.ocup,
              fill = tamanio.calif,group = tamanio.calif,
-             label = scales::percent(particip.ocup,accuracy = 0.01))) +
+             label = scales::percent(particip.ocup,decimal.mark = ",",
+                                     accuracy = 0.1))) +
   geom_col(position = "stack")+
   geom_text(position = position_stack(vjust = .5),size=3)+
 #  labs(title = "Distribución del empleo según grupos")+
@@ -207,9 +237,47 @@ America %>%
         panel.grid.major.x = element_line(colour = "grey"))+
   scale_fill_manual(values = paleta)+
   scale_y_continuous(labels = scales::percent)+
+  facet_grid(cols = vars(Cluster),
+             space = "free",
+             scales = "free_x")+
   guides(fill=guide_legend(title="Tamaño - Calificación"))
+  
 
-write.xlsx(America,"Resultados/America/Cuadros/Resultados_America.xlsx")
+particip_media_cluster<- America %>% 
+  filter(tamanio.calif!= "Total",Pais!= "Canada") %>% 
+  group_by(Cluster,tamanio.calif) %>% 
+  summarise(particip.ocup = mean(particip.ocup)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = Cluster,values_from = particip.ocup)
+
+particip_calif_cluster<- America %>% 
+  filter(tamanio.calif!= "Total",Pais!= "Canada") %>% 
+  group_by(Pais,grupos.calif,Cluster) %>% 
+  summarise(particip.ocup = sum(particip.ocup)) %>% 
+  group_by(grupos.calif,Cluster) %>%
+  summarise(particip.ocup = mean(particip.ocup)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = Cluster,values_from = particip.ocup)
+
+
+particip_tamanios_cluster<- America %>% 
+  filter(tamanio.calif!= "Total",Pais!= "Canada") %>% 
+  group_by(Pais,grupos.tamanio,Cluster) %>% 
+  summarise(particip.ocup = sum(particip.ocup)) %>% 
+  group_by(grupos.tamanio,Cluster) %>%
+  summarise(particip.ocup = mean(particip.ocup)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = Cluster,values_from = particip.ocup)
+
+lista_export <- list("Datos America" = America,
+                     "Particip ocup cluster"  = particip_media_cluster,
+                     "Particip calif cluster"  = particip_calif_cluster,
+                     "Particip tamanio cluster"  = particip_tamanios_cluster)
+
+  openxlsx::write.xlsx(x = lista_export,
+                     file = "Resultados/America/Cuadros/Resultados_America.xlsx",
+                     overwrite = T)
+
 ggsave("Resultados/America/America_calificacion_tamanio.jpg",width = 10,height = 8)
 
 ###### TCP-calificacion#####
@@ -399,7 +467,22 @@ America %>%
 ggsave("Resultados/America/Ingresos TCP ASAL.png",width = 15.59,height = 9)
 
 ###### Primas Salariales##################
-
+desigualdad_salarios<- America %>% 
+  filter(tamanio.calif!= "Total",Pais != "Canada") %>% 
+  group_by(Pais,Cluster) %>% 
+  summarise(salario_perfil9_perfil1 = 
+              promedio.ing.oc.prin.asal[tamanio.calif == "Grande - Alta"]/
+              promedio.ing.oc.prin.asal[tamanio.calif == "Pequeño - Baja"],
+            distancias.promedio = 
+              sum(abs(prima.salario.medio))
+              ) %>% 
+  group_by(Cluster) %>% 
+  mutate(salario_perfil9_perfil1_cluster = 
+              mean(salario_perfil9_perfil1),
+         distancias.promedio_cluster = mean(distancias.promedio)) %>% 
+  arrange(Cluster)
+  
+  
 America %>%
   filter(tamanio.calif!= "Total") %>% 
   ggplot(.,
