@@ -324,13 +324,14 @@ ggsave("Resultados/America/America_calificacion_tamanio_TCP.jpg",width = 10,heig
 ######TCP en empleo total####
 
 TCPs%>% 
+  filter(Pais != "Estados Unidos") %>% 
   ggplot(.,
          aes(x = reorder(Pais,Orden), y = peso_tcp,
              fill = grupos.calif,group = grupos.calif,
              label = scales::percent(peso_tcp,accuracy = 0.01))) +
   geom_col(position = "stack")+
   geom_text(position = position_stack(vjust = .5),size=3)+
-  labs(title = "Participacion del cuentapropismo")+
+  #labs(title = "Participacion del cuentapropismo")+
   theme_tufte()+
   theme(legend.position = "left",
         legend.direction = "vertical",
@@ -488,11 +489,13 @@ lista_export[["seguridad_social_agregado"]] <- seguridad_social_agregado
 #####INGRESOS##################
 ###### TCP vs ASAL##################
 America %>%
- filter(grupos.tamanio== "Pequeño",Pais != "Canada") %>% 
+ # mutate(grupos.calif = factor(grupos.calif,levels = c("Baja","Media","Alta"))) %>% 
+ filter(grupos.tamanio== "Pequeño",Pais != "Canada",
+        Pais != "Estados Unidos") %>% 
  filter(tamanio.calif!= "Total") %>% 
  ggplot(.,
          aes(x = reorder(Pais,Orden), y = ing.tcp.ing.asal,
-             fill = grupos.calif,group = grupos.calif)) +
+             fill = grupos.calif)) +
   geom_col(position = "dodge")+
   geom_hline(mapping = aes(yintercept = 1),size = 1)+
   theme_tufte()+
