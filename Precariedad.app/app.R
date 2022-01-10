@@ -35,6 +35,9 @@ metadata <- read.csv("Metadata.csv",
     .fns = ~factor(.x))) %>%
   ungroup()
 
+tabla <- perfiles %>%
+  bind_rows(agregado)
+
 tabla <- tabla %>% 
   mutate(
      across(
@@ -42,6 +45,7 @@ tabla <- tabla %>%
      .fns = ~round(.x, digits = 2))) %>%
 ungroup()
 
+resultados <- perfiles.tidy
 ###### SHINY ######
 ui <-  fluidPage(
   titlePanel(title = "Precariedad Mundial"),
@@ -68,7 +72,7 @@ ui <-  fluidPage(
                    inputId = "Serie",
                    label =  "Serie:",
                    choices = unique(resultados$Serie),
-                   selected = "tasa.seguridad.social",
+                   selected = "tasa.seguridad.social.asal",
                    multiple = FALSE,
                    width = 400),
                  selectInput(
