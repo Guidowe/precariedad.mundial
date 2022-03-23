@@ -3,14 +3,6 @@
 
 #  ññññ ó á é í ó ú
 
-# COSAS PARA HACER
-
-# Variable precariedad tcp Chile
-# Ver la otra variable ingreso de Paraguay
-# Revisar variable precariedad tcp Paraguay (da 99%)
-
-# Rearmar bases para guardarlas en formato R en Github
-
 #### Intro ####
 
 library(dplyr)
@@ -828,12 +820,12 @@ load("Bases/Bases_Latam_procesadas_Facu.Rds")
 Resultados <- Base                                          %>%      
   filter(COND=="Ocupado" & CALIF!="Ns/Nc" & TAMA!="Ns/Nc" & CATOCUP!="Resto" & CATOCUP!= "Ns/Nc")   %>%
   group_by(PAIS, PERIODO, TAMA, CALIF)                     %>%
-  summarise('periodo'                              = mean(ANO),
+  summarise('periodo'                              = mean(ANO),         ## Ojo, hay una variable 'periodo' y otra 'PERIODO' que luego se descarta
+            'casos'                                = n(),
             'ocupados'                             = sum(WEIGHT, na.rm=TRUE),
             'asalariados'                          = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE),
             'tcp'                                  = sum(WEIGHT[CATOCUP=="Cuenta propia"], na.rm=TRUE),
             'tasa.asalarizacion'                   = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE)/sum(WEIGHT[CATOCUP=="Asalariados" | CATOCUP=="Cuenta propia"], na.rm=TRUE),
-
             'seguridad.social.si.asal'             = sum(WEIGHT[PRECASEG=="Con aportes" & CATOCUP=="Asalariados"], na.rm=TRUE),
             'seguridad.social.no.asal'             = sum(WEIGHT[PRECASEG=="Sin aportes" & CATOCUP=="Asalariados"], na.rm=TRUE),
             'registrados.asal'                     = sum(WEIGHT[PRECAREG=="Registrado" & CATOCUP=="Asalariados"], na.rm=TRUE),
@@ -873,8 +865,10 @@ Resultados <- Base                                          %>%
   group_by(PAIS, PERIODO)                                                      %>%                         
   mutate('particip.ocup'           = ocupados/sum(ocupados),
          'particip.asal'           = asalariados/sum(asalariados),
-         'particip.tcp'         = tcp/sum(tcp))                                %>%  
+         'particip.tcp'            = tcp/sum(tcp))                             %>%  
   ungroup()                                                                    %>%
+  group_by(PAIS, TAMA, CALIF)                                                  %>% 
+  mutate('total.casos'             = sum(casos))                               %>% 
   rename(Pais=PAIS, 
     grupos.tamanio=TAMA, 
     grupos.calif=CALIF)
@@ -992,9 +986,9 @@ Casos  <- Base                                               %>%
            tamanio.calif == "Grande - Alta" ~ "9) Grande - Alta"))   %>% 
   filter(PAIS!="Brasil")
 
-ggplot(Casos, aes(x=PAIS, y=casos)) +
+ggplot(Casos, aes(x=tamanio.calif, y=casos)) +
   geom_col(position = "dodge") +
-  facet_wrap(~tamanio.calif) +
+  facet_wrap(~PAIS) +
   labs(title = "Cantidad de casos sin ponderar")
   
 
