@@ -576,7 +576,7 @@ BOL <- BOL                                 %>%
     #Condicion de actividad
     COND= factor(case_when(
       condact == 1       ~ "Ocupado",
-      condact %in% 2:5   ~ "Desocupado",
+      condact %in% 2:5   ~ "Desocupado",# Revisar que categoría 4 y 5 parecen ser inactivos (tabular con variable pea). Para los calculos no afecta porque tomamos solo ocupados
       TRUE               ~ "Ns/Nc"),
       levels= c("Ocupado", "Desocupado", "Ns/Nc")),
     
