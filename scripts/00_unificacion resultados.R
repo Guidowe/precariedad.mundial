@@ -11,6 +11,7 @@ el.salvador <- readRDS("Resultados/El Salvador.RDS")
 estados.unidos <- readRDS("Resultados/Estados Unidos.RDS")
 guatemala <- readRDS("Resultados/Guatemala.RDS")
 mexico <- readRDS("Resultados/Mexico.RDS")
+china <- readRDS("Resultados/China.RDS")
 
 ####Data Agregada####
 load("Resultados/Resultados_agregados_Facu.RDATA")
@@ -25,6 +26,7 @@ el.salvador.agregado <- readRDS("Resultados/El Salvador_agregado.RDS")
 estados.unidos.agregado <- readRDS("Resultados/Estados Unidos_agregado.RDS")
 guatemala.agregado <- readRDS("Resultados/Guatemala_agregado.RDS")
 mexico.agregado <- readRDS("Resultados/Mexico_agregado.RDS")
+china.agregado <- readRDS("Resultados/China_agregado.RDS")
 
 ############Uno Perfiles#####
 perfiles <- 
@@ -36,6 +38,7 @@ perfiles <-
             guatemala,
             mexico,
 #            canada,
+            china,
             Resultados,
             argentina %>% filter(periodo==2019)) %>% 
   select(Pais,tamanio.calif,tamanio.calif2,everything()) %>% 
@@ -80,6 +83,7 @@ agregado <-
             el.salvador.agregado,
                         estados.unidos.agregado %>% filter(periodo==2018),
             guatemala.agregado,
+            china.agregado,
             Resultados2) %>%
   mutate(tamanio.calif = "Total") %>% 
   select(Pais,tamanio.calif,everything())
@@ -87,8 +91,11 @@ agregado <-
 
 ####Exporto bases unificadas#####
 openxlsx::write.xlsx(tablita,"Resultados/cantidad de casos.xlsx")
-saveRDS(perfiles,file = "Resultados/America.RDS")
-saveRDS(agregado,file = "Resultados/America_agregado.RDS")
+#saveRDS(perfiles,file = "Resultados/America.RDS")
+saveRDS(perfiles,file = "Resultados/America_China.RDS")
+
+#saveRDS(agregado,file = "Resultados/America_agregado.RDS")
+saveRDS(agregado,file = "Resultados/America_China_agregado.RDS")
 save(list = c("perfiles","perfiles.tidy","agregado"),
      file = "Precariedad.app/datashiny.RDATA")
 

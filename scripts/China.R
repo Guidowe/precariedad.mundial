@@ -40,14 +40,13 @@ glance.selection <- function(x, ...) {
 
 #Carga de Datos#####
 ## Expansores####
-expansores <- openxlsx::read.xlsx("Fuentes Complementarias/CHIPweights GW modificacion.xlsx",
-                                  sheet = 1) %>% 
-  mutate(Province.code = as.character(Province.code)) %>% 
-  pivot_longer(cols = 5:7,names_to = "estrato",values_to = "pondera")
+expansores_gw <- openxlsx::read.xlsx("Fuentes Complementarias/CHIPweights GW modificacion.xlsx",
+                                  sheet = "4) 2018_GW",startRow = 3)
 
-expans_unique <- expansores %>% 
-  dplyr::select(Province,Province.code) %>% 
-  unique()
+expansores_urbano <- expansores_gw %>% 
+  dplyr::select(Province,Province.code,pondera_urbano_gw) %>% 
+  mutate(Province.code = as.character(Province.code)) %>% 
+  filter(!is.na(Province.code),!is.na(pondera_urbano_gw))
 
 ramas <- openxlsx::read.xlsx("Fuentes Complementarias/CHIPweights GW modificacion.xlsx",
                                   sheet = "branches_2018") %>% 
@@ -65,6 +64,8 @@ ocupaciones_18 <- openxlsx::read.xlsx(
 base_urbana_2018 <- haven::read_dta("../bases/China/chip2018_urban_person.dta") 
 base_urbana_2018[] <- lapply(base_urbana_2018, function(x) { attributes(x) <- NULL; x })
 
+
+base_urbana_2018 %>% 
 #base_rural_2018 <- haven::read_dta("Data/CHIP/2018/chip2018_rural_person.dta")
 variables <- c("hhcode","A10","C03_1","C05_1","C01_1","C01_2","C01_3",
                "A_03")
@@ -73,7 +74,7 @@ base_dif_2018 <-  base_urbana_2018  %>%
                              A10 == 1 ~"Migrant")) %>% 
   mutate(Province.code = str_sub(hhcode,1,2),
          Province.code!= 15) %>% 
-  left_join(expansores) %>% 
+  left_join(expansores_urbano) %>% 
   left_join(ramas)  %>% 
   mutate(age = 2018 - A04_1,
          estado = case_when(A20 == 1~"Employed",
@@ -93,149 +94,15 @@ base_dif_2018 <-  base_urbana_2018  %>%
                             A10 == 3~"Resident",
                             TRUE ~ "Others"))
 
-## Chequeos cat_ocup y estado####
-# estado_2013 <- base_unificada_2013 %>% 
-#   filter(age %in% 16:60,C03_1 %in% 1:4) %>% 
-#   group_by(estrato,estado) %>% 
-#   summarise(casos = n())
-# 
-# estado_2018 <- base_dif_2018 %>% 
-#   filter(age %in% 16:60,C03_1 %in% 1:4) %>% 
-#   group_by(estrato,estado) %>% 
-#   summarise(casos = n())
-# 
-# estado_2013 <- base_unificada_2013 %>% 
-#   filter(age %in% 16:60,C03_1 %in% 2) %>% 
-#   group_by(estrato,estado) %>% 
-#   summarise(casos = n())
-# 
-# estado_2018 <- base_dif_2018 %>% 
-#   filter(age %in% 16:60,C03_1 %in% 1:4) %>% 
-#   group_by(estrato,estado) %>% 
-#   summarise(casos = n())
-
-
-estrato_hukou13 <-base_unificada_2013%>% 
-  filter(age %in% 16:60,C03_1 %in% 1:4) %>% 
-  group_by(estrato,hukou) %>% 
-  summarise(casos = n())
-
-estrato_hukou18 <-base_dif_2018%>% 
- filter(age %in% 16:60,C03_1 %in% 1:4) %>% 
-  group_by(estrato,hukou) %>% 
+casos_urbano<- base_dif_2018 %>% 
+  group_by(Province,Province.code) %>% 
   summarise(casos = n())
 
 
-
-estrato_catocup13 <- base_unificada_2013 %>% 
-  filter(age %in% 16:60) %>% 
-  group_by(estrato, cat_ocup,hukou) %>% 
-  summarise(casos = n())
-
-estrato_catocup18 <- base_dif_2018 %>% 
-  filter(age %in% 16:60) %>% 
-  group_by(estrato, cat_ocup,hukou) %>% 
-  summarise(casos = n())
-
-#Procesamiento####
-tabla_catocup <- bind_rows(base_dif_2018 %>% mutate(age = 2018 - A04_1,
-                                         year = 2018) %>%  select(A10,C03_1,age,year),
-                base_urbana_2013 %>% mutate(age = 2013 - A04_1,
-                                            year = 2013) %>%  select(A10,C03_1,age,year)) %>% 
-  mutate(estrato = case_when(A10 == 1 ~"Migrant",
-                             TRUE ~"Urban"),
-         cat_ocup = case_when(C03_1 == 1~"Employer",
-                              C03_1 == 2~"Employee",
-                              C03_1 == 3~"Self-Employed",
-                              C03_1 == 4~"Family worker")) %>% 
-  filter(age %in% 16:60) %>% 
-  filter(C03_1 %in% 1:4) %>% 
-  group_by(year,estrato,cat_ocup) %>% 
-  summarise(casos = n()) %>% 
-  group_by(estrato,year) %>% 
-  mutate(casos/sum(casos))
-### 2013 ####
-dif.asalariados.2013 <- base_unificada_2013 %>% 
- # filter(C03_1 == 2) ###Filtro Asalariados
-  filter(estado %in%  c("Employed","Unemployed")) %>%  ###Filtro PEA
-  filter(estrato != "Rural") %>% 
-  mutate(estrato = case_when(A10 == 1 ~"Migrant",
-                             TRUE ~"Urban")) %>% # Así Está definido en la 2018
-  filter(C05_1>0,C01_1>=1,C01_2>0,C01_3>0) %>% # Filtro Salario, Horas, Meses, Dias positivos
-  mutate(asalariado = case_when(C03_1 == 2 ~1,
-                                TRUE ~ 0),
-         salario.mensual.prom = C05_1/C01_1,
-         salario.diario.prom = salario.mensual.prom/C01_2,
-         salario.horario.prom = salario.diario.prom/C01_3,
-         ocupacion_zhang =case_when(
-           C03_4 %in% c(1:18,20,21)~"white-collar",
-           C03_4 %in% c(22:27)~"service",
-           C03_4 %in% c(19,50,51)~"Other",
-           C03_4 %in% c(28:49) ~"blue-collar",
-           TRUE ~"Other",
-         ),
-         age = 2018 - A04_1,
-         sex = factor(
-           case_when(A03==1~"Varon",
-                     A03==2 ~"Mujer"),
-           levels = c("Varon","Mujer")),
-         han = factor(
-           case_when(A06==1~"Yes",
-                     TRUE ~"No"),
-           levels = c("Yes","No")),
-         party_member = factor(
-           case_when(A07_1==1~"Yes",
-                     TRUE ~"No"),
-           levels = c("Yes","No")),
-         married_cohabitation = factor(
-           case_when(
-             A05 %in% 1:4~"Yes",
-             A05 %in% 5:8 ~"No"),
-           levels = c("Yes","No")),
-         tamanio = factor(
-           case_when(
-             C08%in%  1~"8 or less",
-             C08%in%  2:3~"9-100",
-             C08%in%  4:5~"101-500",
-             C08%in%  6:7~"501 or more"),
-           levels = c("8 or less","9-100","101-500","501 or more")),
-         status = case_when(
-           C03_2 %in% 1:3 ~"state-owned, public inst and party agencies",
-           C03_2 %in% 5 ~ "foreign owned",
-           C03_2 %in% c(6,4,7) ~"private sector",
-           TRUE ~"Others"),
-         status2 = case_when(
-           C03_2 %in% 1:3 ~"state-owned, public inst and party agencies",
-           C03_2 %in% 5 ~ "foreign owned",
-           C03_2 %in% c(4,7) ~"private and colective enterprises",
-           C03_2 %in% c(6) ~"individual enterprises",
-           TRUE ~"Others"),
-         sin_contrato_o_temporario = factor(case_when(
-           C07_1 %in% 3:4~"Yes",
-           TRUE ~"No"),
-           levels = c("No","Yes")),
-         sin_contrato = factor(case_when(
-           C07_1 %in% 4~"Yes",
-           TRUE ~"No"),
-           levels = c("No","Yes")),
-         no_social_benefits = NA,
-  ) %>% 
-  rename(years_educ = A13_2,
-         rama = C03_3,
-         huk_status = A09_1,
-         contract_type =C07_1) %>% 
-  mutate(years_educ = case_when(years_educ>0~years_educ),
-         status = case_when(status>0~status),
-         year = 2013)
-
-
-
-
-### 2018####
 dif.asalariados.2018 <- base_dif_2018 %>%
-  filter(estado %in%  c("Employed","Unemployed")) %>%  ###Filtro PEA
-#  filter(C03_1 == 2) %>% ###Filtro Asalariados
-  filter(Province.code!= 15) %>% 
+  filter(estado %in%  c("Employed")) %>%  ###Filtro Ocupados
+  filter(C03_1 %in%  2:3) %>% ###Filtro Asalariados y TCP
+#  filter(Province.code!= 15) %>% 
   filter(C05_1>0,C01_1>=1,C01_2>0,C01_3>0) %>% # Filtro Salario, Horas, Meses, Dias positivos
   mutate(asalariado = case_when(C03_1 == 2 ~1,
                                 TRUE ~ 0),
@@ -286,6 +153,11 @@ dif.asalariados.2018 <- base_dif_2018 %>%
              C08%in%  2 ~"Mediano",
              C08%in%  3:7 ~"Grande"),
            levels = c("Pequeño","Mediano","Grande")),
+         grupos.tamanio = factor(
+           case_when( 
+             C03_1 %in%  3 ~"Pequeño", #TCP a pequeño
+             TRUE ~grupos.tamanio),
+           levels = c("Pequeño","Mediano","Grande")),
          status = case_when(
            C03_2 %in% 1:3~"state-owned, public inst and party agencies",
            C03_2 %in% c(6)~"foreign owned",
@@ -318,7 +190,7 @@ dif.asalariados.2018 <- base_dif_2018 %>%
          years_educ = case_when(years_educ>0~years_educ),
          status = case_when(status>0~status))
 
-variables <- c("sin_contrato_o_temporario","estrato" ,"estado","cat_ocup","asalariado","ocupacion_zhang" , "Region_name","Province",
+variables <- c("sin_contrato_o_temporario","pondera_urbano_gw","estrato" ,"estado","cat_ocup","asalariado","ocupacion_zhang" ,"Province",
                "branch_group","branch_name","grupos.tamanio","grupos.calif", "status","status2", "age" ,"party_member",  "sex" , "tamanio" , "han" , "married_cohabitation",
                "contract_type","rama","years_educ","sin_contrato","sin_contrato_o_temporario","no_social_benefits","year","salario.horario.prom",
                "salario.diario.prom","salario.mensual.prom","A05","A07_1","C03_1","C03_4","C05_1","C01_1","C01_2","C01_3","C03_2")
@@ -369,6 +241,198 @@ salario_tamanio_calif <- base_final %>%
             salario.horario.prom = mean(salario.horario.prom,na.rm = T)) %>% 
   group_by(year) %>% 
   mutate(particip.ocup = casos/sum(casos)) 
+
+
+#### Ocupados.distric ####
+china.ocupados.distrib <-  base_final  %>% 
+  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(grupos.calif,grupos.tamanio) %>% 
+  summarise(
+    total.casos = n(),
+    total.asalariados = sum(C03_1 %in%  2),
+    ocupados = sum(pondera_urbano_gw,na.rm = T),
+    asalariados = sum(pondera_urbano_gw[C03_1 %in%  2],na.rm = T),
+    tcp = sum(pondera_urbano_gw[!(C03_1 %in%  2)],na.rm = T),
+    tasa.asalarizacion = asalariados/ocupados,
+    promedio.ing.oc.prin=weighted.mean(
+      x = salario.mensual.prom,
+      w = pondera_urbano_gw,na.rm = T),
+    promedio.ing.oc.prin.tcp=weighted.mean(
+      x = salario.mensual.prom[!(C03_1 %in%  2)],
+      w = pondera_urbano_gw[!(C03_1 %in%  2)],na.rm = T),
+    promedio.ing.oc.prin.asal=weighted.mean(
+      x = salario.mensual.prom[C03_1 %in%  2],
+      w = pondera_urbano_gw[C03_1 %in%  2],na.rm = T)
+  ) %>% 
+  ungroup() %>% 
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.tcp = tcp/sum(tcp))
+
+
+china.ocupados.distrib.agregado <-  base_final  %>% 
+  summarise(
+    total.casos = n(),
+    total.asalariados = sum(C03_1 %in%  2),
+    ocupados = sum(pondera_urbano_gw,na.rm = T),
+    asalariados = sum(pondera_urbano_gw[C03_1 %in%  2],na.rm = T),
+    tcp = sum(pondera_urbano_gw[!(C03_1 %in%  2)],na.rm = T),
+    tasa.asalarizacion = asalariados/ocupados,
+    promedio.ing.oc.prin=weighted.mean(
+      x = salario.mensual.prom,
+      w = pondera_urbano_gw,na.rm = T),
+    promedio.ing.oc.prin.tcp=weighted.mean(
+      x = salario.mensual.prom[!(C03_1 %in%  2)],
+      w = pondera_urbano_gw[!(C03_1 %in%  2)],na.rm = T),
+    promedio.ing.oc.prin.asal=weighted.mean(
+      x = salario.mensual.prom[C03_1 %in%  2],
+      w = pondera_urbano_gw[C03_1 %in%  2],na.rm = T)
+  ) %>% 
+  ungroup() %>% 
+  mutate(particip.ocup = ocupados/sum(ocupados),
+         particip.asal = asalariados/sum(asalariados),
+         particip.tcp = tcp/sum(tcp))
+
+
+china.asalariados.tasas <- base_final %>% 
+  filter(C03_1 %in%  2) %>% # Asalariado
+  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(grupos.calif,grupos.tamanio) %>% 
+  summarise(
+    seguridad.social.si = sum(pondera_urbano_gw[no_social_benefits=="No"],na.rm = T),
+    seguridad.social.no = sum(pondera_urbano_gw[no_social_benefits=="Yes"],na.rm = T),
+    registrados =sum(pondera_urbano_gw[sin_contrato=="No"],na.rm = T),
+    no.registrados =sum(pondera_urbano_gw[sin_contrato=="Yes"],na.rm = T),
+    empleo.temporal =sum(pondera_urbano_gw[sin_contrato_o_temporario=="Si"],na.rm = T),
+    empleo.no.temporal =sum(pondera_urbano_gw[sin_contrato_o_temporario=="No"],na.rm = T),
+#    part.involun = sum(pondera_urbano_gw[part.time.inv=="Part Involunt"],na.rm = T),
+#    part.volunt = sum(pondera_urbano_gw[part.time.inv=="Part Volunt"],na.rm = T),
+#    full.time = sum(pondera_urbano_gw[part.time.inv=="Full Time"],na.rm = T),
+    # tasa.partime = part.involun/(part.involun+
+    #                                part.volunt+
+    #                                full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                   empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".asal"), .cols = 3:ncol(.))
+
+
+china.tcp.tasas <- base_final %>% 
+  filter(C03_1 %in%  3) %>% # tcp
+  filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
+  group_by(grupos.calif,grupos.tamanio) %>% 
+  summarise(
+    seguridad.social.si = sum(pondera_urbano_gw[no_social_benefits=="No"],na.rm = T),
+    seguridad.social.no = sum(pondera_urbano_gw[no_social_benefits=="Yes"],na.rm = T),
+    registrados =sum(pondera_urbano_gw[sin_contrato=="No"],na.rm = T),
+    no.registrados =sum(pondera_urbano_gw[sin_contrato=="Yes"],na.rm = T),
+    empleo.temporal =sum(pondera_urbano_gw[sin_contrato_o_temporario=="Si"],na.rm = T),
+    empleo.no.temporal =sum(pondera_urbano_gw[sin_contrato_o_temporario=="No"],na.rm = T),
+    #    part.involun = sum(pondera_urbano_gw[part.time.inv=="Part Involunt"],na.rm = T),
+    #    part.volunt = sum(pondera_urbano_gw[part.time.inv=="Part Volunt"],na.rm = T),
+    #    full.time = sum(pondera_urbano_gw[part.time.inv=="Full Time"],na.rm = T),
+    # tasa.partime = part.involun/(part.involun+
+    #                                part.volunt+
+    #                                full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                   empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".tcp"), .cols = 3:ncol(.))
+
+
+china.asalariados.tasas.agregado <- base_final %>% 
+  filter(C03_1 %in%  2) %>% # Asalariado
+  summarise(
+    seguridad.social.si = sum(pondera_urbano_gw[no_social_benefits=="No"],na.rm = T),
+    seguridad.social.no = sum(pondera_urbano_gw[no_social_benefits=="Yes"],na.rm = T),
+    registrados =sum(pondera_urbano_gw[sin_contrato=="No"],na.rm = T),
+    no.registrados =sum(pondera_urbano_gw[sin_contrato=="Yes"],na.rm = T),
+    empleo.temporal =sum(pondera_urbano_gw[sin_contrato_o_temporario=="Si"],na.rm = T),
+    empleo.no.temporal =sum(pondera_urbano_gw[sin_contrato_o_temporario=="No"],na.rm = T),
+    #    part.involun = sum(pondera_urbano_gw[part.time.inv=="Part Involunt"],na.rm = T),
+    #    part.volunt = sum(pondera_urbano_gw[part.time.inv=="Part Volunt"],na.rm = T),
+    #    full.time = sum(pondera_urbano_gw[part.time.inv=="Full Time"],na.rm = T),
+    # tasa.partime = part.involun/(part.involun+
+    #                                part.volunt+
+    #                                full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                   empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".asal"), .cols = 1:ncol(.))
+
+china.tcp.tasas.agregado <- base_final %>% 
+  filter(C03_1 %in%  3) %>% # TCP
+  summarise(
+    seguridad.social.si = sum(pondera_urbano_gw[no_social_benefits=="No"],na.rm = T),
+    seguridad.social.no = sum(pondera_urbano_gw[no_social_benefits=="Yes"],na.rm = T),
+    registrados =sum(pondera_urbano_gw[sin_contrato=="No"],na.rm = T),
+    no.registrados =sum(pondera_urbano_gw[sin_contrato=="Yes"],na.rm = T),
+    empleo.temporal =sum(pondera_urbano_gw[sin_contrato_o_temporario=="Si"],na.rm = T),
+    empleo.no.temporal =sum(pondera_urbano_gw[sin_contrato_o_temporario=="No"],na.rm = T),
+    #    part.involun = sum(pondera_urbano_gw[part.time.inv=="Part Involunt"],na.rm = T),
+    #    part.volunt = sum(pondera_urbano_gw[part.time.inv=="Part Volunt"],na.rm = T),
+    #    full.time = sum(pondera_urbano_gw[part.time.inv=="Full Time"],na.rm = T),
+    # tasa.partime = part.involun/(part.involun+
+    #                                part.volunt+
+    #                                full.time),
+    tasa.seguridad.social = seguridad.social.no/(seguridad.social.si+
+                                                   seguridad.social.no),
+    tasa.no.registro = no.registrados/(registrados+
+                                         no.registrados),
+    tasa.temp = empleo.temporal/(empleo.temporal+
+                                   empleo.no.temporal))%>% 
+  ungroup() %>% 
+  rename_with(~str_c(.,".tcp"), .cols = 1:ncol(.))
+
+china.resultado <- china.ocupados.distrib %>%
+  left_join(china.asalariados.tasas)%>% 
+  left_join(china.tcp.tasas)%>% 
+  mutate(Pais = "China",
+         periodo = 2018,
+         tamanio.calif = paste0(grupos.tamanio," - ",grupos.calif),
+         tamanio.calif = factor(tamanio.calif,
+                                levels = 
+                                  c("Pequeño - Baja",
+                                    "Pequeño - Media",
+                                    "Pequeño - Alta",
+                                    "Mediano - Baja",
+                                    "Mediano - Media", 
+                                    "Mediano - Alta",
+                                    "Grande - Baja",
+                                    "Grande - Media",
+                                    "Grande - Alta"))) %>% 
+  arrange(tamanio.calif)
+
+china.resultado.agregado <- china.ocupados.distrib.agregado %>%
+  mutate(periodo = 2018) %>% 
+  left_join(china.asalariados.tasas.agregado %>% mutate(periodo = 2018))%>% 
+  left_join(china.tcp.tasas.agregado%>% mutate(periodo = 2018))%>% 
+  mutate(Pais = "China")
+
+saveRDS(china.resultado,file = "Resultados/China.RDS")  
+saveRDS(china.resultado.agregado,file = "Resultados/China_agregado.RDS")  
+
+microbase <- base_final %>% 
+  select(pondera = pondera_urbano_gw,
+         rama = branch_name,sin_contrato_o_temporario,
+         periodo = year,no_social_benefits,
+         cat_ocup,age,sex,years_educ,sin_contrato,
+         grupos.tamanio,grupos.calif) %>% 
+  mutate(pais = "China")
+
+#saveRDS(microbase,file = "Resultados/China_microdata.RDS")  
 
 ####Grafiquito ####
 ########PALETA#####
