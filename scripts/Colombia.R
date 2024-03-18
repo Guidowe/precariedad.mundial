@@ -92,7 +92,9 @@ co.ocupados.distrib  <- co.categ %>%
   mutate(uno = 1) %>% 
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
-  summarise(ocupados = sum(fexp,na.rm = T),
+  summarise(total.casos = n(),
+            total.asalariados = sum(P6430 != 4),
+            ocupados = sum(fexp,na.rm = T),
             asalariados = sum(fexp[P6430 != 4],na.rm = T),
             ocupados_muestral = n(),
             asalariados_muestral = sum(uno[P6430 != 4],na.rm = T),
@@ -115,7 +117,9 @@ co.ocupados.distrib  <- co.categ %>%
   ungroup() %>% 
   group_by(grupos.calif,grupos.tamanio) %>% 
   summarise(periodo = 2019, 
-            across(.cols = 4:ncol(.)-2,.fns = mean))  
+            total.casos = sum(total.casos),
+            total.asalariados = sum(total.asalariados),
+            across(.cols = 6:ncol(.)-2,.fns = mean))  
 
 co.ocupados.distrib.agregado  <- co.categ %>% 
   group_by(periodo) %>% 

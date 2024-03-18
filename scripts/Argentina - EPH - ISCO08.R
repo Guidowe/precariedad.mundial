@@ -149,6 +149,8 @@ arg.ocupados.distrib <-  eph.ocup.privados %>%
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,ANO4) %>% 
   summarise(
+    total.casos = n(),
+    total.asalariados = sum(CAT_OCUP == 3),
     ocupados = sum(PONDERA,na.rm = T)/4,
     asalariados = sum(PONDERA[CAT_OCUP == 3],na.rm = T)/4,
     tcp = sum(PONDERA[CAT_OCUP != 3],na.rm = T)/4,

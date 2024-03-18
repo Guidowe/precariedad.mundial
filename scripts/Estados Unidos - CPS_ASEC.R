@@ -181,6 +181,8 @@ usa.ocupados.distrib <-  usa.cat  %>%
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
+    total.casos = n(),
+    total.asalariados = sum(Categoria  == "Asalariados",na.rm = T),
     ocupados = sum(FACTOR,na.rm = T),
     asalariados = sum(FACTOR[Categoria  == "Asalariados"],na.rm = T),
     tcp = sum(FACTOR[Categoria  != "Asalariados"],na.rm = T),

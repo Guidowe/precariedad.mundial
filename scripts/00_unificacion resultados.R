@@ -28,14 +28,14 @@ mexico.agregado <- readRDS("Resultados/Mexico_agregado.RDS")
 
 ############Uno Perfiles#####
 perfiles <- 
-  bind_rows(canada,
-            colombia,
+  bind_rows(colombia,
             costa.rica,
             ecuador %>% mutate(periodo = as.numeric(periodo)),
             el.salvador,
             estados.unidos %>% filter(periodo==2018),
             guatemala,
             mexico,
+#            canada,
             Resultados,
             argentina %>% filter(periodo==2019)) %>% 
   select(Pais,tamanio.calif,tamanio.calif2,everything()) %>% 
@@ -45,6 +45,10 @@ perfiles <-
   ungroup() %>% 
   mutate(prima.salario.medio = promedio.ing.oc.prin.asal/salario.promedio.pais)   %>% 
   ungroup() 
+
+tablita <- perfiles %>% 
+  select(Pais,tamanio.calif,total.casos) %>% 
+  pivot_wider(names_from = tamanio.calif,values_from = total.casos)
 
 
 perfiles.tidy <- perfiles %>% 
@@ -82,6 +86,7 @@ agregado <-
 
 
 ####Exporto bases unificadas#####
+openxlsx::write.xlsx(tablita,"Resultados/cantidad de casos.xlsx")
 saveRDS(perfiles,file = "Resultados/America.RDS")
 saveRDS(agregado,file = "Resultados/America_agregado.RDS")
 save(list = c("perfiles","perfiles.tidy","agregado"),

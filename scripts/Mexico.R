@@ -100,6 +100,8 @@ mex.ocupados.distrib <-  mex.cat  %>%
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
+    total.casos = n(),
+    total.asalariados = sum(pos_ocu == 1),
     ocupados = sum(FACTOR,na.rm = T),
     asalariados = sum(FACTOR[pos_ocu == 1],na.rm = T),
     tcp = sum(FACTOR[pos_ocu != 1],na.rm = T),

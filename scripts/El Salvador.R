@@ -64,6 +64,8 @@ elsa.ocupados.distrib <-  el.salvador.cat  %>%
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
+    total.casos = n(),
+    total.asalariados = sum(r418 %in%  6:8),
     ocupados = sum(FACTOR,na.rm = T),
     asalariados = sum(FACTOR[r418 %in%  6:8],na.rm = T),
     tcp = sum(FACTOR[!(r418 %in%  6:8)],na.rm = T),

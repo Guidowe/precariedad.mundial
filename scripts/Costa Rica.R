@@ -53,6 +53,8 @@ cr.ocupados.distrib  <- cr.categ %>%
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
+    total.casos = n(),
+    total.asalariados = sum(PosiEmpPri == 12),
     ocupados = sum(FACTOR,na.rm = T),
     asalariados = sum(FACTOR[PosiEmpPri == 12],na.rm = T),
     tcp = sum(FACTOR[PosiEmpPri != 12],na.rm = T),

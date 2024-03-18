@@ -105,8 +105,9 @@ ec.ocupados.distrib  <- ec.categ %>%
   filter(!is.na(grupos.calif),!is.na(grupos.tamanio)) %>% 
   group_by(grupos.calif,grupos.tamanio,periodo) %>% 
   summarise(
+    total.casos = n(),
+    total.asalariados = sum(p42 != 6),
     ocupados = sum(fexp,na.rm = T)/4,
-    ocupados_muestral = n(),
     asalariados = sum(fexp[p42 != 6],na.rm = T)/4,
     asalariados_muestral = sum(uno[p42 != 6],na.rm = T),
     tcp = sum(fexp[p42 == 6],na.rm = T)/4,
