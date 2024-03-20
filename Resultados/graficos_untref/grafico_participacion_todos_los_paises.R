@@ -3,10 +3,12 @@ library(tidyverse)
 library(ggthemes)
 
 #Cargo datos finales a mano en precariedad.mundial ####
-america <- readRDS(file = "Resultados/America.RDS")    #guido la llama perfiles y le suma el agregado
-load("~/GitHub/precariedad.mundial/Resultados/EUROPA.RDATA")
+america <- readRDS(file = "Resultados/America_China.RDS")    #guido la llama perfiles y le suma el agregado
+#america <- readRDS(file = "Resultados/America.RDS")    #guido la llama perfiles y le suma el agregado
+load("Resultados/EUROPA.RDATA")
 europa <- Resultados_bind
 rm(list = ls()[!ls() %in% c("europa", "america")])
+
 Paises <- read.xlsx("Fuentes Complementarias/Prod y Salarios.xlsx",
                     sheet = "Paises_Latam") 
 
