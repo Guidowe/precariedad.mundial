@@ -1,9 +1,9 @@
 
 library(dplyr)
 
-Carpeta <- "F:/LFS/"                                                                    
-CarpetaRdos <- "C:/Users/facun/Documents/Investigación/1. LFS 2020 - CEPED Precariedad mundial/Resultados/"
-CarpetaBasesUnificadas <- "F:/LFS/BasesUnificadas/" 
+Carpeta <- "D:/LFS/"                                    #Carpeta con bases originales                                                  
+CarpetaRdos <- "C:/Resultados/"
+CarpetaBasesUnificadas <- "D:/LFS/BasesUnificadas/"     #Carpeta con bases unificadas
 
                             ### CALCULO DE SERIES 2008-2018 ####  
 
@@ -18,6 +18,8 @@ Asalariados_bind <- data.frame()
 
 while (i < length(countries) + 1) {
 
+  print(paste0('Procesando ', countries[i]))
+  
   Base <- readRDS(paste0(CarpetaBasesUnificadas, countries[i], "2008-2018.Rda"))
   
   ## Sacar Sector público y empleo doméstico
@@ -27,6 +29,8 @@ while (i < length(countries) + 1) {
     filter(NACE1D!="T")  %>%
     filter(STAPRO!=4)
   
+  #Base$TAMA[Base$STAPRO==0] <-  "Pequeño"
+
   ## Armo cuadro
   Resultados <- Base                                 %>%
     filter(COND=="Ocupado" & CALIF!="Ns/Nc" & TAMA!="Ns/Nc")   %>%
@@ -40,14 +44,14 @@ while (i < length(countries) + 1) {
               'tasa.temp.asal'                       = sum(WEIGHT[PRECATEMP==1 & STAPRO==3], na.rm=TRUE)/sum(WEIGHT[STAPRO==3], na.rm=TRUE), 
               'tasa.1.asalariados'                   = sum(WEIGHT[PRECACOUNT==1 | PRECACOUNT==2], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
               'tasa.2.asalariados'                   = sum(WEIGHT[PRECACOUNT==2], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
-              'total.tcp'                            = sum(WEIGHT[STAPRO==0], na.rm=TRUE),              
+              'total.tcp'                            = sum(WEIGHT[STAPRO==0], na.rm=TRUE),       
               'tasa.parttime.tcp'                    = sum(WEIGHT[PRECAPT==1 & STAPRO==0], na.rm=TRUE)/sum(WEIGHT[STAPRO==0], na.rm=TRUE))  %>%
     ungroup() %>%
     group_by(YEAR) %>%
-    mutate('particip.ocup'          = total.ocupados/sum(total.ocupados), 
+    mutate('particip.ocup'          = total.ocupados/sum(total.ocupados),     #2024: ver, no tiene sentido esto me parece
            'particip.asal'          = total.asal/sum(total.ocupados), 
            'particip.tcp'           = total.tcp/sum(total.ocupados))
-
+  
   # Formato
   colnames(Resultados)[1] <- "ANO4"
   colnames(Resultados)[2] <- "grupos.tamanio"
@@ -100,6 +104,6 @@ Desocup.Calif <- inner_join(Desocup.Calif_bind, Ocup.Calif_bind, by=c("Pais", "C
   
   
 save(Resultados_bind, Desocup.Calif,
-     file = paste0(CarpetaRdos,"EUROPA.RDATA"))
+     file = paste0("Resultados/EUROPA.RDATA"))
 
 

@@ -1,8 +1,8 @@
 library(dplyr)
 library(beepr)
 
-Carpeta <- "F:/LFS/"                                                                              # Carpeta con bases originales
-CarpetaBasesUnificadas <- "F:/LFS/BasesUnificadas/"                                
+Carpeta <- "D:/LFS/"                                                                              # Carpeta con bases originales
+CarpetaBasesUnificadas <- "D:/LFS/BasesUnificadas/"                                
 
 variables <- c("YEAR", "COEFF", "WSTATOR", "SEX", "AGE", "COUNTRYB", "SEEKWORK", "AVAILBLE", "STAPRO", "NACE1D", 
                "SIZEFIRM", "ISCO1D", "ISCO2D", "ISCO3D", "IS881D", "YSTARTWK", "MSTARTWK", "EXIST2J", "FTPT", 
@@ -16,6 +16,9 @@ countries <- c("ES", "FR", "UK", "DE", "GR", "IT", "PT", "DK", "BG", "RO")
 i <- 1
 while (i < length(countries) + 1) {
   for (val in 2008:2018) {
+    
+  print(paste0('Procesando ', countries[i], ' para el año ', val ))
+    
   Base <- read.csv(paste0(Carpeta, countries[i], val, "_y", ".csv"))
   Base <- Base                               %>% 
     select(one_of(variables))                %>%
@@ -24,6 +27,7 @@ while (i < length(countries) + 1) {
   
   Base <- rbind.data.frame(`2008`, `2009`, `2010`, `2011`, `2012`, `2013`, `2014`, `2015`, `2016`, `2017`, `2018`)
   remove(`2008`, `2009`, `2010`, `2011`, `2012`, `2013`, `2014`, `2015`, `2016`, `2017`, `2018`)
+  
   
   Base <- Base         %>%
     mutate(
