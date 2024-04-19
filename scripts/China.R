@@ -98,11 +98,121 @@ casos_urbano<- base_dif_2018 %>%
   group_by(Province,Province.code) %>% 
   summarise(casos = n())
 
+# Base Homog ####
+base_homog <- base_dif_2018 %>%
+  filter(estado %in%  c("Employed")) %>%  ###Filtro Ocupados
+ # filter(C03_1 %in%  2:3) %>% ###Filtro Asalariados y TCP
+#  filter(Province.code!= 15) %>% 
+  filter(C05_1>0,C01_1>=1,C01_2>0,C01_3>0) %>% # Filtro Salario, Horas, Meses, Dias positivos
+  mutate(PAIS = "China",
+         WEIGHT = pondera_urbano_gw,
+         COND = "Ocupado",
+         CATOCUP = case_when(C03_1 == 2 ~"Asalariados",
+                             C03_1 == 3 ~"Cuenta propia",
+                             TRUE ~"Resto"),
+         PRECAPT = NA,
+         PRECAREG = case_when(
+           C07_1 %in% 4~"No registrado",
+           C07_1 %in% 1:3~"Registrado",
+           TRUE ~"Ns/Nc"),
+         PRECATEMP = case_when(
+           C07_1 %in% 3:4~"Temporal",
+           C07_1 %in% 1:2~"No temporal",
+           TRUE ~ "Ns/Nc"
+         ),
+         PRECASEG = NA,
+         PRECASALUD = NA,
+         CALIF = factor(
+           case_when(
+             C03_4%in%  8 ~"Baja",
+             C03_4%in%  3:6 ~"Media",
+             C03_4%in%  1:2 ~"Alta"),
+           levels = c("Baja","Media","Alta")),
+         ANO = 2018,
+         salario.mensual.prom = C05_1/C01_1,
+         ING = salario.mensual.prom,
+         salario.diario.prom = salario.mensual.prom/C01_2,
+         salario.horario.prom = salario.diario.prom/C01_3,
+         EDAD = 2018 - A04_1,
+         SEXO = factor(
+           case_when(A03==1~"Varon",
+                     A03==2 ~"Mujer"),
+           levels = c("Varon","Mujer")),
+         han = factor(
+           case_when(A06==1~"Yes",
+                     TRUE ~"No"),
+           levels = c("Yes","No")),
+         party_member = factor(
+           case_when(A07_1==1~"Yes",
+                     TRUE ~"No"),
+           levels = c("Yes","No")),
+         married_cohabitation = factor(
+           case_when(
+             A05 %in% 1:4~"Yes",
+             A05 %in% 5:8 ~"No"),
+           levels = c("Yes","No")),
+         tamanio = factor(
+           case_when(
+             C08%in%  1~"8 or less",
+             C08%in%  2:3~"9-100",
+             C08%in%  4:5~"101-500",
+             C08%in%  6:7~"501 or more"),
+           levels = c("8 or less","9-100","101-500","501 or more")),
+         TAMA = factor(
+           case_when(
+             C08%in%  1 ~"Pequeño",
+             C08%in%  2 ~"Mediano",
+             C08%in%  3:7 ~"Grande"),
+           levels = c("Pequeño","Mediano","Grande")),
+         TAMA = factor(
+           case_when( 
+             C03_1 %in%  3 ~"Pequeño", #TCP a pequeño
+             TRUE ~TAMA),
+           levels = c("Pequeño","Mediano","Grande")),
+         status = case_when(
+           C03_2 %in% 1:3~"state-owned, public inst and party agencies",
+           C03_2 %in% c(6)~"foreign owned",
+           C03_2 %in% c(4,7,5)~"private sector",
+           TRUE ~"Others"),
+         status2 = case_when(
+           C03_2 %in% 1:3~"state-owned, public inst and party agencies",
+           C03_2 %in% c(6)~"foreign owned",
+           C03_2 %in% c(4,7,5)~"private, individual and colective enterprises",
+           TRUE ~"Others"),
+         sin_contrato_o_temporario = factor(case_when(
+           C07_1 %in% 3:4~"Yes",
+           TRUE ~"No"),
+           levels = c("No","Yes")),
+         sin_contrato = factor(case_when(
+           C07_1 %in% 4~"Yes",
+           TRUE ~"No"),
+           levels = c("No","Yes")),
+         no_social_benefits = factor(case_when(
+           C07_7 %in% 6~"Yes",
+           TRUE ~"No"),
+           levels = c("No","Yes"))
+         
+  ) %>% 
+  rename(years_educ = A13_3,
+         rama = C03_3,
+         huk_status = A09_1,
+         contract_type =C07_1) %>% 
+  mutate(PERIODO = 2018,
+         years_educ = case_when(years_educ>0~years_educ),
+         status = case_when(status>0~status))
 
+variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD","CATOCUP","COND","PRECAPT",
+  "PRECAREG","PRECATEMP","PRECASALUD","PRECASEG","TAMA","CALIF","ING") 
+Base <- base_homog %>% 
+  select(all_of(variables))
+
+save(Base,file = "Bases_homog/China.Rdata")
+
+# Base trabajo ####
 dif.asalariados.2018 <- base_dif_2018 %>%
   filter(estado %in%  c("Employed")) %>%  ###Filtro Ocupados
   filter(C03_1 %in%  2:3) %>% ###Filtro Asalariados y TCP
-#  filter(Province.code!= 15) %>% 
+  #  filter(Province.code!= 15) %>% 
   filter(C05_1>0,C01_1>=1,C01_2>0,C01_3>0) %>% # Filtro Salario, Horas, Meses, Dias positivos
   mutate(asalariado = case_when(C03_1 == 2 ~1,
                                 TRUE ~ 0),
@@ -189,7 +299,6 @@ dif.asalariados.2018 <- base_dif_2018 %>%
   mutate(year = 2018,
          years_educ = case_when(years_educ>0~years_educ),
          status = case_when(status>0~status))
-
 variables <- c("sin_contrato_o_temporario","pondera_urbano_gw","estrato" ,"estado","cat_ocup","asalariado","ocupacion_zhang" ,"Province",
                "branch_group","branch_name","grupos.tamanio","grupos.calif", "status","status2", "age" ,"party_member",  "sex" , "tamanio" , "han" , "married_cohabitation",
                "contract_type","rama","years_educ","sin_contrato","sin_contrato_o_temporario","no_social_benefits","year","salario.horario.prom",

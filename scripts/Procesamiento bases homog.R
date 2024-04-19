@@ -1,7 +1,6 @@
 options(scipen = 999) 
-setwd("~/GitHub/precariedad.mundial")
+#setwd("~/GitHub/precariedad.mundial") # Creo que abrir el proyecto seria lo ideal
 paises = c('Bolivia', 'Brasil', 'Chile', 'Paraguay', 'Peru', 'Uruguay')
-
 for (pais in paises) {
 #### Join de todas las bases y modificaciones generales ####
 load(paste0("Bases_homog/", pais, ".Rdata"))
