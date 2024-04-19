@@ -290,7 +290,10 @@ America %>%
              space = "free",
              scales = "free_x")+
   guides(fill=guide_legend(title="Tamaño - Calificación"))
-  
+
+datos1 <- America %>% 
+  filter(tamanio.calif!= "Total",Pais!= "Canada") %>% 
+  select(Pais, tamanio.calif, particip.ocup)
 
 particip_media_cluster<- America %>% 
   filter(tamanio.calif!= "Total",Pais!= "Canada") %>% 
@@ -339,7 +342,6 @@ TCPs<- America %>%
   summarise(peso_tcp = tcp/ocupados_spriv.pais) %>% 
   group_by(grupos.calif,Cluster) %>% 
   mutate(peso_tcp_cluster = mean(peso_tcp))
-  
 
 America %>% 
   filter(grupos.tamanio== "Pequeño") %>% 
@@ -427,6 +429,7 @@ America %>%
   facet_grid(cols = vars(Cluster),
              space = "free",
              scales = "free_x")
+
 
 ###### TCP/ASAL - P1 a P3#####
 

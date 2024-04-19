@@ -1,42 +1,17 @@
-
-#### Intro ####
-
-library(dplyr)
-library(haven)
-library(xlsx)
-library(ggplot2)
-library(ggthemes)
-
 options(scipen = 999) 
-
 setwd("~/GitHub/precariedad.mundial")
+paises = c('Bolivia', 'Brasil', 'Chile', 'Paraguay', 'Peru', 'Uruguay')
 
-
-#### Peru ####
-
-
+for (pais in paises) {
 #### Join de todas las bases y modificaciones generales ####
-
-Base <-   bind_rows(CHI, URU, BRA, PAR, BOL, PER)
-
+load(paste0("Bases_homog/", pais, ".Rdata"))
 #Paso todos los TCP a Tamaño Pequeño
-
 Base <- Base %>% 
   mutate(
     TAMA=factor(case_when(
       CATOCUP== "Cuenta propia" ~ "Pequeño", 
       TRUE                      ~ as.character(TAMA)), 
       levels= c("Pequeño", "Mediano", "Grande", "Ns/Nc")))
-
-
-# Guardo la base
- 
-save(Base, file = "Bases/Bases_Latam_procesadas_Facu.Rds")   ## Borrar esto
-    
-#### Resultados ####
-
-#Si es necesario abro la base ya procesada
-load("Bases/Bases_Latam_procesadas_Facu.Rds")
 
 Resultados <- Base                                          %>%      
   filter(COND=="Ocupado" & CALIF!="Ns/Nc" & TAMA!="Ns/Nc" & CATOCUP!="Resto" & CATOCUP!= "Ns/Nc")   %>%
@@ -65,7 +40,6 @@ Resultados <- Base                                          %>%
             'part.involun.tcp'                     = sum(WEIGHT[PRECAPT=="Part-time involuntario" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
             'part.volunt.tcp'                      = sum(WEIGHT[PRECAPT=="Part-time voluntario" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
             'full.time.tcp'                        = sum(WEIGHT[PRECAPT=="Tiempo completo" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
-            
             'tasa.1.asalariados'                   = sum(WEIGHT[PRECACOUNT==1 | PRECACOUNT==2 | PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
             'tasa.2.asalariados'                   = sum(WEIGHT[PRECACOUNT==2 | PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
             'tasa.3.asalariados'                   = sum(WEIGHT[PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
@@ -95,13 +69,10 @@ Resultados <- Base                                          %>%
 
 #Resultados <-  Resultados[,c(1:5, 16, 17, 6:15, 18)]
 Resultados[is.na(Resultados)] <- 0
-
 Resultados <- Resultados %>%                        
   group_by(Pais, grupos.tamanio, grupos.calif) %>%
   summarise_each(funs(mean)) %>%
   select(-PERIODO)
-
-
 Resultados   <-  Resultados  %>% 
   mutate(tamanio.calif= paste(grupos.tamanio, " - ", grupos.calif, sep=""),
          tamanio.calif2 = case_when(
@@ -115,8 +86,7 @@ Resultados   <-  Resultados  %>%
            tamanio.calif == "Grande - Media" ~ "8) Grande - Media",
            tamanio.calif == "Grande - Alta" ~ "9) Grande - Alta"))
 
-
-save(Resultados, file = "Resultados/ResultadosFacu.RDATA")
+save(Resultados, file = paste0("Resultados/", pais, ".Rdata"))
 
 
 #### Resultados sin desagregar por perfiles ####
@@ -130,7 +100,6 @@ Resultados2 <- Base                                          %>%
             'asalariados'                          = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE),
             'tcp'                                  = sum(WEIGHT[CATOCUP=="Cuenta propia"], na.rm=TRUE),
             'tasa.asalarizacion'                   = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE)/sum(WEIGHT[CATOCUP=="Asalariados" | CATOCUP=="Cuenta propia"], na.rm=TRUE),
-            
             'seguridad.social.si.asal'             = sum(WEIGHT[PRECASEG=="Con aportes" & CATOCUP=="Asalariados"], na.rm=TRUE),
             'seguridad.social.no.asal'             = sum(WEIGHT[PRECASEG=="Sin aportes" & CATOCUP=="Asalariados"], na.rm=TRUE),
             'registrados.asal'                     = sum(WEIGHT[PRECAREG=="Registrado" & CATOCUP=="Asalariados"], na.rm=TRUE),
@@ -140,7 +109,6 @@ Resultados2 <- Base                                          %>%
             'part.involun.asal'                    = sum(WEIGHT[PRECAPT=="Part-time involuntario" & CATOCUP=="Asalariados"], na.rm=TRUE),
             'part.volunt.asal'                     = sum(WEIGHT[PRECAPT=="Part-time voluntario" & CATOCUP=="Asalariados"], na.rm=TRUE),
             'full.time.asal'                       = sum(WEIGHT[PRECAPT=="Tiempo completo" & CATOCUP=="Asalariados"], na.rm=TRUE),
-            
             'seguridad.social.si.tcp'              = sum(WEIGHT[PRECASEG=="Con aportes" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
             'seguridad.social.no.tcp'              = sum(WEIGHT[PRECASEG=="Sin aportes" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
             'registrados.tcp'                      = sum(WEIGHT[PRECAREG=="Registrado" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
@@ -150,7 +118,6 @@ Resultados2 <- Base                                          %>%
             'part.involun.tcp'                     = sum(WEIGHT[PRECAPT=="Part-time involuntario" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
             'part.volunt.tcp'                      = sum(WEIGHT[PRECAPT=="Part-time voluntario" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
             'full.time.tcp'                        = sum(WEIGHT[PRECAPT=="Tiempo completo" & CATOCUP=="Cuenta propia"], na.rm=TRUE),
-            
             'tasa.1.asalariados'                   = sum(WEIGHT[PRECACOUNT==1 | PRECACOUNT==2 | PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
             'tasa.2.asalariados'                   = sum(WEIGHT[PRECACOUNT==2 | PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
             'tasa.3.asalariados'                   = sum(WEIGHT[PRECACOUNT==3], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),
@@ -170,47 +137,12 @@ Resultados2 <- Base                                          %>%
   rename(Pais=PAIS)
 
 Resultados2[is.na(Resultados2)] <- 0
-
 Resultados2 <- Resultados2 %>%                        
   group_by(Pais) %>%
   summarise_each(funs(mean)) %>%
   select(-PERIODO)
 
-save(Resultados2, file = "Resultados/Resultados_agregados_Facu.RDATA")
+save(Resultados, file = paste0("Resultados/", pais, "_agregado.Rdata"))
 
-
-#### Cuento cantidad de casos sin ponderar en cada perfil ####
-
-Casos  <- Base                                               %>%      
-  filter(COND=="Ocupado" & CALIF!="Ns/Nc" & TAMA!="Ns/Nc")   %>%
-  group_by(PAIS, PERIODO, TAMA, CALIF)                       %>%
-  summarise('casos' = n())                                   %>%
-  ungroup()                                                  %>% 
-  group_by(PAIS, TAMA, CALIF)                                %>%  
-  summarise_each(funs(mean))                                 %>%
-  ungroup()                                                  %>% 
-  select(-PERIODO)                                           %>% 
-  group_by(PAIS)                                             %>%                         
-  mutate('porcentaje'           = casos/sum(casos))          %>% 
-  ungroup()                                                  %>% 
-  mutate(tamanio.calif= paste(TAMA, " - ", CALIF, sep=""),
-         tamanio.calif = case_when(
-           tamanio.calif == "Pequeño - Baja"  ~ "1) Pequeño - Baja",
-           tamanio.calif == "Pequeño - Media" ~ "2) Pequeño - Media",
-           tamanio.calif == "Pequeño - Alta" ~ "3) Pequeño - Alta",
-           tamanio.calif == "Mediano - Baja" ~ "4) Mediano - Baja",
-           tamanio.calif == "Mediano - Media" ~ "5) Mediano - Media",
-           tamanio.calif == "Mediano - Alta" ~ "6) Mediano - Alta",
-           tamanio.calif == "Grande - Baja" ~ "7) Grande - Baja",
-           tamanio.calif == "Grande - Media" ~ "8) Grande - Media",
-           tamanio.calif == "Grande - Alta" ~ "9) Grande - Alta"))   %>% 
-  filter(PAIS!="Brasil")
-
-ggplot(Casos, aes(x=tamanio.calif, y=casos)) +
-  geom_col(position = "dodge") +
-  facet_wrap(~PAIS) +
-  labs(title = "Cantidad de casos sin ponderar")
-  
-
-
+}
 
