@@ -7,13 +7,13 @@ Este es el repositorio de datos para el procesamiento de encuestas de hogares, e
 
 El repositorio está organizado de la siguiente manera:
 
-- **\Bases**: Contiene las bases de microdatos en el formato de publicación del instituto de estadística de cada país.
-- **\scripts**: Incluye los scripts por país utilizados para transformar los datos de cada país en un dataframe homogéneo.
-- **\bases_homog**: Contiene las bases homogéneas por país y el archivo base_homog.Rds con los datos unificados.
-- **\Resultados**: Contiene tablas de resultados de distintas tasas e indicadores del mercado de trabajo.
+- **\Bases**: Contiene las bases de microdatos en el formato de publicación del instituto de estadística de cada país
+- **\scripts**: Incluye los scripts utilizados para transformar los datos por país de \bases en dataframes con datos homogéneos que se guardan en \bases_homog
+- **\bases_homog**: Contiene las bases homogéneas por país y el archivo base_homog.Rds con los datos unificados
+- **\Resultados**: Contiene tablas de resultados de distintas tasas e indicadores del mercado de trabajo
 - **\procesamiento.R**: Procesa los datos unificados y construye el dataframe de resultados
-- **\bases_homog\unificar.R**: Unifica toda la información procesada por país en un único dataframe.
-- **metadata.xlsx**: Documento que describe los criterios utilizados para la creación de variables de la base homogeneizada.
+- **\bases_homog\unificar.R**: Unifica toda la información procesada por país en un único dataframe
+- **metadata.xlsx**: Documento que describe los criterios utilizados para la creación de variables de la base homogeneizada
 
 ## Descripción del Dataframe
 
