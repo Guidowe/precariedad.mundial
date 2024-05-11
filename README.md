@@ -14,7 +14,7 @@ El repositorio está organizado de la siguiente manera:
 
 ## Descripción del Dataframe
 
-Las encuestas de cada país son filtradas para obtener información solo del sector urbano para el empleo, sin incluir el sector público y el trabajo doméstico remunerado. El dataframe base_homog.Rds cuenta con las siguientes columnas:
+Las encuestas de cada país son filtradas para obtener información para el total del empleo urbano del país sin incluir el sector público y el trabajo doméstico remunerado. El dataframe base_homog.Rds cuenta con las siguientes columnas:
 
 - **PAIS**: País de la encuesta.
 - **WEIGHT**: Ponderador.
