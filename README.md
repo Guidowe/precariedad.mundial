@@ -1,7 +1,7 @@
 --english version below--
-# Repositorio precariedad.mundial
+# Proyecto precariedad.mundial
 
-Bienvenido al repositorio de datos para el procesamiento de encuestas de hogares, en el marco de la línea de trabajo sobre precariedad mundial del Centro de Estudios sobre Población, Empleo y Desarrollo (CEPED - IIEEP – UBA). Este proyecto utiliza microdatos de encuestas de hogares de institutos de estadística oficiales de distintos países del mundo y los convierte en un dataframe unificado con información homogeneizada.
+Este es el repositorio de datos para el procesamiento de encuestas de hogares, en el marco de la línea de trabajo sobre precariedad mundial del Centro de Estudios sobre Población, Empleo y Desarrollo (CEPED - IIEEP – UBA). Este proyecto utiliza microdatos de encuestas de hogares de institutos de estadística oficiales de distintos países del mundo y los convierte en un dataframe unificado con información homogeneizada.
 
 ## Estructura del Repositorio
 
@@ -12,7 +12,7 @@ El repositorio está organizado de la siguiente manera:
 - **\bases_homog**: Contiene las bases homogéneas por país y el archivo base_homog.Rds con los datos unificados.
 - **\Resultados**: Contiene tablas de resultados de distintas tasas e indicadores del mercado de trabajo.
 - **\procesamiento.R**: Procesa los datos unificados y construye el dataframe de resultados
-- **\bases_homog\unificar.R**: Script que unifica toda la información procesada por país en un único dataframe.
+- **\bases_homog\unificar.R**: Unifica toda la información procesada por país en un único dataframe.
 - **metadata.xlsx**: Documento que describe los criterios utilizados para la creación de variables de la base homogeneizada.
 
 ## Descripción del Dataframe
