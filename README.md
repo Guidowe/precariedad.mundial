@@ -68,8 +68,11 @@ Surveys from each country are filtered to obtain information for total urban emp
 
 - **PAIS**: Country of the survey.
 - **WEIGHT**: Weight.
-- **CATOCUP**: Occupational category.
+- **SEXO**: Sex.
+- **EDAD**: Age.
 - **COND**: Activity condition.
+- **CATOCUP**: Occupational category.
+- **SECTOR**: Sector (Public, Private, Paid domestic workers)
 - **PRECAPT**: Precariousness due to part-time work.
 - **PRECAREG**: Precariousness due to lack of registration of the employment relationship.
 - **PRECATEMP**: Precariousness due to temporary work.
