@@ -20,8 +20,11 @@ Las encuestas de cada país son filtradas para obtener información para el tota
 
 - **PAIS**: País de la encuesta.
 - **WEIGHT**: Ponderador.
-- **CATOCUP**: Categoría ocupacional.
+- **SEXO**: Sexo.
+- **EDAD**: Edad.
 - **COND**: Condición de actividad.
+- **CATOCUP**: Categoría ocupacional.
+- **SECTOR**: Sector (Público, Privado sin servicio doméstico, Servicio Doméstico)
 - **PRECAPT**: Precariedad por trabajo part-time.
 - **PRECAREG**: Precariedad por no registro de la relación laboral.
 - **PRECATEMP**: Precariedad por trabajo temporario.
