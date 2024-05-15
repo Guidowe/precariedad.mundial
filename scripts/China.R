@@ -6,38 +6,6 @@ library(openxlsx)
 #library(tidymodels)
 #library(stargazer)
 
-## Funciones ####
-tidy.selection <- function(x,
-                           conf.int = FALSE,
-                           conf.level = 0.95,
-                           ...) {
-  s <- summary(x, ...)
-  ret <- broom:::as_tidy_tibble(s$estimate,
-                                new_names = c("estimate", "std.error",
-                                              "statistic", "p.value"))
-  
-  # selection models include an outcome and a selection equation
-  ret$group <- NA_character_
-  ret$group[s$param$index$betaS] <- "Selection"
-  ret$group[s$param$index$betaO] <- "Outcome"
-  
-  if (isTRUE(conf.int)) {
-    ci <- broom:::broom_confint_terms(x, level = conf.level)
-    ret <- dplyr::left_join(ret, ci, by = "term")
-  }
-  ret
-}
-
-glance.selection <- function(x, ...) {
-  broom:::as_glance_tibble(
-    nobs = stats::nobs(x),
-    method = x$method[1],
-    rho = x$rho,
-    sigma = x$sigma,
-    na_types = "icrr")
-}
-
-
 #Carga de Datos#####
 ## Expansores####
 expansores_gw <- openxlsx::read.xlsx("Fuentes Complementarias/CHIPweights GW modificacion.xlsx",
@@ -65,9 +33,7 @@ base_urbana_2018 <- haven::read_dta("../bases/China/chip2018_urban_person.dta")
 base_urbana_2018[] <- lapply(base_urbana_2018, function(x) { attributes(x) <- NULL; x })
 
 
-base_urbana_2018 %>% 
-#base_rural_2018 <- haven::read_dta("Data/CHIP/2018/chip2018_rural_person.dta")
-variables <- c("hhcode","A10","C03_1","C05_1","C01_1","C01_2","C01_3",
+variables <- c("hhcode","A10","C03_1","C05_1","C01_1","C01_2","C01_3","C03_3",
                "A_03")
 base_dif_2018 <-  base_urbana_2018  %>% 
   mutate(estrato = case_when(A10 != 1 ~"Urban",
@@ -138,6 +104,8 @@ base_homog <- base_dif_2018 %>%
            case_when(A03==1~"Varon",
                      A03==2 ~"Mujer"),
            levels = c("Varon","Mujer")),
+         SECTOR = case_when(C03_2 %in% 1:2 ~ "Publico",
+                            TRUE ~ "Privado sin SD"),
          han = factor(
            case_when(A06==1~"Yes",
                      TRUE ~"No"),
@@ -201,7 +169,7 @@ base_homog <- base_dif_2018 %>%
          years_educ = case_when(years_educ>0~years_educ),
          status = case_when(status>0~status))
 
-variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD","CATOCUP","COND","PRECAPT",
+variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD","CATOCUP","COND","SECTOR","PRECAPT",
   "PRECAREG","PRECATEMP","PRECASALUD","PRECASEG","TAMA","CALIF","ING") 
 Base <- base_homog %>% 
   select(all_of(variables))
