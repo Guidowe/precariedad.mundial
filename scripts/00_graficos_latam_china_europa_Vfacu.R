@@ -88,14 +88,14 @@ perfiles <- perfiles %>%
 Paises <- Paises %>% 
   mutate(
     Cluster = factor(case_when(
-    COD.OCDE %in% c("BOL","ECU","SLV") ~ "Cluster 1",
-    COD.OCDE %in% c("GTM","PRY","PER") ~ "Cluster 2",
-    COD.OCDE %in% c("BRA","URY","MEX","CHL","ARG","CRI","COL") ~ "Cluster 3",
+    COD.OCDE %in% c("BOL","ECU","SLV") ~ "Latinoamérica",
+    COD.OCDE %in% c("GTM","PRY","PER") ~ "Latinoamérica",
+    COD.OCDE %in% c("BRA","URY","MEX","CHL","ARG","CRI","COL") ~ "Latinoamérica",
     COD.OCDE %in% c("USA") ~ "EE.UU.",
     COD.OCDE %in% c("CHN") ~ "China",
     COD.OCDE %in% c("DEU", "BEL", "BGR", "DNK", "ESP", "FRA", "GRC", "NLD", "HUN", 
                     "IRL", "ITA", "NOR", "POL", "PRT", "GBR", "CZE", "ROU", "SWE") ~ "Europa"),
-    levels = c("Cluster 1","Cluster 2","Cluster 3","China", "Europa" ,"EE.UU.")),
+    levels = c("Latinoamérica","China", "Europa" ,"EE.UU.")),
     Orden = case_when(
       COD.OCDE %in% c("BOL")~ 1,
       COD.OCDE %in% c("ECU")~ 2,
