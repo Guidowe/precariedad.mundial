@@ -25,7 +25,7 @@ Las encuestas de cada país son filtradas para obtener información para el tota
 - **COND**: Condición de actividad.
 - **CATOCUP**: Categoría ocupacional.
 - **SECTOR**: Sector (Público, Privado sin servicio doméstico, Servicio Doméstico)
-- **EDUC**: Highest level of education completed (primary, secondary, tertiary)
+- **EDUC**: Máximo nivel educativo terminado (primary, intermediate, terciary)
 - **PRECAPT**: Precariedad por trabajo part-time involuntario.
 - **PRECAREG**: Precariedad por no registro de la relación laboral.
 - **PRECATEMP**: Precariedad por trabajo temporario.
@@ -74,7 +74,7 @@ Surveys from each country are filtered to obtain information for total urban emp
 - **COND**: Activity condition.
 - **CATOCUP**: Occupational category.
 - **SECTOR**: Sector (Public, Private, Paid domestic workers)
-- **EDUC**: Máximo nivel educativo terminado (primary, intermediate, terciary)
+- **EDUC**: Highest level of education completed (primary, secondary, tertiary)
 - **PRECAPT**: Precariousness due to involuntary part-time work.
 - **PRECAREG**: Precariousness due to lack of registration of the employment relationship.
 - **PRECATEMP**: Precariousness due to temporary work.
