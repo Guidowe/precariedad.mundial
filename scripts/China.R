@@ -76,18 +76,14 @@ base_homog <- base_dif_2018 %>%
          CATOCUP = case_when(C03_1 == 2 ~"Asalariados",
                              C03_1 == 3 ~"Cuenta propia",
                              TRUE ~"Resto"),
-         PRECAPT = NA,
          PRECAREG = case_when(
-           C07_1 %in% 4~"No registrado",
-           C07_1 %in% 1:3~"Registrado",
-           TRUE ~"Ns/Nc"),
+           C07_1 %in% 4~1,#"No registrado",
+           C07_1 %in% 1:3~0),
          PRECATEMP = case_when(
-           C07_1 %in% 3:4~"Temporal",
-           C07_1 %in% 1:2~"No temporal",
-           TRUE ~ "Ns/Nc"
-         ),
-         PRECASEG = NA,
+           C07_1 %in% 3:4~1,#"Temporal",
+           C07_1 %in% 1:2~0),
          PRECASALUD = NA,
+         PRECAPT = NA,
          CALIF = factor(
            case_when(
              C03_4%in%  8 ~"Baja",
@@ -104,8 +100,16 @@ base_homog <- base_dif_2018 %>%
            case_when(A03==1~"Varon",
                      A03==2 ~"Mujer"),
            levels = c("Varon","Mujer")),
-         SECTOR = case_when(C03_2 %in% 1:2 ~ "Publico",
-                            TRUE ~ "Privado sin SD"),
+         SECTOR = case_when(C03_2 %in% 1:2 ~ "Pub",
+                            TRUE ~ "Priv"),
+         EDUC = case_when(A13_1 %in% 1:2 ~ 1,
+                          A13_1 %in% 3:7 ~ 2,
+                          A13_1 %in% 8:9 ~ 3,
+                          ),
+         EDUC = ifelse(A13_2 %in% 2:4 & EDUC %in% 2:3,yes = EDUC-1,no = EDUC),#completo
+         EDUC = case_when(EDUC == 1 ~ "Primaria",
+                          EDUC == 2 ~ "Secundaria",
+                          EDUC == 3 ~ "Terciaria"),
          han = factor(
            case_when(A06==1~"Yes",
                      TRUE ~"No"),
@@ -158,9 +162,12 @@ base_homog <- base_dif_2018 %>%
          no_social_benefits = factor(case_when(
            C07_7 %in% 6~"Yes",
            TRUE ~"No"),
-           levels = c("No","Yes"))
-         
-  ) %>% 
+           levels = c("No","Yes")),
+         PRECASEG = case_when(
+           C07_7 %in% 6~ 1,#"Ningun beneficio social",
+           TRUE ~ 0 #"Social benefits"),
+           )
+         ) %>% 
   rename(years_educ = A13_3,
          rama = C03_3,
          huk_status = A09_1,
@@ -169,12 +176,13 @@ base_homog <- base_dif_2018 %>%
          years_educ = case_when(years_educ>0~years_educ),
          status = case_when(status>0~status))
 
-variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD","CATOCUP","COND","SECTOR","PRECAPT",
+variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD",
+              "CATOCUP","COND","SECTOR","PRECAPT","EDUC",
   "PRECAREG","PRECATEMP","PRECASALUD","PRECASEG","TAMA","CALIF","ING") 
-Base <- base_homog %>% 
+base_homog_final <- base_homog %>% 
   select(all_of(variables))
 
-save(Base,file = "Bases_homog/China.Rdata")
+saveRDS(base_homog_final,file = "bases_homog/china.rds")
 
 # Base trabajo ####
 dif.asalariados.2018 <- base_dif_2018 %>%

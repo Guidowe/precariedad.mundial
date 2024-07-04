@@ -7,29 +7,28 @@ library(stringr)
 # rutas <- data.frame(
 #   ruta = list.files("../bases/Ecuador/",recursive = T))
 # 
-# rutas.base.2019 <- rutas %>% 
+# rutas.base.2019 <- rutas %>%
 #   filter(str_detect(ruta,pattern = "sav"))
 # 
 # ecuador2019 <- data.frame()
 # 
-# for(base in rutas.base.2019$ruta){
-#   
-#   
+# for(base in rutas.base.2019$ruta[1]){
+# 
+# 
 #   ecuador<- read.spss(file = paste0('../bases/Ecuador/',base),
-#                      reencode = "UTF-8",use.value.labels = F,
-#                                            to.data.frame = T) %>% 
+#                      reencode = "UTF-8",use.value.labels = T,
+#                                            to.data.frame = T) %>%
 #     mutate(ciudad = as.character(ciudad),
 #            area = as.character(area),
 #            dominio = as.character(dominio))
-#   
+# 
 # ecuador2019 <-   bind_rows(ecuador2019,ecuador)
-#   
+# 
 # 
 # }
 
 #saveRDS(ecuador2019,"Bases/ecuador_2019.RDS")
 ecuador2019 <- readRDS("Bases/ecuador_2019.RDS")
-
 ####Ecuador####
 ##Miro variables##
 # prueba.salario <- ecuador %>%
@@ -39,7 +38,7 @@ ecuador2019 <- readRDS("Bases/ecuador_2019.RDS")
 #   ggplot(aes(x = ingrl)) +
 #   geom_histogram()
 # salarios<- data.frame(table(prueba.salario$ingrl))
-# table(ecuador$area)
+ table(ecuador$p10a)
 # table(ecuador2$area)
 # table(ecuador$p27)
 # table(ecuador2$p27)
@@ -56,7 +55,75 @@ ver <- ecuador2019 %>%
   group_by(p42) %>%
   summarise(casos = n())
 
-##Proceso##
+#Base homogenea ####
+table(ecuador2019$periodo)
+base_homog <- ecuador2019 %>% 
+  mutate(uno = 1) %>% 
+  filter(area == 1) %>% #Urbanos
+  filter(condact %in% 2:7) %>% #Ocupados
+ # filter(p42 %in% c(2,3,4,6)) %>% # CP, y asalariados privados (incluye jornalero y terciarizado)
+  #   filter(p42 == 2) %>% # Asalariad
+  mutate(
+    PAIS = "Ecuador",
+    COND = "Ocupado",
+    ANO = as.integer(str_sub(periodo,1,4)),
+    SEXO = case_when(p02 == 1 ~ "Varon",
+                     p02 == 2 ~ "Mujer"),
+    EDAD = p03,
+
+    SECTOR = case_when(p42  == 1 ~"Pub",
+                         p42  %in%  c(2:6) ~"Priv",
+                         p42  == 10 ~"SD"),
+    CATOCUP = case_when(p42 %in% c(1,2,3,4,9,10) ~"Asalariados",
+                        p42 == 6 ~"Cuenta propia",
+                        TRUE ~"Resto"),
+    PRECASEG =  case_when(p44f == 1 ~ 0,# "Recibe seguo social",
+                          p44f == 2 ~ 1),
+    PRECAREG = NA,
+    PRECASALUD = NA,
+    registracion =  NA,
+    part.time.inv = case_when(p24 < 35 & p27%in% 1:3 ~ "Part Involunt",
+                              p24 < 35 & p27 %in% 4 ~ "Part Volunt",
+                              p24 >= 35 ~ "Full Time"), 
+    PRECAPT = case_when(part.time.inv == "Part Involunt"~1,
+                        part.time.inv %in%  c("Part Volunt","Full Time")~0),
+    PRECATEMP = NA,
+    # tiempo.determinado = case_when(
+    #   Estabili == 10 ~ "No",
+    #   Estabili != 10 ~ "Si"),
+    ISCO.1.digit = str_sub(p41,1,1), 
+    CALIF =   case_when(
+      ISCO.1.digit %in% 1:3 ~ "Alta",
+      ISCO.1.digit %in% 4:8 ~ "Media",
+      ISCO.1.digit %in% 9 ~ "Baja"),
+    TAMA =
+      case_when(
+        p47b %in% 1:9 ~ "Pequeño", # 1 a 9
+        p47b %in% 10:50 ~ "Mediano", # 10 a 50
+        p47b > 50 | p47a == 2 ~ "Grande"),#  + de  100
+    TAMA =case_when(
+      p42 == 6   ~ "Pequeño",
+      TRUE ~ TAMA),
+    ING = case_when(ingrl %in% c(0,999999) ~ NA,
+                TRUE ~ ingrl),
+    EDUC = case_when(p10a %in% 1:5 ~ "Primaria",
+                     p10a %in% 6:7 ~ "Secundaria",
+                     p10a %in% 8:10 ~ "Terciaria"
+                     ),
+  ) %>% 
+  rename(
+    WEIGHT = fexp,
+    PERIODO = periodo,
+    ) 
+
+variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD",
+              "CATOCUP","COND","SECTOR","PRECAPT","EDUC",
+              "PRECAREG","PRECATEMP","PRECASALUD","PRECASEG","TAMA","CALIF","ING") 
+base_homog_final <- base_homog %>% 
+  select(all_of(variables))
+
+saveRDS(base_homog_final,file = "bases_homog/ecuador.rds")
+##Base Indicadores####
 ec.categ <- ecuador2019 %>% 
   mutate(uno = 1) %>% 
   filter(area == 1) %>% #Urbanos
@@ -87,6 +154,7 @@ ec.categ <- ecuador2019 %>%
     grupos.tamanio =
       case_when(p42 == 6   ~ "Pequeño",
                 TRUE ~ grupos.tamanio)) 
+
 
 # ver <- ec.categ %>% 
 #   group_by(part.time.inv,grupos.tamanio,grupos.calif) %>% 
