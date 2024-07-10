@@ -277,8 +277,9 @@ America %>%
         legend.direction = "vertical",
         legend.title = element_text(size = 14),
         axis.title = element_blank(),
-        text = element_text(size = 15),
+        text = element_text(size = 18),
         axis.text.x = element_text(angle = 45),
+        plot.margin = margin(0,1,0,0, "cm"),
         #panel.spacing = unit(1,"cm"),
         panel.grid.major.y = element_line(colour = "grey"),
         panel.grid.minor.y = element_line(colour = "grey30"),
@@ -290,6 +291,48 @@ America %>%
              space = "free",
              scales = "free_x")+
   guides(fill=guide_legend(title="Tamaño - Calificación"))
+
+ggsave("Resultados/Mundial/perfiles.jpg",width = 15,height = 12,bg = "white")
+
+
+###### Solo Asalariados #####
+asalariados_perfiles<- America %>% 
+  filter(tamanio.calif!= "Total",Pais!= "Canada") %>% 
+  group_by(Pais,Orden,Cluster) %>%
+  mutate(total_asalaraiados_pais = sum(asalariados,na.rm = T)) %>%
+  ungroup() %>% 
+  mutate(partticip_asal_perf = asalariados/total_asalaraiados_pais) 
+  
+ggplot(asalariados_perfiles,
+         aes(x = reorder(Pais,Orden), y = partticip_asal_perf,
+             fill = tamanio.calif,group = tamanio.calif,
+             label = scales::percent(partticip_asal_perf,decimal.mark = ",",
+                                     accuracy = 0.1))) +
+  geom_col(position = "stack")+
+  geom_text(position = position_stack(vjust = .5),size=3)+
+  #  labs(title = "Distribución del empleo según grupos")+
+  theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        legend.title = element_text(size = 14),
+        axis.title = element_blank(),
+        text = element_text(size = 18),
+        axis.text.x = element_text(angle = 45),
+        plot.margin = margin(0,1,0,0, "cm"),
+        #panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_fill_manual(values = paleta)+
+  scale_y_continuous(labels = scales::percent)+
+  facet_grid(cols = vars(Cluster),
+             space = "free",
+             scales = "free_x")+
+  guides(fill=guide_legend(title="Tamaño - Calificación"))
+
+ggsave("Resultados/Mundial/perfiles_solo_asalariados.jpg",width = 15,height = 12,bg = "white")
+
 
 datos1 <- America %>% 
   filter(tamanio.calif!= "Total",Pais!= "Canada") %>% 
@@ -337,11 +380,11 @@ TCPs<- America %>%
   filter(tamanio.calif!= "Total",Pais!= "Canada") %>% 
   group_by(Pais) %>% 
   mutate(ocupados_spriv.pais = sum(ocupados)) %>% 
-  filter(grupos.tamanio== "Pequeño") %>% 
+#  filter(grupos.tamanio== "Pequeño") %>% 
   group_by(Pais,grupos.calif,Orden,Cluster) %>% 
-  summarise(peso_tcp = tcp/ocupados_spriv.pais) %>% 
-  group_by(grupos.calif,Cluster) %>% 
-  mutate(peso_tcp_cluster = mean(peso_tcp))
+  summarise(tcp_calif = sum(tcp,na.rm = T),
+            ocupados_spriv.pais = unique(ocupados_spriv.pais),
+            peso_tcp = tcp_calif/ocupados_spriv.pais)
 
 America %>% 
   filter(grupos.tamanio== "Pequeño") %>% 
@@ -388,6 +431,7 @@ TCPs%>%
         axis.title = element_blank(),
         text = element_text(size = 15),
         axis.text.x = element_text(angle = 45),
+        plot.margin = margin(0,1,0,0, "cm"),
         #panel.spacing = unit(1,"cm"),
         panel.grid.major.y = element_line(colour = "grey"),
         panel.grid.minor.y = element_line(colour = "grey30"),
@@ -398,6 +442,10 @@ TCPs%>%
              scales = "free_x")+
   scale_y_continuous(labels = scales::percent)+
   guides(fill=guide_legend(title="Calificación"))
+
+
+ggsave("Resultados/Mundial/TCP_calificacion.jpg",width = 15,height = 12,
+       bg = "white")
 
 
 ###### Asalariz en P1 a P3#####
