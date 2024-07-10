@@ -54,6 +54,74 @@ base_join_sample <- base_join %>%
   mutate(isco.08 = purrr::map(data, sample.isco))  %>%
   select(-data) %>% # Elimino la columna creada para el sorteo
   mutate(isco.08 = as.character(isco.08))
+
+table(base_join_sample$NIV_INS,useNA = "always")
+#Base homogenea ####
+base_homog <- base_join_sample %>% 
+  rename_all(.funs = tolower) %>% 
+  filter(t_loc != 4) %>%  #Localidades mayores a 2500
+  filter(clase2 == 1) %>%  #Ocupados
+  # filter((tue1  %in%  c(1,4))   |
+  #          (tue1 == 2 & tue2 == 3)|
+  #          (tue1 == 3 & tue3 == 5)) %>% # Spriv s/ serv domestico
+  # filter(pos_ocu %in%  c(1,3))%>% # Asalariado o TCP 
+  mutate(
+    PAIS = "México",
+    ANO = 2019,
+    SEXO = case_when(sex == 1 ~ "Varon",
+                     sex == 2 ~ "Mujer"),
+    EDAD = eda,
+    PERIODO = per,
+    WEIGHT  = fac,
+    COND = "Ocupado",
+    CATOCUP = case_when(pos_ocu %in%  c(1)~ "Asalariados",
+                         pos_ocu %in%  c(3)~ "Cuenta Propia",
+                         TRUE ~ "Resto"),
+    SECTOR = case_when(tue2  %in%  c(1:3,5,7)~ "Priv",
+                       tue2  %in%  c(4)~ "Pub",
+                       tue2  %in%  c(6)~ "SD"),
+    TAMA = 
+      case_when(
+        emple7c %in% 1:3 ~ "Pequeño", # 1 a 10
+        emple7c %in% 4:5 ~ "Mediano", # 11 a 50
+        emple7c %in% 6:5 ~ "Grande"), # + 51
+    TAMA = 
+      case_when(
+        pos_ocu %in% 3 ~ "Pequeño",
+        TRUE ~  TAMA),
+    PRECASEG =  case_when(p3m4 %in% 4 ~ 0,
+                                  TRUE ~ 1),
+    PRECAREG =  case_when(p3j %in% 1 ~ 0,
+                          p3j %in% 2 ~ 1),
+    part.time.inv = case_when(dur_est %in%  2:3 & sub_o == 1 ~ "Part Involunt",
+                              dur_est %in%  2:3 & sub_o == 0 ~ "Part Volunt",
+                              dur_est %in% 4:5 ~ "Full Time"), 
+    PRECAPT = case_when(part.time.inv == "Part Involunt"~1,
+                        part.time.inv %in%  c("Part Volunt","Full Time")~0),
+    PRECATEMP = case_when(
+      tip_con %in% c(1,3) ~ 0,
+      TRUE   ~ 1),
+    PRECASALUD = NA,
+    CALIF =   
+      case_when(
+        str_sub(isco.08,1,1) %in% 1:3 ~ "Alta",
+        str_sub(isco.08,1,1) %in% 4:8 ~ "Media",
+        str_sub(isco.08,1,1) %in% 9 ~ "Baja"),
+    ING = case_when(
+      p6b2 %in% c(0,999999) ~ NA,
+      TRUE ~ p6b2),
+    EDUC = case_when(niv_ins %in% 1:2 ~ "Primaria",
+                     niv_ins %in% 3 ~ "Secundaria",
+                     niv_ins %in% 4 ~ "Terciaria")
+    ) 
+
+variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD",
+              "CATOCUP","COND","SECTOR","PRECAPT","EDUC",
+              "PRECAREG","PRECATEMP","PRECASALUD","PRECASEG","TAMA","CALIF","ING") 
+base_homog_final <- base_homog %>% 
+  select(all_of(variables))
+
+saveRDS(base_homog_final,file = "bases_homog/mexico.rds")
 #######################Categorias#############################################
 mex.cat <- base_join_sample %>% 
   rename_all(.funs = tolower) %>% 
