@@ -38,11 +38,6 @@ Base <- Base %>%
     COND = case_when(
       condact == 1 ~ "Ocupado", 
       pead ==1 ~ "Desocupado"),
-    # COND = factor(case_when(
-    #   condact == 1 ~ "Ocupado",
-    #   condact %in% 2:5 ~ "Desocupado",
-    #   TRUE ~ "Ns/Nc"),
-    # levels = c("Ocupado", "Desocupado", "Ns/Nc")),
     PRECAPT = case_when(
       phrs < 35 & phrs > 0 & s2_57 == 1 ~ 1,         
       phrs < 35 & phrs > 0 & s2_57 == 2 ~ 0, #Part-time voluntario
