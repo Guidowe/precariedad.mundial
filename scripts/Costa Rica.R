@@ -8,7 +8,7 @@ library(foreign)
 costarica<-readRDS(file = "Bases/costarica_2019.RDS")
 
 ####Costa Rica####
-# table(costarica$OcupEmpPri)
+ table(costarica$Estabili)
 # table(costarica$C10)
 # table(costarica$CondAct)
 # table(costarica$PosiEmpPri)
@@ -17,6 +17,72 @@ costarica<-readRDS(file = "Bases/costarica_2019.RDS")
 # table(costarica$E10A)
 # table(costarica$Estabili)
 # weighted.mean(costarica$C2A1,costarica$FACTOR,na.rm = T) #horas
+##Base homog ####
+base_homog <- costarica %>% 
+  filter(ZONA == 1) %>% #Urbano
+  filter(CondAct %in% 1) %>% #Ocupados
+#  filter(SecInsPri %in% 3) %>% # Spriv
+#  filter(PosiEmpPri %in% c(12,22)) %>% # Asalariados y TCP sin  serv domestico
+  #    filter(PosiEmpPri == 12) %>% # Asalariad
+  mutate(
+    PERIODO = periodo,
+    CATOCUP = case_when(PosiEmpPri %in% 11:12~ "Asalariados",
+                         PosiEmpPri %in% 22~ "Cuenta Propia",
+                         TRUE ~ "Resto"),
+    SECTOR = case_when(SecInsPri %in% 1:2~ "Pub",
+                       SecInsPri %in% 3 & PosiEmpPri != 11~ "Priv",
+                       PosiEmpPri == 11 ~ "SD"),
+    PRECASALUD = case_when(IPM_S1 == 0 ~ 0,
+                           IPM_S1 == 1 ~ 1),
+    COND = "Ocupado",
+    WEIGHT  = FACTOR,
+    PAIS = "Costa Rica",
+    ANO = 2019,
+    SEXO = case_when(A4 == 1 ~ "Varon",
+                     A4 == 2 ~ "Mujer"),
+    EDAD = A5,
+    
+    PRECASEG =  case_when(E10A == 1 ~ 0,
+                                  E10A == 2 ~ 1),
+    PRECAREG =  case_when(E10A == 1 ~ 0,
+                          E10A == 2 ~ 1),
+    part.time.inv = case_when(C2A1 < 35 & C3 == 1 ~ "Part Involunt",
+                              C2A1 < 35 & C3 == 2 ~ "Part Volunt",
+                              C2A1 >= 35 ~ "Full Time"), 
+    PRECAPT = case_when(part.time.inv == "Part Involunt"~1,
+                        part.time.inv %in%  c("Part Volunt","Full Time")~0),
+    PRECATEMP = case_when(
+      Estabili == 10 ~ 0,
+      Estabili != 10 ~ 1),
+    CALIF =   case_when(
+      OcupEmpPri %in% 1:3 ~ "Alta",
+      OcupEmpPri %in% 4:8 ~ "Media",
+      OcupEmpPri %in% 9 ~ "Baja"),
+    TAMA =
+      case_when(
+        C10 %in% 1:9 ~ "Pequeño", # 1 a 9
+        C10 %in% 10:11 ~ "Mediano", # 10 a 30
+        C10 %in% 12 ~ "Mediano", #  30 a 100
+        C10 %in% 13 ~ "Grande"), #  + de  100
+    TAMA =
+      case_when( PosiEmpPri == 22 ~ "Pequeño",
+                 TRUE ~ TAMA),
+    ING = ipnt,
+    EDUC = case_when(NivInst %in% c(1:3,5) ~ "Primaria",
+                     NivInst %in% c(4,6) ~ "Secundaria",
+                     NivInst %in% 7:8 ~ "Terciaria")
+    ) 
+
+variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD",
+              "CATOCUP","COND","SECTOR","PRECAPT","EDUC",
+              "PRECAREG","PRECATEMP","PRECASALUD","PRECASEG","TAMA","CALIF","ING") 
+
+base_homog_final <- base_homog %>% 
+  select(all_of(variables))
+
+saveRDS(base_homog_final,file = "bases_homog/costa_rica.rds")
+
+## Base trabajo ####
 
 cr.categ <- costarica %>% 
   filter(ZONA == 1) %>% #Urbano

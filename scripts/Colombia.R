@@ -1,46 +1,122 @@
 library(tidyverse)
 library(foreign)
 library(RVerbalExpressions)
-
+# 
 # data.2019 <- data.frame(
 #   ruta = list.files("../bases/Colombia/2019/",recursive = T))
 # 
-# hasta.el.punto<- rx() %>% 
+# hasta.el.punto<- rx() %>%
 #   rx_anything_but(".")
 # 
-# data.2019.cabecera.ocup <- data.2019 %>% 
-#   filter(str_detect(ruta,"Cabecera - Ocupados")) %>% 
+# data.2019.cabecera.ocup <- data.2019 %>%
+#   filter(str_detect(ruta,"Cabecera - Ocupados")|str_detect(ruta,"Cabecera - Caracter")) %>%
 #   mutate(mes = str_extract(string = ruta,pattern = hasta.el.punto))
 # 
 # colombia2019 <- data.frame()
-# for(base in data.2019.cabecera.ocup$ruta){
-#   
-# mes <- str_extract(string = base,pattern = hasta.el.punto)
+# for(mes_loop in unique(data.2019.cabecera.ocup$mes)){
 # 
-# colombia<- read.spss(file = paste0('../bases/Colombia/2019/',base),
+# print(mes_loop)
+# #mes <- str_extract(string = base,pattern = hasta.el.punto)
+# rutas <-   data.2019.cabecera.ocup %>% 
+#     filter(mes == mes_loop)
+#   
+#   
+# colombia_general<- read.spss(file = paste0('../bases/Colombia/2019/',rutas$ruta[1]),
 #                      reencode = "UTF-8",
 #                      use.value.labels = F,
 #                      to.data.frame = T) %>% 
-#   mutate(periodo = paste0(mes, " - ","2019"))
+#   select(DIRECTORIO,SECUENCIA_P,ORDEN,HOGAR,P6210,P6020,P6040)
+# 
+# colombia_ocupados<- read.spss(file = paste0('../bases/Colombia/2019/',rutas$ruta[2]),
+#                      reencode = "UTF-8",
+#                      use.value.labels = F,
+#                      to.data.frame = T) 
+# 
+# colombia <- left_join(colombia_ocupados,colombia_general)%>%
+#   mutate(periodo = paste0(mes_loop, " - ","2019"))
+# 
 # 
 # 
 # colombia2019 <- bind_rows(colombia2019,colombia)
 # }
-# 
-# 
-# 
-# saveRDS(colombia2019,file = "Bases/colombia_2019.RDS")
+
+
+
+#saveRDS(colombia2019,file = "Bases/colombia_2019.RDS")
 colombia<-readRDS(file = "Bases/colombia_2019.RDS")
 ####Colombia####
 ##Miro variables##
 # table(colombia$CLASE)
-table(colombia$periodo)
-# table(colombia$P6460)
+#table(colombia$periodo)
+#table(colombia2019$P6440)
+# table(colombia$P6210)
 # table(colombia$P6440)
 # table(colombia$P6450)
 # table(colombia$OFICIO)
 
-##Proceso##
+##Base homog ####
+base_homog <- colombia %>% 
+  rename(fexp = fex_c_2011) %>% 
+  filter(CLASE == 1) %>% # Ubana
+#  filter( P6430  %in%  c(1,4,8)) %>% # Asal privado, TCP, y jornalero
+  mutate(
+    PAIS = "Colombia",
+    ANO = 2019,
+    SEXO = case_when(P6020 == 1 ~ "Varon",
+                     P6020 == 2 ~ "Mujer"),
+    EDAD = P6040,
+    PERIODO = periodo,
+    WEIGHT  = fexp,
+    COND = "Ocupado",
+    CATOCUP = case_when(P6430  %in%  c(1,2,3,8)~ "Asalariado",
+                        P6430  %in%  c(4)~ "Cuenta Propia",
+                        TRUE ~ "Resto"),
+    SECTOR = case_when(P6430  %in%  c(1,4,5,7)~ "Priv",
+                       P6430  %in%  c(2)~ "Pub",
+                       P6430  %in%  c(3)~ "SD",
+                       TRUE ~"Resto"),
+    PRECASEG =  case_when(P6920 == 1 ~ 0,
+                          P6920 == 2 ~ 1),
+    PRECAREG =  case_when(P6440 == 1 & P6450 == 2 ~ 0,
+                          !(P6440 == 1 & P6450 == 2)~ 1),
+    part.time.inv = case_when(P6800 < 35 & P6810 == 1 ~ "Part Involunt",
+                              P6800 < 35 & P6810 != 1 ~ "Part Volunt",
+                              P6800 >= 35 ~ "Full Time"), 
+    PRECAPT = case_when(part.time.inv == "Part Involunt"~1,
+                        part.time.inv %in%  c("Part Volunt","Full Time")~0),
+    PRECATEMP = case_when(
+      P6460 == 1 ~ 0,
+      P6460 == 2  ~ 1),
+    CALIF =   case_when(
+      substr(OFICIO,1,1) == 0|
+        substr(OFICIO,2,2) %in%  1:2 ~ "Alta",
+      substr(OFICIO,1,1) != 0 &
+        substr(OFICIO,2,2) %in% 3:5 ~ "Media",
+      substr(OFICIO,1,1) != 0 &
+        substr(OFICIO,2,2) %in% 6:9 ~ "Baja"),
+    TAMA =
+      case_when(
+        P6870  %in% 1:4 ~ "Pequeño", # 1 a 10
+        P6870  %in% 5:7 ~ "Mediano", # 11 a 50
+        P6870  %in% 8:9  ~ "Grande"),#  51 +,
+    TAMA = case_when( P6430 == 4  ~ "Pequeño",
+                                TRUE ~TAMA),
+    EDUC = case_when(P6210 %in% 1:4 ~ "Primaria",
+                        P6210 %in% 5 ~ "Secundaria",
+                        P6210 %in% 6 ~ "Terciaria"),
+    PRECASALUD = NA,
+    ING = INGLABO
+  ) 
+
+variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD",
+              "CATOCUP","COND","SECTOR","PRECAPT","EDUC",
+              "PRECAREG","PRECATEMP","PRECASALUD","PRECASEG","TAMA","CALIF","ING") 
+base_homog_final <- base_homog %>% 
+  select(all_of(variables))
+
+saveRDS(base_homog_final,file = "bases_homog/colombia.rds")
+
+##Procesam resultados####
 co.categ <- colombia %>% 
   rename(fexp = fex_c_2011) %>% 
   filter(CLASE == 1) %>% # Ubana
