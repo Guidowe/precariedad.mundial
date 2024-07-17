@@ -1,10 +1,10 @@
-libary(tidyverse)
+library(tidyverse)
 
 Base <- readRDS('bases_homog/europa.rds')
 
 
 Resultados <- Base                                 %>%
-  filter(COND=="Ocupado", SECTOR == "Priv")   %>%
+  filter(COND=="Ocupado", SECTOR == "Priv", !is.na(CALIF), !is.na(TAMA))   %>%
   group_by(PAIS, TAMA, CALIF)                             %>%
   summarise('total.ocupados'                       = sum(WEIGHT, na.rm=TRUE),
             'tasa.asalarizacion'                   = sum(WEIGHT[CATOCUP=="Asalariados"], na.rm=TRUE)/sum(WEIGHT, na.rm=TRUE),

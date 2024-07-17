@@ -43,7 +43,8 @@ paleta1 <- c(azul[1],
 
 ### Lenvato data de perfiles de Europa y lo modifico acá (VER CON Guido como organizar el repositorio y pasarlo a otro lado)
 load("Resultados/EUROPA.RDATA")
-perfiles_europa <- Resultados_bind %>% filter(ANO4==2018)
+perfiles_europa <- Resultados_bind %>%
+  filter((ANO4 == 2018 & pais != "DE") | (pais == "DE" & ANO4 == 2017))
 colnames(perfiles_europa) <- c("Pais", "periodo", "grupos.tamanio",  "grupos.calif", "ocupados", "particip.ocup", 
                                "tasa.asalarizacion", "asalariados", "pormedio.decil",  "tasa.partime.asal",  "tasa.temp.asal" ,
                                "tasa.1.asalariados", "tasa.2.asalariados", "tcp", "tasa.parttime.tcp",  "particip.asal" ,
