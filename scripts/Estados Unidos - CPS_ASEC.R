@@ -10,26 +10,26 @@ sample.isco <- function(df) {
 }
 
 #######USA#####
-
-# ocup_usa <- read.xlsx("data/Codigos Ocup USA.xlsx",sheet = "OCC 2011a2019")
-# ramas_usa <- read.xlsx("data/Codigos Ocup USA.xlsx",sheet = "IND 2014a2019")
-# soc_census <- read.xlsx("data/Codigos Ocup USA.xlsx",sheet = "SOC CENSO cross para R")
-# soc_isco <- read.xlsx("data/Codigos Ocup USA.xlsx",sheet = "SOC ISCO cross para R")
-# skills_isco <- read.xlsx("data/Codigos Ocup USA.xlsx",sheet = "Skill levels ISCO")
-
-
-# cps_ddi_file <- "../bases/cps_00004.xml"
-# cps_data_file <- "../bases/cps_00004.dat"
+# 
+#  ocup_usa <- read.xlsx("Fuentes Complementarias/Codigos Ocup USA.xlsx",sheet = "OCC 2011a2019")
+#  ramas_usa <- read.xlsx("Fuentes Complementarias/Codigos Ocup USA.xlsx",sheet = "IND 2014a2019")
+# soc_census <- read.xlsx("Fuentes Complementarias/Codigos Ocup USA.xlsx",sheet = "SOC CENSO cross para R")
+# soc_isco <- read.xlsx("Fuentes Complementarias/Codigos Ocup USA.xlsx",sheet = "SOC ISCO cross para R")
+# skills_isco <- read.xlsx("Fuentes Complementarias/Codigos Ocup USA.xlsx",sheet = "Skill levels ISCO")
+# 
+# 
+# cps_ddi_file <- "../bases/Estados Unidos/cps_00005.xml"
+# cps_data_file <- "../bases/Estados Unidos/cps_00005.dat"
 # cps_ddi <- read_ipums_ddi(cps_ddi_file)
-# # Base_USA <- ipumsr::read_ipums_micro(ddi = cps_ddi_file,
-# #                                  data_file =  cps_data_file) %>%
-# #   filter(YEAR %in% 2011:2019)%>%
-# #   filter(ASECFLAG==1)
-# Base_USA <- readRDS("../bases/Base_USA2011_2019.RDS")
-
-####USA Variables####
+# Base_USA <- ipumsr::read_ipums_micro(ddi = cps_ddi_file,
+#                                  data_file =  cps_data_file) %>%
+#   filter(YEAR %in% 2011:2019)%>%
+#   filter(ASECFLAG==1)
+# Base_USA <- readRDS("../bases/Estados Unidos/Base_USA2011_2019.RDS")
+# 
+# ####USA Variables####
 #  Variables.USA <- c("FIRMSIZE","EDUC","LABFORCE","EMPSTAT","YEAR","MONTH",
-#                     "CLASSWKR","CLASSWLY","WORKLY",
+#                     "CLASSWKR","CLASSWLY","WORKLY","SEX","AGE",
 #                     "WKSTAT","FULLPART",
 #                     "WHYPTLY","WHYPTLWK",
 #                     "IND","INDLY",
@@ -38,16 +38,16 @@ sample.isco <- function(df) {
 #                     "INCWAGE","INCBUS","INCLONGJ","SRCEARN",
 #                     "INCTOT","EARNWEEK","INCFARM","OINCFARM",
 #                     "OINCWAGE","WKSWORK1","UHRSWORKLY",
-#                     "ASECWT","EARNWT","ASECFLAG") 
+#                     "ASECWT","EARNWT","ASECFLAG")
 # 
 # table(Base_USA$UHRSWORKLY)
-####Crosswalk USA#####
-#   
-# cross.census.a.soc <- ocup_usa %>% 
-#   full_join(soc_census %>% mutate(OCC=as.numeric(`2010.Census.Code`))) %>% 
+# ####Crosswalk USA#####
+# 
+# cross.census.a.soc <- ocup_usa %>%
+#   full_join(soc_census %>% mutate(OCC=as.numeric(`2010.Census.Code`))) %>%
 #   select(Census = OCC,Census.title = Description,
 #          SOC.title = `2010.Occupation.Title`,
-#          SOC = `2010.SOC.Code`) %>% 
+#          SOC = `2010.SOC.Code`) %>%
 #   mutate(SOC= stringr::str_trim(string = SOC,side = "both"),
 #          Census= stringr::str_trim(string = Census,side = "both"),
 #          SOC.title = case_when(is.na(SOC.title)~Census.title,
@@ -55,17 +55,17 @@ sample.isco <- function(df) {
 #          SOC = case_when(Census %in%  c(9840,9830)~"55-3010",
 #                          Census== 4550~"39-7010",
 #                          Census== 1000~"15-1131",
-#                          TRUE~SOC)) %>% 
+#                          TRUE~SOC)) %>%
 #   filter(!is.na(Census))
-#   
-# cross.soc.a.isco <-  soc_isco %>% 
-#   select(SOC = `2010.SOC.Code`,SOC.title = `2010.SOC.Title`,part, 
-#          ISCO = `ISCO-08.Code`,ISCO.title = `ISCO-08.Title.EN`) %>% 
+# 
+# cross.soc.a.isco <-  soc_isco %>%
+#   select(SOC = `2010.SOC.Code`,SOC.title = `2010.SOC.Title`,part,
+#          ISCO = `ISCO-08.Code`,ISCO.title = `ISCO-08.Title.EN`) %>%
 #   mutate(SOC= stringr::str_trim(string = SOC,side = "both"),
 #          ISCO= stringr::str_trim(string = ISCO,side = "both"))
 # 
 # 
-# cross.census.a.soc.a.isco <- cross.census.a.soc %>% 
+# cross.census.a.soc.a.isco <- cross.census.a.soc %>%
 #   mutate(SOC.JOIN = case_when(substring(SOC, nchar(SOC)) %in% c("0","X")~
 #                          paste0(substring(SOC,1,nchar(SOC)-1),1),
 #                          TRUE~ SOC),
@@ -78,7 +78,7 @@ sample.isco <- function(df) {
 #                               SOC.JOIN == "39-4099"~"39-4011",
 #                               SOC.JOIN == "53-1001"~"53-1031",
 #                               SOC.JOIN == "53-1001"~"53-1031",
-#                               TRUE~ SOC.JOIN)) %>% 
+#                               TRUE~ SOC.JOIN)) %>%
 #   left_join(cross.soc.a.isco %>% rename(SOC.title.2 = SOC.title,
 #                                         SOC.JOIN = SOC))
 # 
@@ -87,49 +87,120 @@ sample.isco <- function(df) {
 # 
 # 
 # ###Cross a 1 digito sampleado###
-# cross.census.a.soc.a.isco.1.dig  <- cross.census.a.soc.a.isco %>% 
+# cross.census.a.soc.a.isco.1.dig  <- cross.census.a.soc.a.isco %>%
 #   mutate(ISCO.1.digit = substr(ISCO,1,1),
-#          Census = as.numeric(Census)) %>% 
-#   left_join(skills_isco %>% mutate(ISCO.1.digit = as.character(ISCO.1.digit))) 
-#   
+#          Census = as.numeric(Census)) %>%
+#   left_join(skills_isco %>% mutate(ISCO.1.digit = as.character(ISCO.1.digit)))
 # 
-# casos.analizables  <- cross.census.a.soc.a.isco.1.dig %>% 
-#    select(SOC,SOC.title,subjetividad) %>% 
-#    unique() %>% 
-#    group_by(SOC) %>% 
-#    summarise(soc.a.isco.1.dig.distintos = n()) %>% 
-#    filter(soc.a.isco.1.dig.distintos>1,!is.na(SOC)) %>% 
-#    left_join(cross.census.a.soc.a.isco.1.dig %>% 
+# 
+# casos.analizables  <- cross.census.a.soc.a.isco.1.dig %>%
+#    select(SOC,SOC.title,subjetividad) %>%
+#    unique() %>%
+#    group_by(SOC) %>%
+#    summarise(soc.a.isco.1.dig.distintos = n()) %>%
+#    filter(soc.a.isco.1.dig.distintos>1,!is.na(SOC)) %>%
+#    left_join(cross.census.a.soc.a.isco.1.dig %>%
 #                select(SOC,SOC.title.2,ISCO.1.digit,ISCO,ISCO.title))
 # 
 # 
-# cross.census.a.soc.a.isco.nested <-  cross.census.a.soc.a.isco.1.dig %>% 
-#   group_by(Census,SOC,SOC.title) %>% 
+# cross.census.a.soc.a.isco.nested <-  cross.census.a.soc.a.isco.1.dig %>%
+#   group_by(Census,SOC,SOC.title) %>%
 #   nest()
 # 
 # ####Aplico Cross####
-# Base_Usa_cruzada <- Base_USA %>% 
-#   filter(ASECFLAG==1) %>% 
-#   select(Variables.USA) %>% 
-#   rename(Census = OCCLY) %>%  
+# Base_Usa_cruzada <- Base_USA %>%
+#   filter(ASECFLAG==1) %>%
+#   select(Variables.USA) %>%
+#   rename(Census = OCCLY) %>%
 #   left_join(cross.census.a.soc.a.isco.nested)
 # 
 # #Sorteo ocupaciones
 # set.seed(9999)
-# Base_Usa_sampleada <- Base_Usa_cruzada %>% 
-#   mutate(ISCO.1.digit = map(data, sample.isco)) %>% 
-#   select(-data) %>% 
-#   mutate(ISCO.1.digit = as.numeric(ISCO.1.digit)) %>% 
-#   left_join(skills_isco) 
+# Base_Usa_sampleada <- Base_Usa_cruzada %>%
+#   mutate(ISCO.1.digit = map(data, sample.isco)) %>%
+#   select(-data) %>%
+#   mutate(ISCO.1.digit = as.numeric(ISCO.1.digit)) %>%
+#   left_join(skills_isco)
 # 
 # rm(list = c("Base_USA","Base_Usa_cruzada","cps_ddi"))
 # gc()
-
-#saveRDS(Base_Usa_sampleada,"../bases/Base_Usa_sampleada.RDS")
+# 
+# saveRDS(Base_Usa_sampleada,"../bases/Estados Unidos/Base_Usa_sampleada.RDS")
 Base_Usa_sampleada<- readRDS("../bases/Estados Unidos/Base_Usa_sampleada.RDS")
 
 # table(Base_Usa_sampleada$CLASSWKR)
 ver <- eph::calculate_tabulates(Base_Usa_sampleada,"CLASSWLY","FIRMSIZE")
+####Base homogenea####
+
+base_homog <- Base_Usa_sampleada %>% 
+  
+  filter(ASECFLAG==1,
+         WORKLY ==  2) %>% 
+#         INDLY <9370,#sin Sector publico
+#         INDLY <9290,#sin Sector publico ni S. doméstico 
+#         CLASSWLY %in% 10:28) %>% # ASAL y TCP
+  mutate(ingreso.horario = INCLONGJ/WKSWORK1/UHRSWORKLY,
+         ingreso.mensual = INCLONGJ/WKSWORK1*4) %>% 
+  mutate(
+    ANO = YEAR,
+    PAIS = "Estados Unidos",
+    WEIGHT = ASECWT,
+    SEXO = case_when(SEX == 1 ~ "Varon",
+                     SEX == 2 ~ "Mujer"),
+    EDAD = AGE,
+    PERIODO = paste0(YEAR, " - ",MONTH),
+    COND = "Ocupado",
+    CATOCUP = case_when(CLASSWLY %in% 20:28~ "Asalariados",
+                        CLASSWLY %in% 10:19~ "Cuenta Propia",
+                        TRUE ~ "Resto"),
+    SECTOR = case_when(INDLY < 9290~ "Priv",
+                       INDLY >9290 ~"Pub",
+                       INDLY == 9290 ~ "SD"),
+    CALIF = factor(subjetividad,levels = c("Baja","Media","Alta")),
+    EDUC = case_when(
+      EDUC %in% 2:72~ "Primaria",
+      EDUC %in% 73:110~ "Secundaria",
+      EDUC %in% 111:125~ "Terciaria",
+      TRUE ~ "Ns/Nr"),
+    TAMA =case_when(
+      FIRMSIZE==1~"Pequeño",
+      FIRMSIZE %in% 2:4~"Mediano",
+      FIRMSIZE %in% 5:9~"Grande"),
+    TAMA =case_when(CLASSWKR %in% 10:19 ~"Pequeño",
+                              TRUE ~ TAMA),
+    PRECASEG = NA,
+    pension = case_when(
+      PENSION %in% 1:2 ~ 1,
+      PENSION %in% 3 ~ 0),
+    part.time.inv = case_when(
+      FULLPART == 2 & WHYPTLY %in% c(1,3,4)~"Part Involunt",
+      FULLPART == 2 & WHYPTLY %in% c(2)~"Part Volunt",
+      FULLPART == 1 ~"Full Time",
+      TRUE ~ "Otros"),
+    PRECAPT = case_when(part.time.inv == "Part Involunt"~1,
+                        part.time.inv %in%  c("Part Volunt","Full Time")~0),
+    PRECAREG = NA,
+    PRECATEMP = NA,
+    PRECASALUD = NA,
+    sobreocup = case_when(UHRSWORKLY %in%  46:99~"Si",
+                          UHRSWORKLY %in%  1:45~"No"),
+    ING =  case_when(INCLONGJ>0&
+                    (INCLONGJ!=99999999|INCLONGJ!=99999999)&
+                    (INCWAGE==INCLONGJ|INCBUS==INCLONGJ) ~ ingreso.mensual))
+
+ingresos<- base_homog %>% 
+  select(CATOCUP,SECTOR,ING,INCLONGJ,INCBUS,INCWAGE,WKSWORK1,UHRSWORKLY)
+
+variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD",
+              "CATOCUP","COND","SECTOR","PRECAPT","EDUC",
+              "PRECAREG","PRECATEMP","PRECASALUD","PRECASEG","TAMA","CALIF","ING") 
+
+base_homog_final <- base_homog %>% 
+  select(all_of(variables)) %>% 
+  filter(ANO == 2019)
+
+saveRDS(base_homog_final,file = "bases_homog/estados_unidos.rds")
+
 ####USA Categorias####
 Base_USA.cat <- Base_Usa_sampleada %>% 
   filter(ASECFLAG==1,

@@ -43,7 +43,8 @@ gc()
 
 #####Calificaciones##########
 bases_bind <- bases_bind %>% 
-  filter(ESTADO == 1,CAT_OCUP %in% 2:3) %>% #Ocupados - Asal o TCP
+  filter(ESTADO == 1) %>% #Ocupados - Asal o TCP
+#  filter(CAT_OCUP %in% 2:3) %>% #Ocupados - Asal o TCP
   mutate(PP04D_COD = stringr::str_pad(PP04D_COD, 5, side = "left",pad = "0"),
          digito.calificacion = str_sub(PP04D_COD,5,5),
          calificacion = factor(
@@ -94,8 +95,64 @@ correccion<- bases_bind %>%
   group_by(ANO4,grupos.calif,grupos.calif.isco) %>% 
   summarise(Casos = n())
 
+#### Base Homog #####
+base_homog <- bases_bind %>%
+  filter(ANO4 == 2019) %>% 
+  mutate(
+    PAIS = "Argentina",
+    ANO = ANO4,
+    SEXO = case_when(CH04 == 1 ~ "Varon",
+                     CH04 == 2 ~ "Mujer"),
+    PERIODO = paste0(ANO4,"-",TRIMESTRE),
+    EDAD = CH06,
+    COND = "Ocupados",
+    EDUC = case_when(NIVEL_ED %in% c(7,1:3) ~ "Primaria",
+                     NIVEL_ED %in% 4:5 ~ "Secundaria",
+                     NIVEL_ED %in% 6 ~ "Terciaria"),
+    TAMA = 
+      case_when(PP04C %in% 1:6  |(PP04C %in% 99 & PP04C99 == 1)~ "Pequeño",
+                PP04C %in% 7:8  ~ "Mediano",
+                PP04C %in% 9:12 |(PP04C %in% 99 & PP04C99 == 3)~ "Grande"),
+    TAMA = case_when(CAT_OCUP == 2 ~ "Pequeño",
+                               TRUE ~ TAMA),
+    CALIF = grupos.calif.isco,
+    PRECAREG = case_when(PP07H == 1 ~ 0,
+                         PP07H == 2 ~ 1),
+    PRECASEG = case_when(PP07H == 1 ~ 0,
+                         PP07H == 2 ~ 1),
+    CATOCUP =  case_when(CAT_OCUP == 2 ~ "Cuenta Propia",
+                         CAT_OCUP == 3 ~ "Asalariados",
+                         TRUE ~ "Resto"),
+    part.time.inv = case_when(ESTADO == 1 & PP3E_TOT < 35 & PP03G == 1 ~ "Part Involunt",
+                              ESTADO == 1 & PP3E_TOT < 35 & PP03G == 2 ~"Part Volunt",
+                              ESTADO == 1 & PP3E_TOT >= 35  ~"Full Time",
+                              TRUE ~ "Otros"),
+    PRECAPT = case_when(part.time.inv == "Part Involunt"~1,
+                        part.time.inv %in%  c("Part Volunt","Full Time")~0),
+    PRECATEMP = case_when(
+      PP07C ==  1 ~1,
+      PP07C ==  2 ~ 0),
+    PRECASALUD = NA,
+    ING = case_when(P21 > 0 ~ P21),
+    SECTOR = case_when(PP04B_COD %in% c(75,7500:7599)~"Pub",
+                       PP04B_COD %in% c(95,9500:9599)~"SD",
+                       TRUE ~"Priv"),
+    WEIGHT = as.integer(PONDERA),
+    WEIGHT_W = as.integer(PONDIIO)
+    )
+
+variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD",
+              "CATOCUP","COND","SECTOR","PRECAPT","EDUC",
+              "PRECAREG","PRECATEMP","PRECASALUD","PRECASEG","TAMA","CALIF","ING","WEIGHT_W") 
+base_homog_final <- base_homog %>% 
+  select(all_of(variables))
+
+saveRDS(base_homog_final,file = "bases_homog/argentina.rds")
+
 ####ARG categorias####
 Base_EPH.cat <- bases_bind %>%
+  filter(ESTADO == 1) %>% #Ocupados - Asal o TCP
+    filter(CAT_OCUP %in% 2:3) %>% #Ocupados - Asal o TCP
     mutate(
       grupos.tamanio = 
       case_when(PP04C %in% 1:6  |(PP04C %in% 99 & PP04C99 == 1)~ "Pequeño",
