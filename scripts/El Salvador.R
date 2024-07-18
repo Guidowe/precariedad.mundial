@@ -5,7 +5,11 @@ library(foreign)
 #                         to.data.frame = T)
 # 
 # saveRDS(elsalvador,file = "Bases/elsalvador_2016.RDS")
-elsalvador<-readRDS(file = "Bases/elsalvador_2016.RDS")
+
+elsalvador <- read.spss("../bases/El Salvador/EHPM 2019.sav",
+                        reencode = "UTF-8",use.value.labels = F,
+                        to.data.frame = T)
+#elsalvador<-readRDS(file = "Bases/elsalvador_2016.RDS")
 
 ####El Salvador####
 # eph::calculate_tabulates(base = elsalvador,
@@ -18,7 +22,73 @@ elsalvador<-readRDS(file = "Bases/elsalvador_2016.RDS")
 # table(elsalvador$actpr2012)
 # table(elsalvador$area)
 #table(elsalvador$r420,elsalvador$r418) #La pregunta de sector solo se hace a asalariados
+##Base Homog ####
+base_homog<- elsalvador %>% 
+  filter(area == 1) %>%  #Urbano
+  filter(actpr2012 == 10) %>%  #Ocupados
+#  filter(r418  %in%  c(2,3,6,7,8)) %>% #  TCP y asal s/ serv domestico
+#  filter(!((r418 %in%  6:7) & (r420 != 1))) %>% #  Saco S.Pub para asal
+  # filter(r418 == 6:7) %>% # Asalariado
+  mutate(
+    ING = money,
+    WEIGHT = fac00,
+    PERIODO = 2019,
+    CATOCUP = case_when(r418 %in% 6:9~ "Asalariados",
+                        r418 %in% c(2,3)~ "Cuenta Propia",
+                        TRUE ~ "Resto"),
+    SECTOR = case_when(r420 %in% 2~ "Pub",
+                       r420 %in% 1 & r418!=9  ~ "Priv",
+                       r418 == 9 ~ "SD"),
+    PRECASALUD = NA,
+    COND = "Ocupado",
+    PAIS = "El Salvador",
+    ANO = 2019,
+    SEXO = case_when(r104 == 1 ~ "Varon",
+                     r104 == 2 ~ "Mujer"),
+    EDAD = r106,
+    EDUC = case_when(r215a %in% c(8,0:2) ~ "Primaria",
+                     r217 %in% c(3) ~ "Secundaria",
+                     r217 %in% c(4:5) ~ "Terciaria"),
+    periodo = edicion,
+    FACTOR = fac00,
+    horas.semana = r412a + r412d,
+    PRECASEG =  case_when(r422a %in%  1:2 ~ 0,
+                                  r422a == 3 ~ 1),
+    PRECAREG =  case_when(r419 %in% 1:6 ~ 0,
+                              r419 %in% 7 ~ 1),
+    part.time.inv = case_when(horas.semana < 35 & r413  %in%  2:4 ~ "Part Involunt",
+                              horas.semana < 35 & !(r413  %in% 2:4) ~ "Part Volunt",
+                              horas.semana >= 35 ~ "Full Time"), 
+    PRECAPT = case_when(part.time.inv == "Part Involunt"~1,
+                        part.time.inv %in%  c("Part Volunt","Full Time")~0),
+    PRECATEMP = case_when(
+      r419 == 1 ~ 0,
+      r419 %in% 2:7 ~ 1),
+    CALIF =   
+      case_when(
+        ciuo414 %in% 1:3 ~ "Alta",
+        ciuo414 %in% 4:8 ~ "Media",
+        ciuo414 %in% 9 ~ "Baja"),
+    TAMA =
+      case_when(
+        r421 %in% 1:9 ~ "Pequeño", # 1 a 9
+        r421 %in% 10:50 ~ "Mediano", # 10 a 50
+        r421 %in% 51:997  ~ "Grande"),
+    TAMA = 
+      case_when(r418 %in% 2:3 ~ "Pequeño",
+                TRUE ~ TAMA)
+  )
 
+variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD",
+              "CATOCUP","COND","SECTOR","PRECAPT","EDUC",
+              "PRECAREG","PRECATEMP","PRECASALUD","PRECASEG","TAMA","CALIF","ING") 
+
+base_homog_final <- base_homog %>% 
+  select(all_of(variables))
+
+saveRDS(base_homog_final,file = "bases_homog/el_salvador.rds")
+
+##Base cat####
 el.salvador.cat<- elsalvador %>% 
   filter(area == 1) %>%  #Urbano
   filter(actpr2012 == 10) %>%  #Ocupados
