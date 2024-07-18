@@ -21,7 +21,70 @@ guatemala<-readRDS(file = "Bases/guatemala_2019.RDS")
 # table(guatemala$AREA)
 # table(guatemala$P04C06,useNA = "always")
 #table(guatemala$OCUPADOS,useNA = "always")
+table(guatemala$P03A05A)
+##Base homog ####
+base_homog <- guatemala %>% 
+  #  mutate(FACTOR = Factor_expansion) %>% 
+  filter(AREA == 1) %>%  #area urbana
+  filter(OCUPADOS == 1) %>%  #Ocupados
+  #filter(P04C06 %in% c(2,5)) %>% # Spriv s/ serv domestico, Asal y TCP (no agrícola)
+  # filter(P04C06 == 2) %>% # Asalariado
+  mutate(
+    ING = P04C10,
+    WEIGHT = FACTOR,
+    PERIODO = periodo,
+    CATOCUP = case_when(P04C06 %in% 1:4~ "Asalariados",
+                        P04C06 %in% c(5,7)~ "Cuenta Propia",
+                        TRUE ~ "Resto"),
+    SECTOR = case_when(P04C06 %in% 1~ "Pub",
+                       P04C06 %in% c(2:3,5:9) ~ "Priv",
+                       P04C06 == 4 ~ "SD"),
+    PRECASALUD = NA,
+    COND = "Ocupado",
+    PAIS = "Guatemala",
+    ANO = 2019,
+    SEXO = case_when(PPA02 == 1 ~ "Varon",
+                     PPA02 == 2 ~ "Mujer"),
+    EDAD = PPA03,
+    EDUC = case_when(P03A05A %in% c(0:2) ~ "Primaria",
+                     P03A05A %in% c(3,4) ~ "Secundaria",
+                     P03A05A %in% c(5:7) ~ "Terciaria"),
+    horas.semana = P04C28A+P04C28B+P04C28C+P04C28D+P04C28E+P04C28F+P04C28G,
+    PRECASEG =  case_when(P04C25A %in%  1:3 ~ 0,
+                                  P04C25A == 4 ~ 1),
+    PRECAREG =  case_when(P04C07 == 1 ~ 0,
+                              P04C07 == 2 ~ 1),
+    part.time.inv = case_when(horas.semana < 35 & P04C29  %in%  2:4 ~ "Part Involunt",
+                              horas.semana < 35 & !(P04C29  %in% 2:4) ~ "Part Volunt",
+                              horas.semana >= 35 ~ "Full Time"),
+    PRECAPT = case_when(part.time.inv == "Part Involunt"~1,
+                        part.time.inv %in%  c("Part Volunt","Full Time")~0),
+    PRECATEMP = case_when(
+      P04C08A == 2 ~ 1,
+      P04C08A == 1 ~ 0),
+    CALIF =   
+      case_when(
+        P04C02B_1D %in% 1:3 ~ "Alta",
+        P04C02B_1D %in% 4:8 ~ "Media",
+        P04C02B_1D %in% 9 ~ "Baja"),
+    TAMA =
+      case_when(
+        P04C05 %in% 1:9 ~ "Pequeño", # 1 a 9
+        P04C05 %in% 10:50 ~ "Mediano", # 10 a 50
+        P04C05 >51  ~ "Grande"),
+    TAMA = case_when(P04C06 %in%  c(5,7) ~ "Pequeño",
+                               TRUE ~ TAMA)
+  ) 
 
+variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD",
+              "CATOCUP","COND","SECTOR","PRECAPT","EDUC",
+              "PRECAREG","PRECATEMP","PRECASALUD","PRECASEG","TAMA","CALIF","ING") 
+
+base_homog_final <- base_homog %>% 
+  select(all_of(variables))
+
+saveRDS(base_homog_final,file = "bases_homog/guatemala.rds")
+## Base cat ####
 guatemala.cat <- guatemala %>% 
 #  mutate(FACTOR = Factor_expansion) %>% 
   filter(AREA == 1) %>%  #area urbana

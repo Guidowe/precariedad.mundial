@@ -51,6 +51,10 @@ colnames(perfiles_europa) <- c("Pais", "periodo", "grupos.tamanio",  "grupos.cal
                                "particip.tcp")
 perfiles_europa <- perfiles_europa %>% 
   mutate(tamanio.calif= paste0( grupos.tamanio, " - ",grupos.calif))
+
+asal.Calificacion.europa <- read.xlsx(
+  "Resultados/Trabajo y Sociedad/Excel/RestultadosLFS 29.5.xlsx",sheet = "Asalariados.nivel.ed")
+
 ###
 
 
