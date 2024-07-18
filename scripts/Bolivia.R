@@ -1,6 +1,6 @@
 library(tidyverse)
 variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD",
-              "CATOCUP","COND","SECTOR","PRECAPT","EDUC",
+              "CATOCUP","SECTOR","PRECAPT","EDUC",
               "PRECAREG","PRECATEMP","PRECASALUD","PRECASEG",
               "TAMA","CALIF","ING") 
 
@@ -10,8 +10,8 @@ Base$s2_22[is.na(Base$s2_22)] = 0
 Base <- Base %>% 
   # Filtro areas rurales
   filter(area != 2) %>%
-  # Filtro PEA
-  filter(condact == 1 | pead ==1) %>%
+  # Filtro ocupados
+  filter(condact == 1) %>%
   mutate(
     ANO = 2019,
     PERIODO = trimestre,
@@ -22,8 +22,7 @@ Base <- Base %>%
       s1_02 == 2 ~ "Mujer"),
     EDAD = s1_03a,
     EDUC = case_when(
-      niv_ed %in% 0:1 ~ "Sin instruccion", 
-      niv_ed %in% 2:3 ~ "Primaria", 
+      niv_ed %in% 0:3 ~ "Primaria", 
       niv_ed  == 4 ~ "Secundaria", 
       niv_ed  == 5 ~ "Terciaria"),
     CATOCUP = case_when(
@@ -35,9 +34,6 @@ Base <- Base %>%
       s2_22 == 1 ~ "Pub", 
       s2_22 %in% 2:6 ~ "Priv", 
       s2_18 == 7 ~ "SD"),
-    COND = case_when(
-      condact == 1 ~ "Ocupado", 
-      pead ==1 ~ "Desocupado"),
     PRECAPT = case_when(
       phrs < 35 & phrs > 0 & s2_57 == 1 ~ 1,         
       phrs < 35 & phrs > 0 & s2_57 == 2 ~ 0, #Part-time voluntario

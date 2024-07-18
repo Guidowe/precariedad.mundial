@@ -2,7 +2,7 @@ library(dplyr)
 
 # Define variables and settings
 variables <- c("PAIS", "ANO", "PERIODO", "WEIGHT", "SEXO", "EDAD",
-               "CATOCUP", "COND", "SECTOR", "PRECAPT", "EDUC",
+               "CATOCUP", "SECTOR", "PRECAPT", "EDUC",
                "PRECAREG", "PRECATEMP", "PRECASALUD", "PRECASEG",
                "TAMA", "CALIF", "ING")
 
@@ -27,7 +27,7 @@ for (country in countries) {
   temp_data <- read.csv(file_path)
   temp_data <- temp_data %>% 
     select(all_of(variables_raw)) %>%
-    filter(ILOSTAT %in% c(1, 2, 4)) %>%
+    filter(ILOSTAT %in% c(1, 4)) %>%
     mutate(
       ANO = 2018,
       PERIODO = NA,
@@ -49,9 +49,6 @@ for (country in countries) {
         NACE1D == "O" ~ "Pub",
         NACE1D == "T" ~ "SD",
         TRUE ~ "Priv"),
-      COND = case_when(
-        ILOSTAT == 1 | ILOSTAT == 4 ~ "Ocupado",
-        ILOSTAT == 2 ~ "Desocupado"),
       PRECAPT = case_when(
         FTPT == 2 & FTPTREAS == 5 ~ 1,
         TRUE ~ 0),

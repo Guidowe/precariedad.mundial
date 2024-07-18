@@ -1,14 +1,14 @@
 library(tidyverse)
 variables<- c("PAIS","ANO","PERIODO","WEIGHT","SEXO","EDAD",
-              "CATOCUP","COND","SECTOR","PRECAPT","EDUC",
+              "CATOCUP","SECTOR","PRECAPT","EDUC",
               "PRECAREG","PRECATEMP","PRECASALUD","PRECASEG",
               "TAMA","CALIF","ING") 
 URU <- readRDS("Bases/uruguay_2019.RDS")    # Version liviana de la base original en este repositorio
 Base <- URU %>%
   # Filtro areas rurales
   filter(region_4 != 4) %>%
-  # Filtro PEA
-  filter(pobpcoac %in% 2:5) %>%
+  # Filtro Ocupados
+  filter(pobpcoac ==2) %>%
   mutate(
     ANO = 2019,
     PERIODO = 1, 
@@ -20,7 +20,7 @@ Base <- URU %>%
     ),
     EDAD = e27,
     EDUC = case_when(
-      e49 == 2 ~ "Sin instruccion",
+      e49 == 2 ~ "Primaria",
       e197_1 == 1 ~ "Primaria", 
       e201_1 == 1 ~ "Secundaria", 
       e212_1 == 1 ~ "Terciaria", 
@@ -39,10 +39,6 @@ Base <- URU %>%
       f73 %in% c(1, 3, 4, 5, 6, 7) ~ "Priv", 
       f73 %in% c(2, 8) ~ "Pub", 
       f71_2 == "9111" ~ "SD"
-    ), 
-    COND = case_when(
-      pobpcoac == 2 ~ "Ocupado",
-      pobpcoac %in% 3:5 ~ "Desocupado"
     ),
     PRECAPT = case_when(
       f85 < 35 & f85 > 0 & f102 == 1 ~ 1,
