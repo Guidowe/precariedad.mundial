@@ -34,22 +34,26 @@ Base<- PER                                  %>%
       p301a %in% c(6:7, 9) ~ "Secundaria", 
       p301a %in% c(8, 10, 11) ~ "Terciaria"),
     CATOCUP=case_when(
-      p507 == 2                  ~ "Cuenta propia", 
-      p507 %in% c(1, 5, 7)       ~ "Resto", 
-      p507 %in% c(3, 4, 6)        ~ "Asalariados"),
+      p507 == 2                ~ "Cuenta propia", 
+      p507 %in% c(1, 5:7)      ~ "Resto", 
+      p507 %in% c(3, 4)        ~ "Asalariados"),
     SECTOR = case_when(
       p510 %in% c(1, 2) ~ "Pub",
-      p507 == 6 ~ "SD", 
-      TRUE ~ "Priv"),
-    PRECAPT= case_when(p513t<35 & p513t>0 & p521==1   ~ 1,     
-                              p513t<35 & p513t>0 & p521==2   ~ 0, 
-                              p513t>34                       ~ 0),
-    PRECATEMP= factor(case_when( p511a %in% c(2,6)              ~ 1,
-                                 p511a %in% c(1, 3, 4, 5, 7, 8) ~ 0)),
-    PRECASEG= factor(case_when( p558a5==5                                   ~ 1, 
-                                p558a1==1 | p558a2==2 | p558a3==3 | p558a4==4 ~ 0)), 
-    PRECAREG= factor(case_when( p511a==7 ~ 1,
-                                p511a %in% c(1:6, 8)  ~ 0)),
+      p507 == 6         ~ "SD", 
+      TRUE              ~ "Priv"),
+    PRECAPT= case_when(
+      p513t<35 & p513t>0 & p521==1   ~ 1,     
+      p513t<35 & p513t>0 & p521==2   ~ 0, 
+      p513t>34                       ~ 0),
+    PRECATEMP= factor(case_when( 
+      p511a %in% c(2,6)              ~ 1,
+      p511a %in% c(1, 3, 4, 5, 7, 8) ~ 0)),
+    PRECASEG= factor(case_when( 
+      p558a5==5                                   ~ 1, 
+      p558a1==1 | p558a2==2 | p558a3==3 | p558a4==4 ~ 0)), 
+    PRECAREG= factor(case_when( 
+      p511a==7 ~ 1,
+      p511a %in% c(1:6, 8)  ~ 0)),
     PRECASALUD= NA,                                
     #Tamaño establecimiento
     TAMA= case_when( 
@@ -63,8 +67,7 @@ Base<- PER                                  %>%
       p505r4 %in% 400:899          ~ "Media",                 
       p505r4 %in% 4000:8999        ~ "Media", 
       p505r4 %in% 100:399          ~ "Alta", 
-      p505r4 %in% 1000:3999        ~ "Alta", 
-      TRUE                     ~  "Ns/Nc"), 
+      p505r4 %in% 1000:3999        ~ "Alta"), 
     ING=case_when(
       CATOCUP=="Asalariados" & p523==1       ~ p524e1 * 20,                      # ASALARIADOS: el dato de ingreso de ocupacion principal esta en jornal, semana, quincenal o mes
       CATOCUP=="Asalariados" & p523==2       ~ p524e1 * 4,                       # dependiendo como cobre el encuestado. Se mensualiza suponiendo que la persona trabaja todo el mes
