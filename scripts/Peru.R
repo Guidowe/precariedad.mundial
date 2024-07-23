@@ -45,17 +45,16 @@ Base<- PER                                  %>%
       p513t<35 & p513t>0 & p521==1   ~ 1,     
       p513t<35 & p513t>0 & p521==2   ~ 0, 
       p513t>34                       ~ 0),
-    PRECATEMP= factor(case_when( 
+    PRECATEMP= case_when( 
       p511a %in% c(2,6)              ~ 1,
-      p511a %in% c(1, 3, 4, 5, 7, 8) ~ 0)),
-    PRECASEG= factor(case_when( 
+      p511a %in% c(1, 3, 4, 5, 7, 8) ~ 0),
+    PRECASEG= case_when( 
       p558a5==5                                   ~ 1, 
-      p558a1==1 | p558a2==2 | p558a3==3 | p558a4==4 ~ 0)), 
-    PRECAREG= factor(case_when( 
+      p558a1==1 | p558a2==2 | p558a3==3 | p558a4==4 ~ 0), 
+    PRECAREG= case_when( 
       p511a==7 ~ 1,
-      p511a %in% c(1:6, 8)  ~ 0)),
+      p511a %in% c(1:6, 8)  ~ 0),
     PRECASALUD= NA,                                
-    #Tamaño establecimiento
     TAMA= case_when( 
       p512a==1 & p512b<11         ~ "Pequeño",              
       p512a==1 & p512b %in% 11:20 ~ "Mediano",

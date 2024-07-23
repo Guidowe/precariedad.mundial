@@ -17,8 +17,9 @@ PAR4 <- PAR4 %>% mutate(PERIODO=4)
 
 PAR <- bind_rows(PAR1, PAR2, PAR3, PAR4)
 remove(PAR1, PAR2, PAR3, PAR4)
-Base <- PAR                                 %>% 
-  filter(AREA!=6)                           %>%
+Base <- PAR       %>% 
+  filter(AREA!=6) %>%
+  filter(PEAA==1) %>% 
   mutate(
     ANO= 2019,
     PAIS="Paraguay",
