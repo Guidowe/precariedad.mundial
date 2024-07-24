@@ -1,4 +1,6 @@
 library(dplyr)
+library(tidyverse)
+library(Hmisc)
 
 # Define variables and settings
 variables <- c("PAIS", "ANO", "PERIODO", "WEIGHT", "SEXO", "EDAD",
@@ -8,8 +10,6 @@ variables <- c("PAIS", "ANO", "PERIODO", "WEIGHT", "SEXO", "EDAD",
 
 countries <- c("AT2018", "BG2018", "DE2017", "DK2018", "ES2018", "FR2018", "GR2018", 
                "IT2018", "NL2018", "NO2018", "PL2018", "PT2018", "RO2018", "SE2018", "UK2018")
-variables_raw <- c("COEFF", "ILOSTAT", "SEX", "AGE", "STAPRO", "NACE1D", "FTPT", 
-                   "FTPTREAS", "TEMP", "TEMPREAS", "SIZEFIRM", "HAT11LEV", "HAT97LEV", "ISCO1D", "IS881D")
 
 country_names <- c(
   "AT2018" = "Austria", "BG2018" = "Bulgaria", "DE2017" = "Alemania", "DK2018" = "Dinamarca", 
@@ -17,20 +17,18 @@ country_names <- c(
   "NL2018" = "Países Bajos", "NO2018" = "Noruega", "PL2018" = "Polonia", "PT2018" = "Portugal", 
   "RO2018" = "Rumanía", "SE2018" = "Suecia", "UK2018" = "Reino Unido")
 
-# Initialize an empty dataframe to store results
-Base <- data.frame()
+Base_LFS <- data.frame()
 
 # Iterate over countries
 for (country in countries) {
-  print(paste("Procesando país:", country_names[country]))
+  print(paste("Procesando LFS para", country_names[country]))
   file_path <- paste0("bases/LFS/", country, "_y.csv")
   temp_data <- read.csv(file_path)
   temp_data <- temp_data %>% 
-    select(all_of(variables_raw)) %>%
     filter(ILOSTAT %in% c(1, 4)) %>%
     mutate(
-      ANO = 2018,
-      PERIODO = NA,
+      ANO = ifelse(country == "DE2017", 2017, 2018),  #Usamos 2017 para alemania por problemas en variable de tamanio
+      PERIODO = 1,
       PAIS = country_names[country],
       WEIGHT = COEFF * 1000,
       SEXO = case_when(
@@ -67,14 +65,76 @@ for (country in countries) {
         ISCO1D %in% c(400, 500, 600, 700, 800) | IS881D %in% c(400, 500, 600, 700, 800) ~ "Media",
         ISCO1D %in% c(100, 200, 300) | IS881D %in% c(100, 200, 300) ~ "Alta"), 
       ING = NA) %>% 
-    select(variables)
+    select(variables, 'INCDECIL')
   
-  Base <- bind_rows(Base, temp_data)
+  Base_LFS <- bind_rows(Base_LFS, temp_data)
   
   rm(temp_data)
 }
 
-saveRDS(Base, "bases_homog/europa.rds")
+#Imputacion con SES
 
+Carpeta <- "D:/SES/"
 
+paises_SES <- c("ES2014", "FR2014", "UK2014", "DE2014", "IT2014", "PT2014", "DK2014", "BG2014", "RO2014")
 
+country_names_SES <- c(
+  "DE2014" = "Alemania", "DK2014" = "Dinamarca", "BG2014" = "Bulgaria",
+  "ES2014" = "España", "FR2014" = "Francia",  "IT2014" = "Italia", 
+  "PT2014" = "Portugal", "RO2014" = "Rumanía", "UK2014" = "Reino Unido")
+
+Base_SES <- data.frame()
+
+i <- 1
+while (i < length(paises_SES) + 1) {
+  print(paste("Procesando SES para", country_names_SES[paises_SES[i]]))
+  Base <- readRDS(paste0(Carpeta, paises_SES[i], ".Rda"))
+  
+  Base <- Base     %>% 
+    filter(nace!="XO")   %>%
+    filter(nace!="XT")   %>%
+    mutate(
+      PAIS=country_names_SES[paises_SES[i]],
+      WEIGHT=as.numeric(as.character(B52)), 
+      CALIF= case_when(
+        B23 %in% c(90:99, 900:999)  ~ "Baja",
+        B23 %in% c(40:89, 400:899) ~ "Media", 
+        B23 %in% c(10:39, 100:399) ~ "Alta"),                                                                   
+      SALARIODB = as.numeric(as.character(B42))) %>% 
+    select(PAIS, WEIGHT, CALIF, A12_CLASS, SALARIODB)
+
+  #Calculo el límite de los deciles ponderados
+  q <- wtd.quantile(Base$SALARIODB, probs = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1), na.rm = TRUE, weight = Base$WEIGHT)
+  
+  #Asigno decil a los casos
+  Base <- Base %>%
+    mutate(decil=case_when(   SALARIODB <= q[1]                    ~ 1, 
+                              SALARIODB > q[1] & SALARIODB <= q[2] ~ 2,
+                              SALARIODB > q[2] & SALARIODB <= q[3] ~ 3, 
+                              SALARIODB > q[3] & SALARIODB <= q[4] ~ 4, 
+                              SALARIODB > q[4] & SALARIODB <= q[5] ~ 5, 
+                              SALARIODB > q[5] & SALARIODB <= q[6] ~ 6, 
+                              SALARIODB > q[6] & SALARIODB <= q[7] ~ 7, 
+                              SALARIODB > q[7] & SALARIODB <= q[8] ~ 8, 
+                              SALARIODB > q[8] & SALARIODB <= q[9] ~ 9, 
+                              SALARIODB > q[9] & SALARIODB <= q[10] ~ 10))
+  
+  Base_SES <- bind_rows(Base_SES, Base)
+  
+  i <- i + 1
+  
+}
+
+PromedioDeciles <- Base_SES                                              %>%
+  group_by(PAIS, decil)                                                  %>%
+  summarise(promedio = weighted.mean(SALARIODB, WEIGHT, na.rm = TRUE)) %>%
+  filter(!is.na(decil))  %>% 
+  rename(INCDECIL = decil)
+
+# Imputo promedio del decil del ingreso
+Base_LFS <- Base_LFS %>%
+  left_join(PromedioDeciles, by = c("PAIS", "INCDECIL")) %>% 
+  mutate(ING = promedio) %>% 
+  select(variables)
+
+saveRDS(Base_LFS, "bases_homog/europa.rds")
