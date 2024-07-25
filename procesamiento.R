@@ -22,6 +22,12 @@ rm(list = setdiff(ls(), "Base"))
 table(Base$CATOCUP,Base$SECTOR,useNA = "always")
 table(Base$CATOCUP,Base$PAIS,useNA = "always")
 
+for (pais in unique(Base$PAIS)){
+subset_data <- Base %>% filter(PAIS == pais)
+cat("PAIS:", pais, "\n")
+print(table(subset_data$CATOCUP, subset_data$SECTOR, useNA = "always"))}
+
+
 Base$CATOCUP[Base$CATOCUP=="Asalariados"] <- "Asalariado"
 Base$CATOCUP[Base$CATOCUP=="Cuenta Propia"] <- "Cuenta propia"
 

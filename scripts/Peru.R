@@ -35,8 +35,8 @@ Base<- PER                                  %>%
       p301a %in% c(8, 10, 11) ~ "Terciaria"),
     CATOCUP=case_when(
       p507 == 2                ~ "Cuenta propia", 
-      p507 %in% c(1, 5:7)      ~ "Resto", 
-      p507 %in% c(3, 4)        ~ "Asalariados"),
+      p507 %in% c(1, 5, 7)      ~ "Resto", 
+      p507 %in% c(3, 4, 6)        ~ "Asalariados"),
     SECTOR = case_when(
       p510 %in% c(1, 2) ~ "Pub",
       p507 == 6         ~ "SD", 

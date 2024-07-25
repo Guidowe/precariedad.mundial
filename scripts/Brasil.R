@@ -35,9 +35,15 @@ Base <- Base %>%
       VD3004 %in% c("Superior completo")~ "Terciaria"),
     CATOCUP = case_when(
       VD4009 == "Conta-própria" ~ "Cuenta propia", 
-      VD4009 == "Trabalhador familiar auxiliar" | VD4009 == "Empregador" ~ "Resto", 
-      VD4009 == "Empregado no setor privado com carteira de trabalho assinada" |
-      VD4009 == "Empregado no setor privado sem carteira de trabalho assinada" ~ "Asalariados"),
+      VD4009 == "Trabalhador familiar auxiliar"~ "Resto", 
+      VD4009 == "Empregador" ~ "Resto", 
+      VD4009 == "Empregado no setor privado com carteira de trabalho assinada" ~ "Asalariado", 
+      VD4009 == "Empregado no setor privado sem carteira de trabalho assinada" ~ "Asalariado", 
+      VD4009 == "Empregado no setor público com carteira de trabalho assinada" ~ "Asalariado", 
+      VD4009 == "Empregado no setor público sem carteira de trabalho assinada" ~ "Asalariado", 
+      VD4009 == "Trabalhador doméstico com carteira de trabalho assinada" ~ "Asalariado",
+      VD4009 == "Trabalhador doméstico sem carteira de trabalho assinada"~ "Asalariado", 
+      VD4009 == "Militar e servidor estatutário" ~ "Asalariado"),
     SECTOR = case_when(
       VD4009 %in% c("Empregado no setor público com carteira de trabalho assinada",
                     "Empregado no setor público sem carteira de trabalho assinada",
