@@ -31,16 +31,17 @@ Resultados <- Base                                 %>%
          'particip.tcp'           = total.tcp/sum(total.ocupados))
 
 # Alternativa Perfiles - CP ####
+
 base_grupos <- Base %>% 
   filter(SECTOR == "Priv"|CATOCUP =="Cuenta propia", !is.na(CALIF), !is.na(TAMA)) %>%
-  mutate(grupos = case_when(CATOCUP == "Cuenta propia" ~ paste0("CP - ",CALIF),
+  mutate(grupos = case_when(CATOCUP == "Cuenta propia" ~ paste0("Cuentapropista - ",CALIF),
                             #SECTOR == "Pub" ~ "S. Publico",
                             TRUE ~ paste0(TAMA, " - ",CALIF)),
          tamanio.calif = factor(grupos,
                                 levels = 
-                                  c("CP - Baja",
-                                    "CP - Media",
-                                    "CP - Alta",
+                                  c("Cuentapropista - Baja",
+                                    "Cuentapropista - Media",
+                                    "Cuentapropista - Alta",
                                     "Pequeño - Baja",
                                     "Pequeño - Media",
                                     "Pequeño - Alta",
@@ -51,6 +52,7 @@ base_grupos <- Base %>%
                                     "Grande - Media",
                                     "Grande - Alta"
                                   ))) 
+  
 # Calculos####
 pesos_perfiles<- base_grupos %>% 
   group_by(PAIS,tamanio.calif) %>% 
@@ -104,6 +106,24 @@ salario_preca_grupos <- asalariados %>%
   ) %>% 
   filter(buenos_empleos>0,salrio_prom>0)
 
+
+salario <- asalariados %>% 
+  group_by(ANO,PAIS) %>% 
+  summarise(salrio_prom = weighted.mean(ING_PPA,na.rm = T),
+            salario_median = median(ING_PPA,na.rm = T)) %>% 
+  pivot_longer(cols = 3:4,names_to = "indicador",values_to = "valor")
+
+
+salario_perfiles <- asalariados %>% 
+  group_by(ANO,PAIS,tamanio.calif) %>% 
+  summarise(salrio_prom = weighted.mean(ING_PPA,na.rm = T),
+            salario_median = median(ING_PPA,na.rm = T)) %>% 
+  ungroup() %>% 
+  group_by(tamanio.calif) %>% 
+  mutate(salario_prom_rel_usa = salrio_prom/salrio_prom[PAIS == "Estados Unidos"],
+         salario_mediana_rel_usa = salario_median/salario_median[PAIS == "Estados Unidos"],
+  )
+
 salario_buenos <- asalariados %>% 
   filter(buen_empleo=="Si") %>% 
   group_by(ANO,PAIS) %>% 
@@ -120,16 +140,6 @@ salario_buenos_perfiles <- asalariados %>%
   mutate(salario_prom_rel_usa = salrio_prom/salrio_prom[PAIS == "Estados Unidos"],
          salario_mediana_rel_usa = salario_median/salario_median[PAIS == "Estados Unidos"],
   )
-
-salario_perfiles <- asalariados %>% 
-  group_by(ANO,PAIS,tamanio.calif) %>% 
-  summarise(salrio_prom = weighted.mean(ING_PPA,na.rm = T),
-            salario_median = median(ING_PPA,na.rm = T)) %>% 
-  group_by(tamanio.calif) %>% 
-  mutate(salario_prom_rel_usa = salrio_prom/salrio_prom[PAIS == "Estados Unidos"],
-         salario_mediana_rel_usa = salario_median/salario_median[PAIS == "Estados Unidos"],
-  )
-
 # Graficos ####
 ## Paleta colores#####
 azul <- colorspace::diverge_hcl(n = 12,h = c(255,330),
@@ -145,7 +155,7 @@ naranja <- colorspace::diverge_hcl(n = 12,h = c(130,43),
 rojo <- colorspace::diverge_hcl(n = 12,h = 14,
                                 c = 100,
                                 l = c(70,90))[c(10,11,12)]
-#colorspace::choose_color()
+colorspace::choose_color()
 paleta <- c(rojo,
             azul,
             naranja,
@@ -156,6 +166,8 @@ paleta9 <- c(azul,
             naranja,
             verde
 )
+#colourpicker::colourPicker()
+paleta_regiones <- c("#59B359","#E04343","#1BAFBD","#250CA3")
 ## Peso de perfiles#####
 paises_orden <- Paises %>% select(PAIS = nombre.pais,region,Orden,COD.OCDE)
 
@@ -197,18 +209,21 @@ ggsave("Resultados/Mundial/perfiles_v2.jpg",width = 15,height = 12,bg = "white")
 
 peso_buenos_emp %>% 
   filter(buen_empleo == "Si") %>% 
+  left_join(paises_orden) %>% 
+  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
   ggplot(.,
          aes(x = reorder(PAIS,porcentaje), y = porcentaje,
+             fill = region,
              label = scales::percent(porcentaje,decimal.mark = ",",
                                      accuracy = 0.1))) +
   geom_col(position = "stack")+
   geom_text(position = position_stack(vjust = .5),size=3)+
-  labs(title = '% de "buenos empleos" asalariados',
-       subtitle = "Expreiones evaluadas:  | No registro | Falta de cobertura social | Part Time Involuntario| Empleo de duración determinada")+
+  # labs(title = '% de "buenos empleos" asalariados',
+  #      subtitle = "Expreiones evaluadas:  | No registro | Falta de cobertura social | Part Time Involuntario| Empleo de duración determinada")+
   # labs(title = "% de asalariados con alguna expresión de precariedad",
   #      subtitle = "Expreiones evaluadas:  | No registro | Falta de cobertura social | Part Time Involuntario| Empleo de duración determinada")+
   ggthemes::theme_tufte()+
-  theme(legend.position = "left",
+  theme(legend.position = "none",
         legend.direction = "vertical",
         legend.title = element_text(size = 14),
         axis.title = element_blank(),
@@ -220,14 +235,16 @@ peso_buenos_emp %>%
         panel.grid.minor.y = element_line(colour = "grey30"),
         panel.grid.minor.x = element_line(colour = "grey"),
         panel.grid.major.x = element_line(colour = "grey"))+
-  scale_fill_manual(values = paleta)+
+  scale_fill_manual(values = paleta_regiones)+
   scale_y_continuous(labels = scales::percent)
 ggsave("Resultados/Mundial/empleos_buenos.jpg",width = 15,height = 12,bg = "white")
+ggsave("Resultados/Mundial/empleos_buenos_color.jpg",width = 15,height = 12,bg = "white")
 
 ### por perfil ####
 peso_buenos_emp_perfiles %>% 
   filter(buen_empleo == "Si") %>% 
   left_join(paises_orden) %>% 
+  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
   ggplot(.,
          aes(x = tamanio.calif, y = porcentaje,
              group = tamanio.calif,fill = tamanio.calif,
@@ -235,8 +252,8 @@ peso_buenos_emp_perfiles %>%
                                      accuracy = 0.1))) +
   geom_col(position = "stack")+
   # geom_text(position = position_stack(vjust = .5),size=3)+
-  labs(title = '% de "buenos empleos" asalariados',
-       subtitle = "Expreiones evaluadas:  Falta de cobertura social | Part Time Involuntario| Empleo de duración determinada")+
+  # labs(title = '% de "buenos empleos" asalariados',
+  #      subtitle = "Expreiones evaluadas:  Falta de cobertura social | Part Time Involuntario| Empleo de duración determinada")+
   # labs(title = "% de asalariados con alguna expresión de precariedad",
   #      subtitle = "Expreiones evaluadas:  | No registro | Falta de cobertura social | Part Time Involuntario| Empleo de duración determinada")+
   ggthemes::theme_tufte()+
@@ -254,7 +271,8 @@ peso_buenos_emp_perfiles %>%
         panel.grid.major.x = element_line(colour = "grey"))+
   facet_wrap(vars(reorder(PAIS,Orden)))+
   scale_fill_manual(values = paleta[4:12])+
-  scale_y_continuous(labels = scales::percent)
+  scale_y_continuous(labels = scales::percent)+
+  guides(fill=guide_legend(title="Tamaño - Calificación"))
 ggsave("Resultados/Mundial/empleos_buenos_perfiles.jpg",width = 15,height = 12,bg = "white")
 
 ## % precariedad s/ expresion #####
@@ -299,21 +317,27 @@ con_bandera_grupos<- salario_preca_grupos %>%
   mutate(alpha_2= str_to_lower(alpha_2))
 
 con_bandera %>% 
+  left_join(paises_orden) %>% 
+  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
   ggplot(aes(x = buenos_empleos,
              y = salrio_prom, 
              group = alpha_2,
              country = alpha_2)) +
   geom_flag(size = 10) +
   labs(x = "% de empleos no precarios",
-       y = "Salario Promedio PPA")+
+       y = "Salario promedio")+
   theme(legend.title = element_blank(),
         legend.position = "none",
-        text = element_text(size=15))
+        text = element_text(size=15))+
+  scale_y_continuous(labels = scales::number_format(big.mark = "."))+
+  scale_x_continuous(labels = scales::number_format(decimal.mark = ","))
 ggsave("Resultados/Mundial/banderas_paises.jpg",width = 15,height = 9,bg = "white")
 
 
 
 con_bandera_grupos %>% 
+  left_join(paises_orden) %>% 
+  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
   mutate(perfil = as.numeric(tamanio.calif)) %>% 
   mutate(perfil_text = paste0(perfil," - ",tamanio.calif)) %>% 
   ggplot(aes(x = buenos_empleos,
@@ -323,31 +347,64 @@ con_bandera_grupos %>%
   labs(x = "% de empleos no precarios",
        y = "Salario Promedio PPA")+
   theme(legend.title = element_blank(),
-        legend.position = "left")
-facet_wrap(vars(tamanio.calif),scales = "")
+        legend.position = "left")+
+facet_wrap(vars(tamanio.calif))
 ggsave("Resultados/Mundial/banderas_grupos.jpg",width = 15,height = 12,bg = "white")
 
 con_bandera_grupos %>% 
+  left_join(paises_orden) %>% 
+  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
   mutate(perfil = as.numeric(tamanio.calif)) %>% 
   mutate(perfil_text = paste0(perfil," - ",tamanio.calif)) %>% 
   ggplot(aes(x = buenos_empleos,
              y = salrio_prom, 
-             group = perfil_text,
-             fill = perfil_text,
+             group = reorder(perfil_text,perfil),
+             fill = reorder(perfil_text,perfil),
              label = perfil,
              country = alpha_2)) +
   geom_point(size = 0) +
-  geom_flag() +
-  geom_text() +
+  geom_flag(size = 10) +
+  geom_text(size = 10) +
   labs(x = "% de empleos no precarios",
        y = "Salario Promedio PPA")+
   theme(legend.title = element_blank(),
         legend.position = "left")
 ggsave("Resultados/Mundial/banderas_grupos_todo_junto.jpg",width = 15,height = 12,bg = "white")
-### Salarios - sin filtrar ####
+### Total asalariados####
+salario %>% 
+  filter(!is.na(valor)) %>% 
+  left_join(paises_orden) %>% 
+  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
+  ggplot(.,
+         aes(x = reorder(PAIS,Orden), y = valor,fill = region,
+             label = round(valor,digits = 0))) +
+  geom_col(position = "stack")+
+#  geom_text(position = position_stack(vjust = .5),size=3)+
+  # labs(title = "% de asalariados con alguna expresión de precariedad",
+  #      subtitle = "Expreiones evaluadas:  | No registro | Falta de cobertura social | Part Time Involuntario| Empleo de duración determinada")+
+  ggthemes::theme_tufte()+
+  theme(legend.position = "none",
+        legend.direction = "vertical",
+        legend.title = element_text(size = 14),
+        axis.title = element_blank(),
+        text = element_text(size = 18),
+        axis.text.x = element_text(angle = 45),
+        plot.margin = margin(0,1,0,0, "cm"),
+        #panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  facet_wrap(vars(indicador),ncol = 2)+
+  scale_fill_manual(values = paleta_regiones)+
+  scale_y_continuous(labels = scales::number_format(big.mark = "."))
+ggsave("Resultados/Mundial/salarios_total_fila.png",
+       width = 15.59,height = 9)
+
 
 salario_perfiles %>% 
   left_join(paises_orden) %>% 
+  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
   filter(!is.na(salrio_prom),region != "USA") %>% 
   ggplot(aes(x = reorder(PAIS,Orden),
              y = salario_prom_rel_usa,
@@ -362,6 +419,7 @@ salario_perfiles %>%
         axis.text.x = element_text(angle = 90),
         axis.ticks.x = element_blank(),
         panel.spacing = unit(1,"cm"),
+        text = element_text(size = 15),
         panel.grid.major.y = element_line(colour = "grey"),
         panel.grid.minor.y = element_line(colour = "grey30"),
         panel.grid.minor.x = element_line(colour = "grey"),
@@ -371,11 +429,12 @@ salario_perfiles %>%
   facet_grid(cols = vars(region), scales = "free_x",space = "free")
 
 
-ggsave("Resultados/America/relativos a mismo perfil.png",
+ggsave("Resultados/Mundial/relativos a mismo perfil.png",
        width = 15.59,height = 9)
 
 salario_perfiles %>% 
   left_join(paises_orden) %>% 
+  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
   filter(!is.na(salrio_prom),region != "USA") %>% 
   ggplot(aes(x = reorder(PAIS,Orden),
              y = salario_mediana_rel_usa,
@@ -390,6 +449,7 @@ salario_perfiles %>%
         axis.text.x = element_text(angle = 90),
         axis.ticks.x = element_blank(),
         panel.spacing = unit(1,"cm"),
+        text = element_text(size = 15),
         panel.grid.major.y = element_line(colour = "grey"),
         panel.grid.minor.y = element_line(colour = "grey30"),
         panel.grid.minor.x = element_line(colour = "grey"),
@@ -399,22 +459,23 @@ salario_perfiles %>%
   facet_grid(cols = vars(region), scales = "free_x",space = "free")
 
 
-ggsave("Resultados/America/medianas_relativos a mismo perfil.png",
+ggsave("Resultados/Mundial/medianas_relativos a mismo perfil.png",
        width = 15.59,height = 9)
 
 ### No precarios ####
 salario_buenos %>% 
   filter(!is.na(valor)) %>% 
   left_join(paises_orden) %>% 
+  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
   ggplot(.,
-         aes(x = reorder(PAIS,valor), y = valor,
+         aes(x = reorder(PAIS,Orden), y = valor,fill = region,
              label = round(valor,digits = 0))) +
   geom_col(position = "stack")+
-  geom_text(position = position_stack(vjust = .5),size=3)+
+  #  geom_text(position = position_stack(vjust = .5),size=3)+
   # labs(title = "% de asalariados con alguna expresión de precariedad",
   #      subtitle = "Expreiones evaluadas:  | No registro | Falta de cobertura social | Part Time Involuntario| Empleo de duración determinada")+
   ggthemes::theme_tufte()+
-  theme(legend.position = "left",
+  theme(legend.position = "none",
         legend.direction = "vertical",
         legend.title = element_text(size = 14),
         axis.title = element_blank(),
@@ -426,12 +487,17 @@ salario_buenos %>%
         panel.grid.minor.y = element_line(colour = "grey30"),
         panel.grid.minor.x = element_line(colour = "grey"),
         panel.grid.major.x = element_line(colour = "grey"))+
-  facet_wrap(vars(indicador))
+  facet_wrap(vars(indicador),ncol = 2)+
+  scale_fill_manual(values = paleta_regiones)+
+  scale_y_continuous(labels = scales::number_format(big.mark = "."))
+ggsave("Resultados/Mundial/salarios_buenos_fila.png",
+       width = 15.59,height = 9)
 
 
 salario_buenos_perfiles %>% 
   filter(!is.na(salrio_prom)) %>% 
   left_join(paises_orden) %>% 
+  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
   ggplot(.,
          aes(x = reorder(PAIS,Orden), y = salrio_prom,
              label = round(salrio_prom,digits = 0))) +
@@ -457,6 +523,7 @@ salario_buenos_perfiles %>%
 salario_buenos_perfiles %>% 
   left_join(paises_orden) %>% 
   filter(!is.na(salrio_prom),region != "USA") %>% 
+  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
   ggplot(aes(x = reorder(PAIS,Orden),
            y = salario_prom_rel_usa,
            color = tamanio.calif,group = tamanio.calif)) +
@@ -470,6 +537,7 @@ salario_buenos_perfiles %>%
         axis.text.x = element_text(angle = 90),
         axis.ticks.x = element_blank(),
         panel.spacing = unit(1,"cm"),
+        text = element_text(size = 15),
         panel.grid.major.y = element_line(colour = "grey"),
         panel.grid.minor.y = element_line(colour = "grey30"),
         panel.grid.minor.x = element_line(colour = "grey"),
@@ -479,5 +547,35 @@ salario_buenos_perfiles %>%
   facet_grid(cols = vars(region), scales = "free_x",space = "free")
 
 
-ggsave("Resultados/America/relativos a mismo perfil_no_precarios.png",
+ggsave("Resultados/Mundial/relativos a mismo perfil_no_precarios.png",
+       width = 15.59,height = 9)
+
+salario_buenos_perfiles %>% 
+  left_join(paises_orden) %>% 
+  filter(!is.na(salrio_prom),region != "USA") %>% 
+  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
+  ggplot(aes(x = reorder(PAIS,Orden),
+             y = salario_mediana_rel_usa,
+             color = tamanio.calif,group = tamanio.calif)) +
+  geom_point(position = "dodge",size = 5)+
+  # geom_text(position = position_dodge(),size=2.5)+
+  #labs(title = "Salario relativo a un mismo perfil en EUA. Año 2019")+
+  theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        axis.title = element_blank(),
+        axis.text.x = element_text(angle = 90),
+        axis.ticks.x = element_blank(),
+        panel.spacing = unit(1,"cm"),
+        text = element_text(size = 15),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_color_manual(values = paleta9)+
+  scale_y_continuous(breaks = seq(0.1,1.2,0.1))+
+  facet_grid(cols = vars(region), scales = "free_x",space = "free")
+
+
+ggsave("Resultados/Mundial/relativos a mismo perfil_no_precarios_mediana.png",
        width = 15.59,height = 9)

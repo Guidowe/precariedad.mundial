@@ -61,8 +61,8 @@ for (pais in unique(Base$PAIS)){
   cat("PAIS:", pais, "\n")
   print(table(subset_data$CATOCUP, subset_data$SECTOR, useNA = "always"))}
 
-Base$CATOCUP[Base_PPA$CATOCUP=="Asalariados"] <- "Asalariado"
-Base$CATOCUP[Base_PPA$CATOCUP=="Cuenta Propia"] <- "Cuenta propia"
+Base$CATOCUP[Base$CATOCUP=="Asalariados"] <- "Asalariado"
+Base$CATOCUP[Base$CATOCUP=="Cuenta Propia"] <- "Cuenta propia"
 
 chequeo <- Base %>%
   group_by(PAIS,CATOCUP,SECTOR) %>% 
@@ -72,6 +72,7 @@ chequeo <- Base %>%
 
 # Base PPA ####
 Base_PPA<- Base %>% 
+#  select(-PPA,-ING_PPA) %>% 
   left_join(
     PPA_WB_IPC %>%
       select(PAIS = nombre.pais,
