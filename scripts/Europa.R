@@ -1,6 +1,7 @@
 library(dplyr)
 library(tidyverse)
 library(Hmisc)
+library(haven)
 
 # Define variables and settings
 variables <- c("PAIS", "ANO", "PERIODO", "WEIGHT", "SEXO", "EDAD",
@@ -19,7 +20,7 @@ country_names <- c(
 
 Base_LFS <- data.frame()
 
-# Iterate over countries
+# Itera sobre las bases de la LFS
 for (country in countries) {
   print(paste("Procesando LFS para", country_names[country]))
   file_path <- paste0("bases/LFS/", country, "_y.csv")
@@ -74,34 +75,45 @@ for (country in countries) {
 
 #Imputacion con SES
 
-Carpeta <- "D:/SES/"
+Carpeta <- "bases/SES/"
 
-paises_SES <- c("ES2014", "FR2014", "UK2014", "DE2014", "IT2014", "PT2014", "DK2014", "BG2014", "RO2014")
+# Set de paises disponibles en SES (no hay data para Austria, Belgica, Grecia y UK)
+paises_SES <- c("SES2018_DE.dta", "SES2018_DK.dta", "SES2018_ES.dta", "SES2018_FR.dta", "SES2018_IT.dta", "SES2018_NL.dta", "SES2018_NO.dta", "SES2018_PL.dta", "SES2018_PT.dta", "SES2018_RO.dta", "SES2018_SE.dta")
 
+# Mapeo de nombre de paises
 country_names_SES <- c(
-  "DE2014" = "Alemania", "DK2014" = "Dinamarca", "BG2014" = "Bulgaria",
-  "ES2014" = "España", "FR2014" = "Francia",  "IT2014" = "Italia", 
-  "PT2014" = "Portugal", "RO2014" = "Rumanía", "UK2014" = "Reino Unido")
+  "SES2018_DE.dta" = "Alemania",
+  "SES2018_DK.dta" = "Dinamarca",
+  "SES2018_ES.dta" = "España",
+  "SES2018_FR.dta" = "Francia",
+  "SES2018_IT.dta" = "Italia",
+  "SES2018_NL.dta" = "Países Bajos",
+  "SES2018_NO.dta" = "Noruega",
+  "SES2018_PL.dta" = "Polonia",
+  "SES2018_PT.dta" = "Portugal",
+  "SES2018_RO.dta" = "Rumanía",
+  "SES2018_SE.dta" = "Suecia"
+)
 
 Base_SES <- data.frame()
 
 i <- 1
 while (i < length(paises_SES) + 1) {
   print(paste("Procesando SES para", country_names_SES[paises_SES[i]]))
-  Base <- readRDS(paste0(Carpeta, paises_SES[i], ".Rda"))
+  Base <- read_dta(paste0(Carpeta, paises_SES[i]))
   
   Base <- Base     %>% 
     filter(nace!="XO")   %>%
     filter(nace!="XT")   %>%
     mutate(
       PAIS=country_names_SES[paises_SES[i]],
-      WEIGHT=as.numeric(as.character(B52)), 
+      WEIGHT=as.numeric(as.character(b52)), 
       CALIF= case_when(
-        B23 %in% c(90:99, 900:999)  ~ "Baja",
-        B23 %in% c(40:89, 400:899) ~ "Media", 
-        B23 %in% c(10:39, 100:399) ~ "Alta"),                                                                   
-      SALARIODB = as.numeric(as.character(B42))) %>% 
-    select(PAIS, WEIGHT, CALIF, A12_CLASS, SALARIODB)
+        b23 %in% c(90:99, 900:999)  ~ "Baja",
+        b23 %in% c(40:89, 400:899) ~ "Media", 
+        b23 %in% c(10:39, 100:399) ~ "Alta"),                                                                   
+      SALARIODB = as.numeric(as.character(b42))) %>% 
+    select(PAIS, WEIGHT, CALIF, a12_class, SALARIODB)
 
   #Calculo el límite de los deciles ponderados
   q <- wtd.quantile(Base$SALARIODB, probs = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1), na.rm = TRUE, weight = Base$WEIGHT)
