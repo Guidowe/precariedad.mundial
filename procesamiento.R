@@ -4,7 +4,6 @@ library(tidyverse)
 library(openxlsx)
 
 rutas <- list.files("Bases_homog/",full.names = T,pattern = ".rds")
-
 Base <- data.frame()
 for(i in rutas){
   base_temp<- readRDS(i) %>%
@@ -90,6 +89,11 @@ ingprom <- Base_PPA %>%
   group_by(ANO,PAIS) %>% 
   summarise(PPA_mean =mean(ING_PPA,na.rm = T),
             PPA_median = median(ING_PPA,na.rm = T))
+
+#Para levantar una base en particular y unirla
+# Base_PPA<- readRDS("base_homogenea.RDS")
+# Base_PPA <- base_truco %>%
+#   bind_rows(Base_PPA)
 
 #Exportacion base ####
 saveRDS(object = Base_PPA,"base_homogenea.RDS")
