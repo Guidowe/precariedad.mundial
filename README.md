@@ -1,4 +1,4 @@
-# Proyecto Precariedad Mundial
+# Precariedad Mundial
 
 Este es el repositorio de datos para el procesamiento de encuestas de hogares, en el marco de la línea de trabajo sobre precariedad mundial del Centro de Estudios sobre Población, Empleo y Desarrollo (CEPED - IIEP – UBA). Este proyecto utiliza microdatos de encuestas de hogares de institutos de estadística oficiales de distintos países del mundo y los convierte en un dataframe unificado con información homogeneizada.
 
