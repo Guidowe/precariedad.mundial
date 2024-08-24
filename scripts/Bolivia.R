@@ -27,12 +27,14 @@ Base <- Base %>%
       niv_ed  == 5 ~ "Terciaria"),
     CATOCUP = case_when(
       s2_18 == 2 ~ "Cuenta propia", 
-      s2_18 %in% 3:7 ~ "Resto", 
-      s2_18 == 1 ~ "Asalariados",       
+      s2_18 == 3 ~ "Patron", 
+      s2_18 %in% 4:6 ~ "Resto", 
+      s2_18 %in% c(1, 7) ~ "Asalariados",       
       TRUE ~ "Resto"),
     SECTOR = case_when(
       s2_22 == 1 ~ "Pub", 
       s2_22 %in% 2:6 ~ "Priv", 
+      s2_18 %in% 2:3 ~ "Priv", 
       s2_18 == 7 ~ "SD"),
     PRECAPT = case_when(
       phrs < 35 & phrs > 0 & s2_57 == 1 ~ 1,         

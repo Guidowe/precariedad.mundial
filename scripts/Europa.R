@@ -43,7 +43,7 @@ for (country in countries) {
       CATOCUP = case_when(
         STAPRO == 0 ~ "Cuenta propia",
         STAPRO == 3 ~ "Asalariados",
-        TRUE ~ "Resto"),
+        STAPRO == 4  ~ "Resto"),
       SECTOR = case_when(
         NACE1D == "O" ~ "Pub",
         NACE1D == "T" ~ "SD",
