@@ -28,11 +28,15 @@ Base <- PAR       %>%
       P06 ==1 ~ "Varon", 
       P06 ==6 ~ "Mujer"),
     EDAD=P02, 
-    EDUC= NA, 
+    EDUC = case_when(
+      AÑOEST %in% c(0:6)~ "Primaria", 
+      AÑOEST %in% c(7:12)~ "Secundaria", 
+      AÑOEST %in% c(13:20)~ "Terciaria"), 
     CATOCUP=case_when(
-      CATE_PEA ==   4          ~ "Cuenta propia", 
-      CATE_PEA %in% 1:2        ~ "Asalariados", 
-      CATE_PEA %in% c(3, 5, 6) ~ "Resto"),
+      CATE_PEA == 5          ~ "Patron", 
+      CATE_PEA == 4          ~ "Cuenta propia", 
+      CATE_PEA %in% c(1,2,6) ~ "Asalariados", 
+      CATE_PEA ==3           ~ "Resto"),
     SECTOR= case_when(
       CATE_PEA==1 ~ "Pub", 
       CATE_PEA %in% 2:5~ "Priv",       

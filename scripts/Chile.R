@@ -22,13 +22,14 @@ Base <- Base %>%
       nivel %in% c(6:14) ~ "Terciaria"),
     WEIGHT=as.numeric(sub(",", ".", fact_cal_esi)),
     CATOCUP=case_when(
-      cise %in% c(1, 5:7)        ~ "Resto",
+      cise ==1                   ~ "Patron",
       cise == 2                  ~ "Cuenta propia",
-      cise %in% 3:4              ~ "Asalariados"),
+      cise %in% 3:6              ~ "Asalariados", 
+      cise == 7                  ~ "Resto"),
     SECTOR= case_when(
       cise %in% c(1,2,3,5)  ~ "Priv", 
-      cise == 4 ~ "Pub", 
-      cise %in% 5:6 ~ "SD"),
+      cise == 4             ~ "Pub", 
+      cise %in% 5:6         ~ "SD"),
     PRECAPT= case_when(
       habituales<35 & habituales>0 & c10==1  ~ 1, 
       habituales<35 & habituales>0 & c10==2  ~ 0, 

@@ -30,15 +30,17 @@ Base <- URU %>%
       e224_1 == 1 ~ "Terciaria"
     ),
     CATOCUP = case_when(
+      f71_2 == "9111" ~ "Asalariados",
       f73 %in% 5:6 ~ "Cuenta propia",
-      f73 %in% c(3, 4, 7, 8) ~ "Resto", 
-      f73 %in% 1:2 ~ "Asalariados", 
-      f71_2 == "9111" ~ "Resto"
+      f73 ==4 ~ "Patron",
+      f73 %in% c(7, 8) ~ "Resto", 
+      f73 %in% 1:3 ~ "Asalariados"
     ),
     SECTOR = case_when(
+      f71_2 == "9111" ~ "SD",
       f73 %in% c(1, 3, 4, 5, 6, 7) ~ "Priv", 
-      f73 %in% c(2, 8) ~ "Pub", 
-      f71_2 == "9111" ~ "SD"
+      f73 %in% c(2, 8) ~ "Pub"
+
     ),
     PRECAPT = case_when(
       f85 < 35 & f85 > 0 & f102 == 1 ~ 1,

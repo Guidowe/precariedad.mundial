@@ -36,7 +36,7 @@ Base <- Base %>%
     CATOCUP = case_when(
       VD4009 == "Conta-própria" ~ "Cuenta propia", 
       VD4009 == "Trabalhador familiar auxiliar"~ "Resto", 
-      VD4009 == "Empregador" ~ "Resto", 
+      VD4009 == "Empregador" ~ "Patron", 
       VD4009 == "Empregado no setor privado com carteira de trabalho assinada" ~ "Asalariado", 
       VD4009 == "Empregado no setor privado sem carteira de trabalho assinada" ~ "Asalariado", 
       VD4009 == "Empregado no setor público com carteira de trabalho assinada" ~ "Asalariado", 

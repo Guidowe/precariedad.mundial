@@ -30,13 +30,14 @@ Base<- PER                                  %>%
       p207 == 1 ~ "Varon", 
       p207 == 2 ~ "Mujer"), 
     EDUC = case_when(
-      p301a %in% c(2:5) ~ "Primaria", 
-      p301a %in% c(6:7, 9) ~ "Secundaria", 
+      p301a %in% c(2:5)       ~ "Primaria", 
+      p301a %in% c(6:7, 9)    ~ "Secundaria", 
       p301a %in% c(8, 10, 11) ~ "Terciaria"),
     CATOCUP=case_when(
-      p507 == 2                ~ "Cuenta propia", 
-      p507 %in% c(1, 5, 7)      ~ "Resto", 
-      p507 %in% c(3, 4, 6)        ~ "Asalariados"),
+      p507 == 1               ~ "Patron",
+      p507 == 2               ~ "Cuenta propia", 
+      p507 %in% c(1, 5, 7)    ~ "Resto", 
+      p507 %in% c(3, 4, 6)    ~ "Asalariados"),
     SECTOR = case_when(
       p510 %in% c(1, 2) ~ "Pub",
       p507 == 6         ~ "SD", 

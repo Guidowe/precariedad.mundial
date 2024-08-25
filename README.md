@@ -38,7 +38,9 @@ Las encuestas de cada país son filtradas para obtener información para el tota
 - **ANO**: Año de referencia de la encuesta.
 - **PERIODO**: Período de referencia de la encuesta.
 
-¡Gracias por utilizar nuestro repositorio! Si tienes alguna pregunta o sugerencia, no dudes en contactarnos. Si utilizas información de este proyecto, agradecemos que cites este repositorio o alguna de nuestras publicaciones:
+¡Gracias por utilizar nuestro repositorio! Si tienes alguna pregunta o sugerencia, no dudes en contactarnos. También podés proponer modificaciones al código mediante un issue al repositorio. 
+
+Si utilizas información de este proyecto, agradecemos que cites este repositorio o alguna de nuestras publicaciones:
 
 - [**La calidad del empleo en la Argentina reciente: un análisis sobre su relación con la calificación y el tamaño de las unidades productivas en perspectiva comparada** J Graña, G Weksler, F Lastra *Trabajo y Sociedad 38, 423-446*](https://www.unse.edu.ar/trabajoysociedad/38%20GRANA%20ET%20ALT%20La%20calidad%20del%20empleo%20en%20la%20Argentina.pdf)
 
