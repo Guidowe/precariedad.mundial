@@ -70,6 +70,7 @@ base_homog <- colombia %>%
     COND = "Ocupado",
     CATOCUP = case_when(P6430  %in%  c(1,2,3,8)~ "Asalariado",
                         P6430  %in%  c(4)~ "Cuenta Propia",
+                        P6430  %in%  c(5)~ "Patron",
                         TRUE ~ "Resto"),
     SECTOR = case_when(P6430  %in%  c(1,4,5,7)~ "Priv",
                        P6430  %in%  c(2)~ "Pub",

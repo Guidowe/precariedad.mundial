@@ -28,6 +28,7 @@ base_homog <- costarica %>%
     PERIODO = periodo,
     CATOCUP = case_when(PosiEmpPri %in% 11:12~ "Asalariados",
                          PosiEmpPri %in% 22~ "Cuenta Propia",
+                         PosiEmpPri %in% 21~ "Patron",
                          TRUE ~ "Resto"),
     SECTOR = case_when(SecInsPri %in% 1:2~ "Pub",
                        SecInsPri %in% 3 & PosiEmpPri != 11~ "Priv",

@@ -35,6 +35,7 @@ base_homog <- guatemala %>%
     PERIODO = periodo,
     CATOCUP = case_when(P04C06 %in% 1:4~ "Asalariados",
                         P04C06 %in% c(5,7)~ "Cuenta Propia",
+                        P04C06 %in% c(6)~ "Patrón",
                         TRUE ~ "Resto"),
     SECTOR = case_when(P04C06 %in% 1~ "Pub",
                        P04C06 %in% c(2:3,5:9) ~ "Priv",

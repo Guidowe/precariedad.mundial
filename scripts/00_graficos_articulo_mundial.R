@@ -64,6 +64,13 @@ pesos_perfiles<- base_grupos %>%
   group_by(PAIS) %>% 
   mutate(particip.ocup= casos_pond/sum(casos_pond))
 
+pesos_asal<- base_grupos %>% 
+  filter(CATOCUP == "Asalariado") %>% 
+  group_by(PAIS,tamanio.calif) %>% 
+  summarise(casos_pond = sum(WEIGHT,na.rm = T)) %>% 
+  group_by(PAIS) %>% 
+  mutate(particip.ocup= casos_pond/sum(casos_pond))
+
 peso_cuentaprop <- pesos_perfiles %>% 
   filter(str_sub(tamanio.calif,1,3) == "Cue")
 
@@ -226,6 +233,41 @@ pesos_perfiles %>%
   guides(fill=guide_legend(title="Tamaño - Calificación"))
 
 ggsave("Resultados/Mundial/perfiles_v2.jpg",width = 15,height = 12,bg = "white")
+
+## Perfiles solo asal ####
+pesos_asal %>% 
+  left_join(paises_orden) %>% 
+  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
+  ggplot(.,
+         aes(x = reorder(PAIS,Orden), y = particip.ocup,
+             fill = tamanio.calif,group = tamanio.calif,
+             label = scales::percent(particip.ocup,decimal.mark = ",",
+                                     accuracy = 0.1))) +
+  geom_col(position = "stack")+
+  geom_text(position = position_stack(vjust = .5),size=3)+
+  #  labs(title = "Distribución del empleo según grupos")+
+  ggthemes::theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        legend.title = element_text(size = 14),
+        axis.title = element_blank(),
+        text = element_text(size = 18),
+        axis.text.x = element_text(angle = 45),
+        plot.margin = margin(0,1,0,0, "cm"),
+        #panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_fill_manual(values = paleta9)+
+  scale_y_continuous(labels = scales::percent)+
+  facet_grid(cols = vars(region),
+             space = "free",
+             scales = "free_x")+
+  guides(fill=guide_legend(title="Tamaño - Calificación"))
+
+ggsave("Resultados/Mundial/perfiles_v1.jpg",width = 15,height = 12,bg = "white")
+
 
 ## Peso de CP ####
 peso_cuentaprop %>% 

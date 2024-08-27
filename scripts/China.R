@@ -75,6 +75,7 @@ base_homog <- base_dif_2018 %>%
          COND = "Ocupado",
          CATOCUP = case_when(C03_1 == 2 ~"Asalariados",
                              C03_1 == 3 ~"Cuenta propia",
+                             C03_1 == 1 ~"Patron",
                              TRUE ~"Resto"),
          PRECAREG = case_when(
            C07_1 %in% 4~1,#"No registrado",

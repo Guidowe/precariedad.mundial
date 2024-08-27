@@ -76,6 +76,7 @@ base_homog <- base_join_sample %>%
     COND = "Ocupado",
     CATOCUP = case_when(pos_ocu %in%  c(1)~ "Asalariados",
                          pos_ocu %in%  c(3)~ "Cuenta Propia",
+                         pos_ocu %in%  c(2)~ "Patron",
                          TRUE ~ "Resto"),
     SECTOR = case_when(tue2  %in%  c(1:3,5,7)~ "Priv",
                        tue2  %in%  c(4)~ "Pub",

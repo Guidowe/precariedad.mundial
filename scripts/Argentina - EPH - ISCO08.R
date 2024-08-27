@@ -122,6 +122,7 @@ base_homog <- bases_bind %>%
                          PP07H == 2 ~ 1),
     CATOCUP =  case_when(CAT_OCUP == 2 ~ "Cuenta Propia",
                          CAT_OCUP == 3 ~ "Asalariados",
+                         CAT_OCUP == 1 ~ "Patron",
                          TRUE ~ "Resto"),
     part.time.inv = case_when(ESTADO == 1 & PP3E_TOT < 35 & PP03G == 1 ~ "Part Involunt",
                               ESTADO == 1 & PP3E_TOT < 35 & PP03G == 2 ~"Part Volunt",

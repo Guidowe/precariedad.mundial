@@ -54,18 +54,27 @@ PPA_WB_IPC <- IPC_2005 %>%
 #Cosas a resolver - CATOCUP y SECTOR
 table(Base$CATOCUP,Base$SECTOR,useNA = "always")
 table(Base$CATOCUP,Base$PAIS,useNA = "always")
+chequeo <- Base %>%
+  group_by(PAIS,CATOCUP,SECTOR) %>% 
+  count()
+
 
 for (pais in unique(Base$PAIS)){
   subset_data <- Base %>% filter(PAIS == pais)
   cat("PAIS:", pais, "\n")
   print(table(subset_data$CATOCUP, subset_data$SECTOR, useNA = "always"))}
 
+# Correcciones####
 Base$CATOCUP[Base$CATOCUP=="Asalariados"] <- "Asalariado"
 Base$CATOCUP[Base$CATOCUP=="Cuenta Propia"] <- "Cuenta propia"
+Base$SECTOR[Base$CATOCUP %in% c("Cuenta Propia","Patron")] <- "Priv"
+Base$CATOCUP[Base$SECTOR=="SD"] <- "Asalariado"
 
-chequeo <- Base %>%
+chequeo_post_corr <- Base %>%
   group_by(PAIS,CATOCUP,SECTOR) %>% 
   count()
+
+
 
 #En algunos países los CP no quedan dentro del sector privado
 
@@ -96,4 +105,6 @@ ingprom <- Base_PPA %>%
 #   bind_rows(Base_PPA)
 
 #Exportacion base ####
+Base_PPA <- Base_PPA %>% 
+  select(-PRECASALUD)
 saveRDS(object = Base_PPA,"base_homogenea.RDS")

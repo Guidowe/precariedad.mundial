@@ -35,6 +35,7 @@ base_homog<- elsalvador %>%
     PERIODO = 2019,
     CATOCUP = case_when(r418 %in% 6:9~ "Asalariados",
                         r418 %in% c(2,3)~ "Cuenta Propia",
+                        r418 %in% c(1)~ "Patron",
                         TRUE ~ "Resto"),
     SECTOR = case_when(r420 %in% 2~ "Pub",
                        r420 %in% 1 & r418!=9  ~ "Priv",

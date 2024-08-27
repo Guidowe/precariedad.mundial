@@ -76,6 +76,7 @@ base_homog <- ecuador2019 %>%
                          p42  == 10 ~"SD"),
     CATOCUP = case_when(p42 %in% c(1,2,3,4,9,10) ~"Asalariados",
                         p42 == 6 ~"Cuenta propia",
+                        p42 == 5 ~"Patron",
                         TRUE ~"Resto"),
     PRECASEG =  case_when(p44f == 1 ~ 0,# "Recibe seguo social",
                           p44f == 2 ~ 1),
