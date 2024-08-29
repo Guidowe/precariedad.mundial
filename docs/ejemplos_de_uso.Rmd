@@ -1,8 +1,16 @@
 ---
-title: "Ejemplos de uso"
+title: "Ejemplos de Uso"
 author: "precariedad.mundial"
 date: "2024-08-29"
-output: html_document
+output: 
+  html_document:
+    theme: flatly   
+    css: "~/GitHub/precariedad.mundial/docs/cayman.css"
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    highlight: textmate
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
@@ -23,9 +31,9 @@ base <- readRDS("~/GitHub/precariedad.mundial/base_homogenea.RDS")
 
 ## Análisis de estructura del mercado de trabajo en el sector privado
 
-El dataframe permite caracterizar la estructura del mercado de trabajo según la información sobre categoría ocupacional en la variable en ```CATOCUP``` (Cuentapropista, Patrón y Asalariado/a), el tamaño del establecimiento productivo en ```TAMA``` (Pequeño, Mediano o Grande) y la complejidad en la calificación del puesto en la variable en ```CALIF``` (Alta, Mediana, Baja). Vamos analizar ahora la estructura del mercado de trabajo para la fuerza de trabajo asalariada o cuenta propista del sector privado para todos los países del dataset.
+El dataframe permite caracterizar la estructura del mercado de trabajo según la información sobre categoría ocupacional en la variable en ```CATOCUP``` (Cuentapropista, Patrón y Asalariado/a), el tamaño del establecimiento productivo en ```TAMA``` (Pequeño, Mediano o Grande) y la complejidad en la calificación del puesto en la variable ```CALIF``` (Alta, Mediana, Baja). Vamos analizar ahora la estructura del mercado de trabajo para la fuerza de trabajo asalariada o cuenta propista del sector privado para todos los países del dataset utilizando estas variables.
 
-Si se quiere analizar al sector privado se debe filtrar por la variable ```SECTOR```, que distingue sector público, privado y trabajadoras/es del hogar (SD). Además quitamos del dataframe los casos con datos no válidos en ```CALIF``` o ```TAMA``` y generamos etiquetas para los perfiles ocupacionales creados.
+Si se quiere analizar al sector privado se debe filtrar por ```SECTOR```, que distingue sector público, privado y trabajadoras/es del hogar (SD). Además quitamos del dataframe los casos con datos no válidos en ```CALIF``` o ```TAMA``` y generamos etiquetas para los perfiles ocupacionales creados.
 
 ```{r Procesamiento I}
 base_grupos <- base %>% 
@@ -52,7 +60,7 @@ base_grupos <- base %>%
 
 Luego podemos estimar el peso de cada perfil ocupacional según el entrecruzamiento de las variables ```CATOCUP```, ```TAMA``` y ```CALIF```, lo que nos da un total de 12 perfiles ocupacionales. Para calcular indicadores estadísticamente sigfnicativos recordar siempre ponderar por ```WEIGHT```.
 
-```{r Procesamiento II, warning=FALSE}
+```{r Procesamiento II, warning=FALSE, message=FALSE}
 pesos_perfiles<- base_grupos %>% 
   group_by(PAIS,tamanio.calif) %>% 
   summarise(casos_pond = sum(WEIGHT,na.rm = T)) %>% 
@@ -62,7 +70,7 @@ pesos_perfiles<- base_grupos %>%
 
 Por último graficamos información para todos los países del set incluidos en **precariedad.mundial** en un orden prestablecido.
 
-```{r Grafico, warning=FALSE, fig.width=15, fig.height=12, fig.bg='white'}
+```{r Grafico, warning=FALSE, message=FALSE, fig.width=15, fig.height=12, fig.bg='white'}
 azul <- colorspace::diverge_hcl(n = 12,h = c(255,330),
                                 l = c(40,90))[c(4,2,1)]
 verde <- colorspace::diverge_hcl(n = 12,h = c(130,43),
@@ -91,7 +99,7 @@ paleta9 <- c(azul,
 paleta_regiones <- c("#59B359","#E04343","#1BAFBD","#250CA3")
 
 #Orden de los paises a graficar
-Paises <- read.xlsx("Fuentes Complementarias/Prod y Salarios.xlsx",
+Paises <- read.xlsx("~/GitHub/precariedad.mundial/Fuentes Complementarias/Prod y Salarios.xlsx",
                     sheet = "Paises") 
 paises_orden <- Paises %>% select(PAIS = nombre.pais,region,Orden,COD.OCDE)
 
@@ -130,6 +138,4 @@ pesos_perfiles %>%
   guides(fill=guide_legend(title="Tamaño - Calificación"))
 ```
  
- En el gráfico pueden observase los rasgos típicos de las estructuras del mercado de trabajo latinoamaericanas. En los países de América Latina es notoriamente mayor el porcentaje del empleo en perfiles de calificación baja y media, dentro de establecimientos de tamaño pequeño. En contraste, los países de mayor desarrollo productivo presentan mayor participación del empleo en establecimientos grandes y puesto de alta calificación.
- 
- 
+En el gráfico pueden observase los rasgos típicos de las estructuras del mercado de trabajo latinoamericanas. En los países de América Latina (ubicados a la izquierda del gráfico) es notoriamente mayor el porcentaje del empleo en perfiles de calificación baja y media, dentro de establecimientos de tamaño pequeño. También se nota una mayor importancia del cuentapropismo de baja y media calificación. En contraste, los países de mayor desarrollo productivo (ubicados hacia la derecha del gráfico) presentan una mayor participación del empleo en establecimientos grandes y puestos de alta calificación. En estos países el empleo por cuenta propia tiene un peso mucho menor en la estructura del empleo.
