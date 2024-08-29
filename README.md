@@ -4,13 +4,13 @@ Este es el repositorio de datos para el procesamiento de encuestas de hogares, e
 
 Si utilizas información de este proyecto, agradecemos que cites este repositorio o alguna de nuestras publicaciones:
 
-<small>
+<span style="font-size: 0.85em;">
 
 - [**La calidad del empleo en la Argentina reciente: un análisis sobre su relación con la calificación y el tamaño de las unidades productivas en perspectiva comparada** J Graña, G Weksler, F Lastra *Trabajo y Sociedad 38, 423-446*](https://www.unse.edu.ar/trabajoysociedad/38%20GRANA%20ET%20ALT%20La%20calidad%20del%20empleo%20en%20la%20Argentina.pdf)
 
 - [**Calidad del empleo y estructura del mercado de trabajo en América Latina desde una perspectiva comparada** S Fernández-Franco, JM Graña, F Lastra, G Weksler *Ensayos de Economía 32 (61), 124-151*](https://doi.org/10.15446/ede.v32n61.100343)
 
-</small>
+</span>
 
 ## Estructura del Repositorio
 
