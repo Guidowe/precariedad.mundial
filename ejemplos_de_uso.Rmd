@@ -1,0 +1,131 @@
+---
+title: "Ejemplos de uso"
+author: "precariedad.mundial"
+date: "2024-08-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen=99)
+library(tidyverse)
+library(openxlsx)
+```
+
+# Ejemplos de Procesamiento de Datos
+
+La base de datos homogeneizada de *precariedad.mundial* simplifica la comparación entre países para un conjunto de indicadores sociolaborales. Para procesar la base de datos primero se debe abrir `base_homogenea.RDS` como dataframe.
+
+```{r Cargando base}
+# Cargar la base de datos homogeneizada
+base <- readRDS("~/GitHub/precariedad.mundial/base_homogenea.RDS")
+```
+
+## Análisis de estructura del mercado de trabajo en el sector privado
+
+El dataframe permite caracterizar la estructura del mercado de trabajo según la información sobre categoría ocupacional en la variable en ```CATOCUP``` (Cuentapropista, Patrón y Asalariado/a), el tamaño del establecimiento productivo en ```TAMA``` (Pequeño, Mediano o Grande) y la complejidad en la calificación del puesto en la variable en ```CALIF``` (Alta, Mediana, Baja). Vamos ahora a poner en juego estas variables para analizar la estructura del mercado de trabajo para la fuerza de trabajo asalariada o cuenta propista del sector privado para todos los países del dataset.
+
+Si se quiere analizar al sector privado se debe filtrar por la variable ```SECTOR```, que distingue sector público, privado y trabajadoras/es del hogar (SD). Además quitamos del dataframe los casos con datos no válidos en ```CALIF``` o ```TAMA``` y generamos etiquetas para los perfiles ocupacionales creados.
+
+```{r Procesamiento I}
+base_grupos <- base %>% 
+  filter(CALIF %in%  c("Alta","Media","Baja")) %>% 
+  filter(SECTOR == "Priv", !is.na(CALIF), !is.na(TAMA)) %>%
+  mutate(grupos = case_when(CATOCUP == "Cuenta propia" ~ paste0("Cuentapropista - ",CALIF),
+                            TRUE ~ paste0(TAMA, " - ",CALIF)),
+         tamanio.calif = factor(grupos,
+                                levels = 
+                                  c("Cuentapropista - Baja",
+                                    "Cuentapropista - Media",
+                                    "Cuentapropista - Alta",
+                                    "Pequeño - Baja",
+                                    "Pequeño - Media",
+                                    "Pequeño - Alta",
+                                    "Mediano - Baja",
+                                    "Mediano - Media", 
+                                    "Mediano - Alta",
+                                    "Grande - Baja",
+                                    "Grande - Media",
+                                    "Grande - Alta"
+                                  ))) 
+```
+
+Luego podemos estimar el peso de cada perfil ocupacional según el entrecruzamiento de las variables ```CATOCUP```, ```TAMA``` y ```CALIF```, lo que nos da un total de 12 perfiles ocupacionales. Para calcular indicadores estadísticamente sigfnicativos recordar siempre ponderar por ```WEIGHT```.
+
+```{r Procesamiento II, warning=FALSE}
+pesos_perfiles<- base_grupos %>% 
+  group_by(PAIS,tamanio.calif) %>% 
+  summarise(casos_pond = sum(WEIGHT,na.rm = T)) %>% 
+  group_by(PAIS) %>% 
+  mutate(particip.ocup= casos_pond/sum(casos_pond))
+```
+Por último graficamos información para todos los países del set incluidos en **precariedad.mundial**
+
+```{r Grafico, warning=FALSE, fig.width=15, fig.height=12, fig.bg='white'}
+azul <- colorspace::diverge_hcl(n = 12,h = c(255,330),
+                                l = c(40,90))[c(4,2,1)]
+verde <- colorspace::diverge_hcl(n = 12,h = c(130,43),
+                                 c = 100,
+                                 l = c(70,90))[c(4,2,1)]
+
+naranja <- colorspace::diverge_hcl(n = 12,h = c(130,43),
+                                   c = 100,
+                                   l = c(70,90))[c(10,11,12)]
+
+rojo <- colorspace::diverge_hcl(n = 12,h = 14,
+                                c = 100,
+                                l = c(70,90))[c(10,11,12)]
+#colorspace::choose_color()
+paleta <- c(rojo,
+            azul,
+            naranja,
+            verde
+)
+
+paleta9 <- c(azul,
+            naranja,
+            verde
+)
+#colourpicker::colourPicker()
+paleta_regiones <- c("#59B359","#E04343","#1BAFBD","#250CA3")
+
+#Orden de los paises a graficar
+Paises <- read.xlsx("Fuentes Complementarias/Prod y Salarios.xlsx",
+                    sheet = "Paises") 
+paises_orden <- Paises %>% select(PAIS = nombre.pais,region,Orden,COD.OCDE)
+
+
+## Peso de perfiles#####
+
+pesos_perfiles %>% 
+  left_join(paises_orden) %>% 
+  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
+  ggplot(.,
+         aes(x = reorder(PAIS,Orden), y = particip.ocup,
+             fill = tamanio.calif,group = tamanio.calif,
+             label = scales::percent(particip.ocup,decimal.mark = ",",
+                                     accuracy = 0.1))) +
+  geom_col(position = "stack")+
+  geom_text(position = position_stack(vjust = .5),size=3)+
+  #  labs(title = "Distribución del empleo según grupos")+
+  ggthemes::theme_tufte()+
+  theme(legend.position = "left",
+        legend.direction = "vertical",
+        legend.title = element_text(size = 14),
+        axis.title = element_blank(),
+        text = element_text(size = 18),
+        axis.text.x = element_text(angle = 45),
+        plot.margin = margin(0,1,0,0, "cm"),
+        #panel.spacing = unit(1,"cm"),
+        panel.grid.major.y = element_line(colour = "grey"),
+        panel.grid.minor.y = element_line(colour = "grey30"),
+        panel.grid.minor.x = element_line(colour = "grey"),
+        panel.grid.major.x = element_line(colour = "grey"))+
+  scale_fill_manual(values = paleta)+
+  scale_y_continuous(labels = scales::percent)+
+  facet_grid(cols = vars(region),
+             space = "free",
+             scales = "free_x")+
+  guides(fill=guide_legend(title="Tamaño - Calificación"))
+```
+ En el gráfico pueden observa
