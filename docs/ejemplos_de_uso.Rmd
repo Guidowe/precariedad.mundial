@@ -26,11 +26,11 @@ La base de datos homogeneizada de *precariedad.mundial* puede servir de base par
 base <- readRDS("~/GitHub/precariedad.mundial/base_homogenea.RDS")
 ```
 
-A continuación se presentan ejemplos de usos para el procesamiento de los datos y elaboración de gráficos. Parte de estos resultados fueron presentados por nuestro grupo de trabajo (para verlos hacer [click aquí](https://www.unse.edu.ar/trabajoysociedad/38%20GRANA%20ET%20ALT%20La%20calidad%20del%20empleo%20en%20la%20Argentina.pdf) o [aquí](https://doi.org/10.15446/ede.v32n61.100343)).
+A continuación se presentan ejemplos de uso para el procesamiento de los datos y elaboración de gráficos. Parte de estos resultados fueron presentados por nuestro grupo de trabajo [aquí](https://www.unse.edu.ar/trabajoysociedad/38%20GRANA%20ET%20ALT%20La%20calidad%20del%20empleo%20en%20la%20Argentina.pdf) y [aquí](https://doi.org/10.15446/ede.v32n61.100343)).
 
 ## Estructura del empleo en el sector privado
 
-El dataframe permite caracterizar la estructura del mercado de trabajo según la información sobre categoría ocupacional en la variable en ```CATOCUP``` (Cuentapropista, Patrón y Asalariado/a), el tamaño del establecimiento productivo en ```TAMA``` (Pequeño, Mediano o Grande) y la complejidad en la calificación del puesto en la variable ```CALIF``` (Alta, Mediana, Baja). Vamos analizar ahora la estructura del mercado de trabajo para la fuerza de trabajo asalariada o cuenta propista del sector privado para todos los países del dataset utilizando estas variables.
+El dataframe permite caracterizar la estructura del mercado de trabajo según la información sobre categoría ocupacional en la variable en ```CATOCUP``` (Cuentapropista, Patrón y Asalariado/a), el tamaño del establecimiento productivo en ```TAMA``` (Pequeño, Mediano o Grande) y la complejidad en la calificación del puesto en la variable ```CALIF``` (Alta, Mediana, Baja). Vamos analizar ahora la estructura del mercado de trabajo para la fuerza de trabajo asalariada o cuentapropista del sector privado para todos los países del dataset utilizando estas variables.
 
 Si se quiere analizar al sector privado se debe filtrar por ```SECTOR```, que distingue sector público, privado y trabajadoras/es del hogar (SD). Además quitamos del dataframe los casos con datos no válidos en ```CALIF``` o ```TAMA``` y generamos etiquetas para los perfiles ocupacionales creados.
 
@@ -67,7 +67,7 @@ pesos_perfiles<- base_grupos %>%
   mutate(particip.ocup= casos_pond/sum(casos_pond))
 ```
 
-Por último graficamos información para todos los países del set incluidos en **precariedad.mundial** en un orden prestablecido.
+Por último graficamos información para todos los países del set incluidos dentro de *precariedad.mundial* y presentamos los datos en un orden preestablecido buscando una mejor visualización.
 
 ```{r Grafico, warning=FALSE, message=FALSE, fig.width=15, fig.height=12, fig.bg='white'}
 # Define your color palette
@@ -102,7 +102,7 @@ pesos_perfiles %>%
     axis.title = element_blank(),
     axis.text.x = element_text(angle = 45, hjust = 1, color = "#555555"),
     axis.text.y = element_text(color = "#555555"),
-    legend.position = "left",
+    legend.position = "right",
     legend.direction = "vertical",
     legend.title = element_text(size = 14),
     panel.grid.major.y = element_line(color = "#dfe2e5"),
@@ -120,9 +120,9 @@ pesos_perfiles %>%
  
 En el gráfico pueden observase los rasgos típicos de las estructuras del mercado de trabajo latinoamericanas. En los países de América Latina (ubicados a la izquierda del gráfico) es notoriamente mayor el porcentaje del empleo en perfiles de calificación baja y media, dentro de establecimientos de tamaño pequeño. También se nota una mayor importancia del cuentapropismo de baja y media calificación. En contraste, los países de mayor desarrollo productivo (ubicados hacia la derecha del gráfico) presentan una mayor participación del empleo en establecimientos grandes y puestos de alta calificación. En estos países el empleo por cuenta propia tiene un peso mucho menor en la estructura del empleo.
 
-# Expresiones de precariedad laboral para la población asalariada
+## Expresiones de precariedad laboral para la población asalariada
 
-El dataframe de **precariedad.mundial** tiene información sobre expresiones de precariedad laboral en términos de registración de la relación laboral, empleo temporario y empleo part-time involuntario. Para analizar la incidencia de éstas sobre la población asalariada se recomienda filtrar el dataframe con la fuerza de trabajo asalariada y eliminar casos no válidos para las variables de precariedad.
+El dataframe de **precariedad.mundial** tiene información sobre expresiones de precariedad laboral en términos de registración de la relación laboral, falta de aportes a la seguridad social, empleo temporario y empleo part-time involuntario. Para analizar la incidencia de éstas sobre la población asalariada se recomienda filtrar el dataframe para la población asalariada y eliminar casos no válidos para las variables de precariedad.
 
 ```{r Procesamiento I Asalriados, warning=FALSE, message=FALSE}
 
@@ -134,7 +134,7 @@ asalariados <- base_grupos %>%
                                 PRECATEMP%in% c(0,NA),"Si","No"))
 ```
 
-Luego calculamos la incidencia de las expresiones de precariedad por pais.
+Luego agrupamos los datos por ```PAIS``` y calculamos la incidencia de cada una de las expresiones de precariedad laboral en la fuerza de trabajo asalariada de cada mercado de trabajo a nivel nacional.
 
 
 ```{r Procesamiento II Asalriados, warning=FALSE, message=FALSE}
@@ -149,7 +149,7 @@ expresiones_pais <- asalariados %>%
   pivot_longer(cols = 2:ncol(.),names_to = "expresion",values_to = "valor")
 ```
 
-Por último graficamos la incidencia de las expresiones de precariedad por pais para cada uno de los 9 perfiles.
+Por último graficamos la incidencia de las expresiones de precariedad por pais.
 
 
 ```{r Grafico2, warning=FALSE, message=FALSE, fig.width=15, fig.height=12, fig.bg='white'}
