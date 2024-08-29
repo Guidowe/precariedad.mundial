@@ -14,7 +14,7 @@ library(openxlsx)
 
 # Ejemplos de Procesamiento de Datos
 
-La base de datos homogeneizada de *precariedad.mundial* simplifica la comparación entre países para un conjunto de indicadores sociolaborales. Para procesar la base de datos primero se debe abrir `base_homogenea.RDS` como dataframe.
+La base de datos homogeneizada de *precariedad.mundial* sirve de base para el cálculo de un conjunto de indicadores sociolaborales y simplifica la comparación entre países. Para procesar la base de datos primero se debe abrir `base_homogenea.RDS` como dataframe.
 
 ```{r Cargando base}
 # Cargar la base de datos homogeneizada
@@ -23,7 +23,7 @@ base <- readRDS("~/GitHub/precariedad.mundial/base_homogenea.RDS")
 
 ## Análisis de estructura del mercado de trabajo en el sector privado
 
-El dataframe permite caracterizar la estructura del mercado de trabajo según la información sobre categoría ocupacional en la variable en ```CATOCUP``` (Cuentapropista, Patrón y Asalariado/a), el tamaño del establecimiento productivo en ```TAMA``` (Pequeño, Mediano o Grande) y la complejidad en la calificación del puesto en la variable en ```CALIF``` (Alta, Mediana, Baja). Vamos ahora a poner en juego estas variables para analizar la estructura del mercado de trabajo para la fuerza de trabajo asalariada o cuenta propista del sector privado para todos los países del dataset.
+El dataframe permite caracterizar la estructura del mercado de trabajo según la información sobre categoría ocupacional en la variable en ```CATOCUP``` (Cuentapropista, Patrón y Asalariado/a), el tamaño del establecimiento productivo en ```TAMA``` (Pequeño, Mediano o Grande) y la complejidad en la calificación del puesto en la variable en ```CALIF``` (Alta, Mediana, Baja). Vamos analizar ahora la estructura del mercado de trabajo para la fuerza de trabajo asalariada o cuenta propista del sector privado para todos los países del dataset.
 
 Si se quiere analizar al sector privado se debe filtrar por la variable ```SECTOR```, que distingue sector público, privado y trabajadoras/es del hogar (SD). Además quitamos del dataframe los casos con datos no válidos en ```CALIF``` o ```TAMA``` y generamos etiquetas para los perfiles ocupacionales creados.
 
@@ -59,7 +59,8 @@ pesos_perfiles<- base_grupos %>%
   group_by(PAIS) %>% 
   mutate(particip.ocup= casos_pond/sum(casos_pond))
 ```
-Por último graficamos información para todos los países del set incluidos en **precariedad.mundial**
+
+Por último graficamos información para todos los países del set incluidos en **precariedad.mundial** en un orden prestablecido.
 
 ```{r Grafico, warning=FALSE, fig.width=15, fig.height=12, fig.bg='white'}
 azul <- colorspace::diverge_hcl(n = 12,h = c(255,330),
@@ -128,4 +129,7 @@ pesos_perfiles %>%
              scales = "free_x")+
   guides(fill=guide_legend(title="Tamaño - Calificación"))
 ```
- En el gráfico pueden observa
+ 
+ En el gráfico pueden observase los rasgos típicos de las estructuras del mercado de trabajo latinoamaericanas. En los países de América Latina es notoriamente mayor el porcentaje del empleo en perfiles de calificación baja y media, dentro de establecimientos de tamaño pequeño. En contraste, los países de mayor desarrollo productivo presentan mayor participación del empleo en establecimientos grandes y puesto de alta calificación.
+ 
+ 
