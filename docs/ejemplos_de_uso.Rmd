@@ -1,7 +1,6 @@
 ---
 title: "Ejemplos de Uso"
 author: "precariedad.mundial"
-date: "2024-08-29"
 output: 
   html_document:
     theme: flatly   
@@ -20,16 +19,16 @@ library(tidyverse)
 library(openxlsx)
 ```
 
-# Ejemplos de Procesamiento de Datos
-
-La base de datos homogeneizada de *precariedad.mundial* sirve de base para el cálculo de un conjunto de indicadores sociolaborales y simplifica la comparación entre países. Para procesar la base de datos primero se debe abrir `base_homogenea.RDS` como dataframe.
+La base de datos homogeneizada de *precariedad.mundial* puede servir de base para el cálculo de un conjunto de indicadores sociolaborales y busca simplificar la comparación entre países. Para procesar la base de datos primero se debe abrir `base_homogenea.RDS` como dataframe. 
 
 ```{r Cargando base}
 # Cargar la base de datos homogeneizada
 base <- readRDS("~/GitHub/precariedad.mundial/base_homogenea.RDS")
 ```
 
-## Análisis de estructura del mercado de trabajo en el sector privado
+A continuación se presentan ejemplos de usos para el procesamiento de los datos y elaboración de gráficos. Parte de estos resultados fueron presentados por nuestro grupo de trabajo (para verlos hacer [click aquí](https://www.unse.edu.ar/trabajoysociedad/38%20GRANA%20ET%20ALT%20La%20calidad%20del%20empleo%20en%20la%20Argentina.pdf) o [aquí](https://doi.org/10.15446/ede.v32n61.100343)).
+
+## Estructura del empleo en el sector privado
 
 El dataframe permite caracterizar la estructura del mercado de trabajo según la información sobre categoría ocupacional en la variable en ```CATOCUP``` (Cuentapropista, Patrón y Asalariado/a), el tamaño del establecimiento productivo en ```TAMA``` (Pequeño, Mediano o Grande) y la complejidad en la calificación del puesto en la variable ```CALIF``` (Alta, Mediana, Baja). Vamos analizar ahora la estructura del mercado de trabajo para la fuerza de trabajo asalariada o cuenta propista del sector privado para todos los países del dataset utilizando estas variables.
 
@@ -71,71 +70,120 @@ pesos_perfiles<- base_grupos %>%
 Por último graficamos información para todos los países del set incluidos en **precariedad.mundial** en un orden prestablecido.
 
 ```{r Grafico, warning=FALSE, message=FALSE, fig.width=15, fig.height=12, fig.bg='white'}
-azul <- colorspace::diverge_hcl(n = 12,h = c(255,330),
-                                l = c(40,90))[c(4,2,1)]
-verde <- colorspace::diverge_hcl(n = 12,h = c(130,43),
-                                 c = 100,
-                                 l = c(70,90))[c(4,2,1)]
+# Define your color palette
+azul <- colorspace::diverge_hcl(n = 12, h = c(255, 330), l = c(40, 90))[c(4, 2, 1)]
+verde <- colorspace::diverge_hcl(n = 12, h = c(130, 43), c = 100, l = c(70, 90))[c(4, 2, 1)]
+naranja <- colorspace::diverge_hcl(n = 12, h = c(130, 43), c = 100, l = c(70, 90))[c(10, 11, 12)]
+rojo <- colorspace::diverge_hcl(n = 12, h = 14, c = 100, l = c(70, 90))[c(10, 11, 12)]
 
-naranja <- colorspace::diverge_hcl(n = 12,h = c(130,43),
-                                   c = 100,
-                                   l = c(70,90))[c(10,11,12)]
+paleta <- c(rojo, azul, naranja, verde)
 
-rojo <- colorspace::diverge_hcl(n = 12,h = 14,
-                                c = 100,
-                                l = c(70,90))[c(10,11,12)]
-#colorspace::choose_color()
-paleta <- c(rojo,
-            azul,
-            naranja,
-            verde
-)
+# Load and prepare data
+Paises <- read.xlsx("~/GitHub/precariedad.mundial/Fuentes Complementarias/Prod y Salarios.xlsx", sheet = "Paises")
+paises_orden <- Paises %>% select(PAIS = nombre.pais, region, Orden, COD.OCDE)
 
-paleta9 <- c(azul,
-            naranja,
-            verde
-)
-#colourpicker::colourPicker()
-paleta_regiones <- c("#59B359","#E04343","#1BAFBD","#250CA3")
-
-#Orden de los paises a graficar
-Paises <- read.xlsx("~/GitHub/precariedad.mundial/Fuentes Complementarias/Prod y Salarios.xlsx",
-                    sheet = "Paises") 
-paises_orden <- Paises %>% select(PAIS = nombre.pais,region,Orden,COD.OCDE)
-
-
-## Peso de perfiles#####
-
+# Plotting
 pesos_perfiles %>% 
   left_join(paises_orden) %>% 
-  filter(! COD.OCDE %in% c("BOL","ROU","BGR")) %>% 
-  ggplot(.,
-         aes(x = reorder(PAIS,Orden), y = particip.ocup,
-             fill = tamanio.calif,group = tamanio.calif,
-             label = scales::percent(particip.ocup,decimal.mark = ",",
-                                     accuracy = 0.1))) +
-  geom_col(position = "stack")+
-  geom_text(position = position_stack(vjust = .5),size=3)+
-  #  labs(title = "Distribución del empleo según grupos")+
-  ggthemes::theme_tufte()+
-  theme(legend.position = "left",
-        legend.direction = "vertical",
-        legend.title = element_text(size = 14),
-        axis.title = element_blank(),
-        text = element_text(size = 18),
-        axis.text.x = element_text(angle = 45),
-        plot.margin = margin(0,1,0,0, "cm"),
-        #panel.spacing = unit(1,"cm"),
-        panel.grid.major.y = element_line(colour = "grey"),
-        panel.grid.minor.y = element_line(colour = "grey30"),
-        panel.grid.minor.x = element_line(colour = "grey"),
-        panel.grid.major.x = element_line(colour = "grey"))+
-  scale_fill_manual(values = paleta)+
-  scale_y_continuous(labels = scales::percent)+
-  facet_grid(cols = vars(region),
-             space = "free",
-             scales = "free_x")+
-  guides(fill=guide_legend(title="Tamaño - Calificación"))
+  filter(! COD.OCDE %in% c("BOL", "ROU", "BGR")) %>% 
+  ggplot(aes(x = reorder(PAIS, Orden), y = particip.ocup, fill = tamanio.calif, group = tamanio.calif,
+             label = scales::percent(particip.ocup, decimal.mark = ",", accuracy = 0.1))) +
+  geom_col(position = "stack", alpha = 0.9) +  # Add transparency to the bars
+  geom_text(position = position_stack(vjust = 0.5), size = 3, color = "black") +  # White text on bars
+  labs(
+    title = "Porcentaje sobre el empleo total según perfiles ocupacionales",
+    caption = "Fuente: Repositorio precariedad.mundial"
+  ) +
+  theme_minimal(base_size = 18) +  # Use a minimal theme
+  theme(
+    plot.title = element_text(color = "#333333", size = 22, face = "bold"),
+    plot.subtitle = element_text(color = "#555555", size = 16),
+    plot.caption = element_text(color = "#777777", size = 12, hjust = 1),
+    axis.title = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1, color = "#555555"),
+    axis.text.y = element_text(color = "#555555"),
+    legend.position = "left",
+    legend.direction = "vertical",
+    legend.title = element_text(size = 14),
+    panel.grid.major.y = element_line(color = "#dfe2e5"),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  ) +
+  scale_fill_manual(values = paleta) +
+  scale_y_continuous(labels = scales::percent) +
+  facet_grid(cols = vars(region), space = "free", scales = "free_x") +
+  guides(fill = guide_legend(title = "Tamaño - Calificación"))
+
 ```
  
 En el gráfico pueden observase los rasgos típicos de las estructuras del mercado de trabajo latinoamericanas. En los países de América Latina (ubicados a la izquierda del gráfico) es notoriamente mayor el porcentaje del empleo en perfiles de calificación baja y media, dentro de establecimientos de tamaño pequeño. También se nota una mayor importancia del cuentapropismo de baja y media calificación. En contraste, los países de mayor desarrollo productivo (ubicados hacia la derecha del gráfico) presentan una mayor participación del empleo en establecimientos grandes y puestos de alta calificación. En estos países el empleo por cuenta propia tiene un peso mucho menor en la estructura del empleo.
+
+# Expresiones de precariedad laboral para la población asalariada
+
+El dataframe de **precariedad.mundial** tiene información sobre expresiones de precariedad laboral en términos de registración de la relación laboral, empleo temporario y empleo part-time involuntario. Para analizar la incidencia de éstas sobre la población asalariada se recomienda filtrar el dataframe con la fuerza de trabajo asalariada y eliminar casos no válidos para las variables de precariedad.
+
+```{r Procesamiento I Asalriados, warning=FALSE, message=FALSE}
+
+asalariados <- base_grupos %>% 
+  filter(CATOCUP == "Asalariado") %>% 
+  mutate(buen_empleo = ifelse(PRECAPT %in% c(0,NA) &
+                                #   PRECAREG%in% c(0,NA) &
+                                PRECASEG%in% c(0,NA) &
+                                PRECATEMP%in% c(0,NA),"Si","No"))
+```
+
+Luego calculamos la incidencia de las expresiones de precariedad por pais.
+
+
+```{r Procesamiento II Asalriados, warning=FALSE, message=FALSE}
+
+expresiones_pais <- asalariados %>% 
+  group_by(PAIS) %>% 
+  summarise(part_time = sum(WEIGHT[PRECAPT==1],na.rm = T)/sum(WEIGHT[PRECAPT %in% 0:1],na.rm = T),
+            no_registro = sum(WEIGHT[PRECAREG==1],na.rm = T)/sum(WEIGHT[PRECAREG %in% 0:1],na.rm = T),
+            no_seg_social = sum(WEIGHT[PRECASEG==1],na.rm = T)/sum(WEIGHT[PRECASEG %in% 0:1],na.rm = T),
+            temporario = sum(WEIGHT[PRECATEMP==1],na.rm = T)/sum(WEIGHT[PRECATEMP %in% 0:1],na.rm = T),
+  ) %>% 
+  pivot_longer(cols = 2:ncol(.),names_to = "expresion",values_to = "valor")
+```
+
+Por último graficamos la incidencia de las expresiones de precariedad por pais para cada uno de los 9 perfiles.
+
+
+```{r Grafico2, warning=FALSE, message=FALSE, fig.width=15, fig.height=12, fig.bg='white'}
+
+expresiones_pais %>% 
+  ggplot(aes(x = reorder(PAIS, valor), y = valor,
+             label = scales::percent(valor, decimal.mark = ",", accuracy = 0.1))) +
+  geom_col(position = "stack", fill = "#5bc0de", alpha = 0.5) +  # Lighter blue and transparency
+  geom_text(position = position_stack(vjust = 0.5), size = 3, color = "black") +  
+  labs(
+    title = "Porcentaje de asalariados con expresión de precariedad",
+    subtitle = "Expresiones evaluadas: | No registro | Falta de cobertura social | Part Time Involuntario | Empleo de duración determinada",
+    caption = "Fuente: Repositorio precariedad.mundial"
+  ) +
+  theme_minimal(base_size = 18) +  # Clean, minimalist theme with larger text
+  theme(
+    plot.title = element_text(color = "#333333", size = 22, face = "bold"),  # Dark title
+    plot.subtitle = element_text(color = "#555555", size = 16),  # Subtle subtitle color
+    plot.caption = element_text(color = "#777777", size = 12, hjust = 1),  # Caption styling
+    axis.title = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1, color = "#555555"),  # Grey axis labels
+    axis.text.y = element_text(color = "#555555"),
+    legend.position = "left",
+    legend.direction = "vertical",
+    legend.title = element_text(size = 14),
+    panel.grid.major.y = element_line(color = "#b0b0b0"),  # Light grey grid lines
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  ) +
+  facet_wrap(vars(expresion), ncol = 1) +
+  scale_y_continuous(labels = scales::percent)
+
+
+
+```

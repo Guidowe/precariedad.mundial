@@ -1,6 +1,6 @@
 # Precariedad Mundial
 
-Este es el repositorio de datos para el procesamiento de encuestas de hogares, en el marco de la línea de trabajo sobre precariedad mundial del Centro de Estudios sobre Población, Empleo y Desarrollo (CEPED - IIEP – UBA). Este proyecto utiliza microdatos de encuestas de hogares de institutos de estadística oficiales de distintos países del mundo y los convierte en un dataframe unificado con información homogeneizada. Para ejemplos sobre cómo procesar el dataframe ver la página de [Ejemplos de Uso](./docs/ejemplos_de_uso.html).
+Este es el repositorio de datos para el procesamiento de encuestas de hogares, en el marco de la línea de trabajo sobre precariedad mundial del Centro de Estudios sobre Población, Empleo y Desarrollo (CEPED - IIEP – UBA). Este proyecto utiliza microdatos de encuestas de hogares de institutos de estadística oficiales de distintos países del mundo y los convierte en un dataframe unificado con información homogeneizada. Los datos unificados pueden descargarse desde el repositorio o haciendo [click aquí]((https://github.com/Guidowe/precariedad.mundial/base_homogenea.RDS). Para ejemplos sobre cómo procesar el dataframe ver la página de [Ejemplos de Uso](./docs/ejemplos_de_uso.html).
 
 ## Estructura del Repositorio
 
