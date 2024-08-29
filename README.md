@@ -2,6 +2,16 @@
 
 Este es el repositorio de datos para el procesamiento de encuestas de hogares, en el marco de la línea de trabajo sobre precariedad mundial del Centro de Estudios sobre Población, Empleo y Desarrollo (CEPED - IIEP – UBA). Este proyecto utiliza microdatos de encuestas de hogares de institutos de estadística oficiales de distintos países del mundo y los convierte en un dataframe unificado con información homogeneizada. Los datos unificados pueden descargarse desde el repositorio o haciendo [click aquí](https://github.com/Guidowe/precariedad.mundial/raw/master/base_homogenea.RDS?download=). Para ejemplos sobre cómo procesar el dataframe ver la página de [Ejemplos de Uso](./docs/ejemplos_de_uso.html).
 
+Si utilizas información de este proyecto, agradecemos que cites este repositorio o alguna de nuestras publicaciones:
+
+<small>
+
+- [**La calidad del empleo en la Argentina reciente: un análisis sobre su relación con la calificación y el tamaño de las unidades productivas en perspectiva comparada** J Graña, G Weksler, F Lastra *Trabajo y Sociedad 38, 423-446*](https://www.unse.edu.ar/trabajoysociedad/38%20GRANA%20ET%20ALT%20La%20calidad%20del%20empleo%20en%20la%20Argentina.pdf)
+
+- [**Calidad del empleo y estructura del mercado de trabajo en América Latina desde una perspectiva comparada** S Fernández-Franco, JM Graña, F Lastra, G Weksler *Ensayos de Economía 32 (61), 124-151*](https://doi.org/10.15446/ede.v32n61.100343)
+
+</small>
+
 ## Estructura del Repositorio
 
 El repositorio está organizado de la siguiente manera:
@@ -39,17 +49,6 @@ Las encuestas de cada país son filtradas para obtener información para el tota
 - **PERIODO**: Período de referencia de la encuesta.
 
 ¡Gracias por utilizar nuestro repositorio! Si tienes alguna pregunta o sugerencia, no dudes en contactarnos. También podés proponer modificaciones al código mediante un issue al repositorio. 
-
-Si utilizas información de este proyecto, agradecemos que cites este repositorio o alguna de nuestras publicaciones:
-
-- [**La calidad del empleo en la Argentina reciente: un análisis sobre su relación con la calificación y el tamaño de las unidades productivas en perspectiva comparada** J Graña, G Weksler, F Lastra *Trabajo y Sociedad 38, 423-446*](https://www.unse.edu.ar/trabajoysociedad/38%20GRANA%20ET%20ALT%20La%20calidad%20del%20empleo%20en%20la%20Argentina.pdf)
-
-- [**Calidad del empleo y estructura del mercado de trabajo en América Latina desde una perspectiva comparada** S Fernández-Franco, JM Graña, F Lastra, G Weksler *Ensayos de Economía 32 (61), 124-151*](https://doi.org/10.15446/ede.v32n61.100343)
-
-
-
-
-
 
 # Repository precariedad.mundial
 
