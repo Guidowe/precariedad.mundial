@@ -12,13 +12,12 @@ Si utilizas información de este proyecto, agradecemos que cites este repositori
 
 El repositorio está organizado de la siguiente manera:
 
-- **\bases**: bases de microdatos en el formato de publicación del instituto de estadística de cada país
+- **base_homogenea.RDS**: Dataset principal con información homogénea de todos los países trabajados
+- **Metadata.xlsx**: Documento que describe los criterios utilizados para la creación de variables de la base homogeneizada
+- **\bases**: carpeta para almacenar bases de microdatos en el formato de publicación del instituto de estadística de cada país
 - **\scripts**: scripts utilizados para transformar los datos por país de \bases en dataframes con datos homogéneos que se guardan en \bases_homog
-- **\bases_homog**: bases homogéneas por país y unificado
-- **\resultados**: tablas de resultados de distintas tasas e indicadores del mercado de trabajo
-- **\procesamiento.R**: procesa los datos unificados y construye tablas de resultados
-- **\bases_homog\unificar.R**: unifica toda la información procesada por país en un único dataframe
-- **metadata.xlsx**: Documento que describe los criterios utilizados para la creación de variables de la base homogeneizada
+- **\bases_homog**: carpeta para almacenar bases homogéneas por país
+- **\genera_base_homogenea.R**: unifica toda la información procesada por país en un único dataframe
 
 ## Descripción del Dataframe
 
@@ -40,6 +39,7 @@ Las encuestas de cada país son filtradas para obtener información para el tota
 - **TAMA**: Tamaño del establecimiento.
 - **CALIF**: Calificación del puesto.
 - **ING**: Ingreso de la ocupación principal en moneda local.
+- **PPA**: Coeficiente de paridad de poder adquisitivo para el año de la encuesta.
 - **ING_PPA**: Ingreso de la ocupación principal en moneda de paridad de poder adquisitivo del año correspondiente (USA = 1).
 - **ANO**: Año de referencia de la encuesta.
 - **PERIODO**: Período de referencia de la encuesta.
@@ -54,12 +54,12 @@ Welcome to the data repository for household survey processing, within the frame
 
 The repository is organized as follows:
 
-- **\Bases**: Contains microdata sets in the publication format of each country's statistical institute.
+- **base_homogenea.RDS**: Main dataset with homogeneous information of all countries 
+- **Metadata.xlsx**: Document describing the criteria used to create variables in the standardized database.
+- **\Bases**: Folder to save microdata sets in the publication format of each country's statistical institute.
 - **\scripts**: Includes country-specific scripts used to transform the data from each country into a homogeneous dataframe.
-- **\bases_homog**: Contains homogeneous databases by country and the base_homog.Rds file with unified data.
-- **\Results**: Contains result tables of different rates and labor market indicators.
-- **\processing.R**: Processes unified data and constructs the results dataframe.
-- **metadata.xlsx**: Document describing the criteria used to create variables in the standardized database.
+- **\bases_homog**: Folder to save homogeneous databases by country.
+- **genera_base_homogenea.R**: unifies data from each country to generate the main dataset
 
 ## Description of the Dataframe
 
