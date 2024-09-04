@@ -3,10 +3,6 @@
 .RData
 .Ruserdata
 .dat
-scripts/Uruguay2.R
-bases/uruguay_P_2019_Terceros.sav
-bases/LFS/UK2018_y.csv
-bases/LFS/SE2018_y.csv
-/bases/LFS
-base_homogenea.RDS
-/bases/SES
+Bases/
+Bases_homog/
+scripts_articulos/
