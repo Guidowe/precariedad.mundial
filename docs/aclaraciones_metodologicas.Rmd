@@ -22,7 +22,7 @@ library(kableExtra)
 
 ## Aclaraciones generales
 
-El proyecto de **Precariedad Mundial** tiene como objetivo aportar argumentos y evidencias empíricas sobre la incidencia de la precariedad laboral a lo largo del mundo. Este documento está orientado a detallar las decisiones metodológicas tomadas a la hora de construir una base de datos internacional a partir de una homogeneización de un conjunto de variables presentes en las encuestas hogares de distintos países. Antes de avanzar con lo estrictamente metodológico resultan útiles dos aclaraciones.
+Este documento está orientado a detallar las decisiones metodológicas tomadas a la hora de construir una base de datos internacional a partir de una homogeneización de un conjunto de variables presentes en las encuestas hogares de distintos países. Antes de avanzar con lo estrictamente metodológico resultan útiles dos aclaraciones.
 
 La primera es que la noción de “empleo precario” no es unívoca en la literatura. No sólo su delimitación y cuantificación suele ser diversa en los trabajos académicos, sino que las encuestas a hogares de distintos países presentan distintas preguntas que se asocian a la posibilidad de captar aquellas expresiones de la precariedad laboral que resultan más frecuentes en cada país. En nuestra base de datos recabamos 4 expresiones de la precariedad aun cuando estas no pueden evaluarse en todos los países: **trabajo part-time involuntario, el no registro de la relación laboral, el trabajo de duración determinada y la falta de aportes a la seguridad social**. A su vez, consideramos que la dimensión de los ingresos percibidos en una ocupación también es expresiva de la calidad del empleo, por lo cual, incluimos dicha variable en nuestra base.
 
