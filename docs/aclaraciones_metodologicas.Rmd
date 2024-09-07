@@ -20,13 +20,17 @@ library(readxl)
 library(kableExtra)
 ```
 
-El proyecto de *“Precariedad Mundial”* tiene como objetivo aportar argumentos y evidencias empíricas sobre la incidencia de la precariedad laboral a lo largo del mundo. Este documento está orientado a detallar las decisiones metodológicas tomadas a la hora de construir una base de datos internacional a partir de una homogeneización de un conjunto de variables presentes en las encuestas hogares de distintos países. Antes de avanzar con lo estrictamente metodológico resultan útiles dos aclaraciones. 
-La primera es que la noción de “empleo precario” no es unívoca en la literatura. No sólo su delimitación y cuantificación suele ser diversa en los trabajos académicos, sino que las encuestas a hogares de distintos países presentan distintas preguntas que se asocian a la posibilidad de captar aquellas expresiones de la precariedad laboral que resultan más frecuentes en cada país. En nuestra base de datos recabamos 4 expresiones de la precariedad aun cuando estas no pueden evaluarse en todos los países: *trabajo part-time involuntario, el no registro de la relación laboral, el trabajo de duración determinada y la falta de aportes a la seguridad social*. A su vez, consideramos que la dimensión de los ingresos percibidos en una ocupación también es expresiva de la calidad del empleo, por lo cual, incluimos dicha variable en nuestra base.
+## Aclaraciones generales
+
+El proyecto de **Precariedad Mundial** tiene como objetivo aportar argumentos y evidencias empíricas sobre la incidencia de la precariedad laboral a lo largo del mundo. Este documento está orientado a detallar las decisiones metodológicas tomadas a la hora de construir una base de datos internacional a partir de una homogeneización de un conjunto de variables presentes en las encuestas hogares de distintos países. Antes de avanzar con lo estrictamente metodológico resultan útiles dos aclaraciones.
+
+La primera es que la noción de “empleo precario” no es unívoca en la literatura. No sólo su delimitación y cuantificación suele ser diversa en los trabajos académicos, sino que las encuestas a hogares de distintos países presentan distintas preguntas que se asocian a la posibilidad de captar aquellas expresiones de la precariedad laboral que resultan más frecuentes en cada país. En nuestra base de datos recabamos 4 expresiones de la precariedad aun cuando estas no pueden evaluarse en todos los países: **trabajo part-time involuntario, el no registro de la relación laboral, el trabajo de duración determinada y la falta de aportes a la seguridad social**. A su vez, consideramos que la dimensión de los ingresos percibidos en una ocupación también es expresiva de la calidad del empleo, por lo cual, incluimos dicha variable en nuestra base.
+
 La segunda es que la selección de variables adicionales incluidas en la base no es ajena a los fundamentos teóricos que sustentan nuestra línea de investigación. En los artículos citados en el repositorio se brindan los argumentos por los cuales nos enfocamos centralmente en dos variables: *la calificación del puesto y el tamaño de los establecimientos*. Más allá de eso, la base provee un conjunto adicional de variables que pueden ser de interés en general, tales como el sexo, edad, nivel educativo, entre otras.
 Hechas estas aclaraciones generales, a continuación se detallan los procedimientos que fueron realizados para la construcción del dataset. En primer lugar, el siguiente cuadro especifica las encuestas utilizadas para cada país, su periodicidad y el año para el cual se procesó la información. 
 
 
-```{r Cargando base}
+```{r}
 # Cargar la base de datos homogeneizada
 
 Metadata <- read_excel("~/GitHub/precariedad.mundial/Metadata.xlsx", sheet = "Encuestas Utilizadas")
@@ -42,4 +46,48 @@ Metadata %>% select(c("País", "Encuesta", "Periodicidad", "Año utilizado")) %>
 
 En los casos de países donde existe más de una encuesta a hogares con información sobre el mercado laboral, se privilegió aquella que presentara las variables asociadas al tamaño de los establecimientos y a la calificación del puesto. Por otra parte, en los casos donde la periodicidad de la encuesta no es anual, los datos presentados en el dataset consisten en un pool de las encuestas trimestrales o mensuales, conservando en la variable PERIODO la información sobre la correspondencia de cada caso a un trimestre o mes específico. Cabe aclarar que no se realizó un procedimiento de eliminación de registros de hogares que puedan aparecer en distintos períodos dados los esquemas de rotación de las muestras. 
 Dados el propósito de asegurar la mayor comparabilidad en las estimaciones y considerando que en algunos países las encuestas a hogares contemplan las áreas rurales y en otros no, se realizó un filtro por el cual todos los casos presentados en la base corresponden únicamente a áreas urbanas. Por otra parte, acorde a los propósitos de nuestra comparación, la base solo presenta información para las personas ocupadas, mientras que la información sobre calidad del empleo e ingresos refiere a la ocupación principal de dichas personas. 
+
 Cabe aclarar que, si bien en los artículos de investigación incluimos un filtro adicional para conservar solo el universo constituido por los cuentapropistas y por los asalariados del sector privado excluyendo el servicio doméstico, en la presentación de la base de datos optamos por no realizar este filtro de categorías ocupacionales y sectores a los fines de otorgar mayor flexibilidad a quien quiera incluir en su análisis a los restantes casos. De esta forma, incluimos una variable de categoría ocupacional y de sector, con una reclasificación hacia las principales categorías que pueden distinguirse en cada una de las encuestas. 
+
+```{r }
+Metadata <- read_excel("~/GitHub/precariedad.mundial/Metadata.xlsx", sheet = "Diccionario")
+Metadata %>% 
+  select(c("variable", "tipo", "valores", "referencia"))%>%
+  filter(variable %in% c('CATOCUP', 'SECTOR')) %>% 
+  kable("html", 
+        caption = "Cuadro 2. Recorte del diccionario de la base. Tomado de archivo Metadata.xlsx") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed"))
+
+
+```
+
+El detalle sobre el conjunto de variables que integran el dataset y sus correspondientes categorías puede observarse en el archivo “Metadata.xlsx” que integra el directorio principal del repositorio. Una primera pestaña de dicho archivo (llamada Diccionario) muestra como aparecen nomencladas cada una de las variables en el dataset, el tipo de datos que contienen, su descripción, los valores (tal cual figuran en la base) y la referencia sobre qué indican dichos valores.
+
+Por otra parte, el procedimiento de construcción de estas variables a partir de la homogeneización de la información provista por las encuestas de cada país puede observarse en una segunda pestaña de dicho archivo (llamada Homogeneización). Allí se muestra, para cada país, el detalle de las preguntas y categorías originales provistas en la encuesta y su reclasificación hacia las variables de nuestra base. A continuación se muestra un ejemplo para dos países del procedimiento realizado para homogeneizar la variable de tamaño de establecimiento. 
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+Homogeneizacion <- read_excel("~/GitHub/precariedad.mundial/Metadata.xlsx", sheet = "Homogeneizacion")
+```
+
+```{r }
+Homogeneizacion %>%
+  select(1:9) %>% 
+  filter(Pais %in% c('China', 'Bolivia')) %>% 
+  filter(`Variable dataframe` == 'TAMA') %>% 
+  filter() %>% 
+  kable("html", 
+        caption = "Cuadro 2. Recorte del diccionario de la base. Tomado de archivo Metadata.xlsx") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed"))
+
+
+```
+
+Tras observar las categorías disponibles a lo largo de todas las encuestas nuestra reclasificación propone tres categorías idealmente construidas de la siguiente manera: pequeño (hasta 10 personas), mediano (11 a 49 personas) y grande (50 o más personas). Lógicamente, no todas las encuestas presentan el mismo punto de corte entre categorías, por ende, como se muestra en el ejemplo para el caso de China, la reclasificación no es exacta. 
+
+## Aclaraciones específicas por país
+
+### Labour Force Survey (Europa)
+La versión de la LFS con la que se trabajó en este repositorio no contiene información sobre ingresos laborales, estando solamente disponible la información sobre el decil de ingreso al que pertenece la persona encuestada. Por ello se decidió complementar la información de dicha base con información sobre ingresos de la Structure of Earnings Survey también elaborada por Eurostat. Vale la pena remarcar que por diversos motivos dicha imputación tiene un carácter exploratorio y sus datos no pueden considerarse estadísticamente representativos de los ingresos laborales de la población analizada por la LFS. 
+
+*Alemania:* se utilizaron datos del año 2017 debido a problemas con los datos de la variable SIZE en la base original para el año 2018.
+
