@@ -1828,14 +1828,11 @@ de la base de datos del proyecto Precariedad Mundial</h1>
 
 <div id="aclaraciones-generales" class="section level2">
 <h2>Aclaraciones generales</h2>
-<p>El proyecto de <strong>Precariedad Mundial</strong> tiene como
-objetivo aportar argumentos y evidencias empíricas sobre la incidencia
-de la precariedad laboral a lo largo del mundo. Este documento está
-orientado a detallar las decisiones metodológicas tomadas a la hora de
-construir una base de datos internacional a partir de una
-homogeneización de un conjunto de variables presentes en las encuestas
-hogares de distintos países. Antes de avanzar con lo estrictamente
-metodológico resultan útiles dos aclaraciones.</p>
+<p>Este documento está orientado a detallar las decisiones metodológicas
+tomadas a la hora de construir una base de datos internacional a partir
+de una homogeneización de un conjunto de variables presentes en las
+encuestas hogares de distintos países. Antes de avanzar con lo
+estrictamente metodológico resultan útiles dos aclaraciones.</p>
 <p>La primera es que la noción de “empleo precario” no es unívoca en la
 literatura. No sólo su delimitación y cuantificación suele ser diversa
 en los trabajos académicos, sino que las encuestas a hogares de
@@ -1866,13 +1863,14 @@ periodicidad y el año para el cual se procesó la información.</p>
 Metadata &lt;- read_excel(&quot;~/GitHub/precariedad.mundial/Metadata.xlsx&quot;, sheet = &quot;Encuestas Utilizadas&quot;)
 Metadata %&gt;% select(c(&quot;País&quot;, &quot;Encuesta&quot;, &quot;Periodicidad&quot;, &quot;Año utilizado&quot;)) %&gt;%
   kable(&quot;html&quot;, col.names = c(&quot;País&quot;, &quot;Encuesta&quot;, &quot;Periodicidad&quot;, &quot;Año utilizado&quot;), 
-        caption = &quot;Cuadro 1. Encuestas utilizadas por país y periodicidad&quot;) %&gt;%
+        caption = &quot;&lt;b style=&#39;color:black;&#39;&gt;Cuadro 1. Encuestas utilizadas por país y periodicidad&lt;/b&gt;&quot;) %&gt;%
   kable_styling(full_width = FALSE, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;)) %&gt;% 
   footnote(general = &quot;*La Eurostat LFS condensa la información de distintos países: En nuestra base se encuentran todos los países con información para 2018: Grecia, Polonia, Italia, Portugal, España, Austria, Reino Unido, Países Bajos, Noruega, Francia, Dinamarca, Suecia y Alemania.&quot;,
-           general_title = &quot;Nota:&quot;)</code></pre>
+           general_title = &quot;&lt;b style=&#39;color:black;&#39;&gt;Nota:&lt;/b&gt;&quot;)</code></pre>
 <table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;border-bottom: 0;">
 <caption>
-Cuadro 1. Encuestas utilizadas por país y periodicidad
+<b style="color:black;">Cuadro 1. Encuestas utilizadas por país y
+periodicidad</b>
 </caption>
 <thead>
 <tr>
@@ -2134,7 +2132,8 @@ Anual
 <tfoot>
 <tr>
 <td style="padding: 0; " colspan="100%">
-<span style="font-style: italic;">Nota:</span>
+<span style="font-style: italic;">&lt;b
+style=‘color:black;’&gt;Nota:&lt;/b&gt;</span>
 </td>
 </tr>
 <tr>
@@ -2181,12 +2180,12 @@ Metadata %&gt;%
   select(c(&quot;variable&quot;, &quot;tipo&quot;, &quot;valores&quot;, &quot;referencia&quot;))%&gt;%
   filter(variable %in% c(&#39;CATOCUP&#39;, &#39;SECTOR&#39;)) %&gt;% 
   kable(&quot;html&quot;, 
-        caption = &quot;Cuadro 2. Recorte del diccionario de la base. Tomado de archivo Metadata.xlsx&quot;) %&gt;%
-  kable_styling(full_width = FALSE, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;))</code></pre>
-<table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
+        caption = &quot;&lt;b style=&#39;color:black;&#39;&gt;Cuadro 2. Recorte del diccionario de la base. Tomado de archivo Metadata.xlsx&lt;/b&gt;&quot;) %&gt;%
+  kable_styling(full_width = TRUE, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;))</code></pre>
+<table class="table table-striped table-hover table-condensed" style="margin-left: auto; margin-right: auto;">
 <caption>
-Cuadro 2. Recorte del diccionario de la base. Tomado de archivo
-Metadata.xlsx
+<b style="color:black;">Cuadro 2. Recorte del diccionario de la base.
+Tomado de archivo Metadata.xlsx</b>
 </caption>
 <thead>
 <tr>
@@ -2327,12 +2326,12 @@ establecimiento.</p>
   filter(`Variable dataframe` == &#39;TAMA&#39;) %&gt;% 
   filter() %&gt;% 
   kable(&quot;html&quot;, 
-        caption = &quot;Cuadro 2. Recorte del diccionario de la base. Tomado de archivo Metadata.xlsx&quot;) %&gt;%
+        caption = &quot;&lt;b style=&#39;color:black;&#39;&gt;Cuadro 3. Recorte del diccionario de la base. Tomado de archivo Metadata.xlsx&lt;/b&gt;&quot;) %&gt;%
   kable_styling(full_width = FALSE, bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;))</code></pre>
 <table class="table table-striped table-hover table-condensed" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
-Cuadro 2. Recorte del diccionario de la base. Tomado de archivo
-Metadata.xlsx
+<b style="color:black;">Cuadro 3. Recorte del diccionario de la base.
+Tomado de archivo Metadata.xlsx</b>
 </caption>
 <thead>
 <tr>
