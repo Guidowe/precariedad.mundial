@@ -1,6 +1,6 @@
 # Precariedad Mundial
 
-Este es el repositorio de datos para el procesamiento de encuestas de hogares, en el marco de la línea de trabajo sobre precariedad mundial del Centro de Estudios sobre Población, Empleo y Desarrollo (CEPED - IIEP – UBA). El proyecto **Precariedad Mundial** tiene como objetivo aportar argumentos y evidencias empíricas sobre la incidencia de la precariedad laboral a lo largo del mundo, como también fomentar el intercambio sobre criterios y enfoques para procesar estadísticas laborales. Este proyecto utiliza microdatos de encuestas de hogares de institutos de estadística oficiales de distintos países del mundo y los convierte en un dataframe unificado con información homogeneizada. Los datos unificados pueden descargarse desde el repositorio o haciendo [click aquí](https://github.com/Guidowe/precariedad.mundial/raw/master/base_homogenea.RDS?download=). También están disponibles la página de [Ejemplos de Uso](./docs/ejemplos_de_uso.html) y de [Aclaraciones metodológicas](./docs/aclaraciones_metodologicas.html).
+Este es el repositorio de datos para el procesamiento de encuestas de hogares, en el marco de la línea de trabajo sobre precariedad mundial del Centro de Estudios sobre Población, Empleo y Desarrollo (CEPED - IIEP – UBA). El proyecto **Precariedad Mundial** tiene como objetivo aportar argumentos y evidencias empíricas sobre la incidencia de la precariedad laboral a lo largo del mundo, como también fomentar el intercambio sobre criterios y enfoques para procesar estadísticas laborales. Este proyecto utiliza microdatos de encuestas de hogares de institutos de estadística oficiales de distintos países del mundo y los convierte en un dataframe unificado con información homogeneizada. Los datos unificados pueden descargarse desde [el repositorio](https://github.com/Guidowe/precariedad.mundial) o haciendo [click aquí](https://github.com/Guidowe/precariedad.mundial/raw/master/base_homogenea.RDS?download=). También están disponibles la página de [Ejemplos de Uso](./docs/ejemplos_de_uso.html) y de [Aclaraciones metodológicas](./docs/aclaraciones_metodologicas.html).
 
 Si utilizas información de este proyecto, agradecemos que cites este repositorio o alguna de nuestras publicaciones:
 
@@ -21,7 +21,7 @@ El repositorio está organizado de la siguiente manera:
 
 ## Descripción del Dataframe
 
-Las encuestas de cada país son filtradas para obtener información para el total del empleo urbano del país sin incluir el sector público y el trabajo doméstico remunerado. El dataframe base_homog.Rds cuenta con las siguientes columnas:
+Las encuestas de cada país son filtradas para obtener información para el total de la población ocupada. El dataframe base_homog.Rds cuenta con las siguientes columnas:
 
 - **PAIS**: País de la encuesta.
 - **WEIGHT**: Ponderador.
