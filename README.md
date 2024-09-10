@@ -19,6 +19,29 @@ El repositorio está organizado de la siguiente manera:
 - **\bases_homog**: carpeta para almacenar bases homogéneas por país
 - **\genera_base_homogenea.R**: unifica toda la información procesada por país en un único dataframe
 
+## Encuestas procesadas
+
+| País           | Encuesta                                                                                  | Año utilizado |
+|----------------|-------------------------------------------------------------------------------------------|---------------|
+| Argentina      | Encuesta Permanente de Hogares                                                             | 2019          |
+| Bolivia        | Encuesta Continua de Empleo                                                                | 2019          |
+| Brasil         | Pesquisa Nacional por Amostra de Domicílios Contínua - PNAD Contínua                       | 2019          |
+| Canada         | Labour Force Survey                                                                        | 2019          |
+| Chile          | Encuesta Nacional de Empleo (ENE) – módulo Encuesta Suplementaria de Ingresos (ESI)        | 2019          |
+| China          | Chinese Household Income Project (CHIP)                                                    | 2018          |
+| Colombia       | Gran Encuesta Integrada de Hogares - GEIH                                                  | 2019          |
+| Costa Rica     | Encuesta Nacional de Hogares                                                               | 2019          |
+| Ecuador        | Encuesta Nacional de Empleo, Desempleo y Subempleo (ENEMDU)                                | 2019          |
+| El Salvador    | Encuesta Nacional de Hogares                                                               | 2019          |
+| Estados Unidos | Current Population Survey                                                                  | 2018          |
+| Europa         | Eurostat Labour Force Survey (LFS)                                                         | 2018          |
+| Guatemala      | Encuesta Nacional de Empleo e Ingresos                                                     | 2019          |
+| Mexico         | Encuesta Nacional de Ocupación y Empleo                                                    | 2019          |
+| Paraguay       | Encuesta Permanente de Hogares Continua                                                    | 2019          |
+| Perú           | Encuesta Nacional de Hogares                                                               | 2019          |
+| Uruguay        | Encuesta Continua de Hogares                                                               | 2019          |
+
+
 ## Descripción del Dataframe
 
 Las encuestas de cada país son filtradas para obtener información para el total del empleo urbano del país. El dataframe base_homog.Rds cuenta con las siguientes columnas:
