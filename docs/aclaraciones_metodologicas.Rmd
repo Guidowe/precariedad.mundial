@@ -38,7 +38,7 @@ Metadata %>% select(c("País", "Encuesta", "Periodicidad", "Año utilizado")) %>
   kable("html", col.names = c("País", "Encuesta", "Periodicidad", "Año utilizado"), 
         caption = "<b style='color:black;'>Cuadro 1. Encuestas utilizadas por país y periodicidad</b>") %>%
   kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed")) %>% 
-  footnote(general = "*La Eurostat LFS condensa la información de distintos países: En nuestra base se encuentran todos los países con información para 2018: Grecia, Polonia, Italia, Portugal, España, Austria, Reino Unido, Países Bajos, Noruega, Francia, Dinamarca, Suecia y Alemania.",
+  footnote(general = "*La Eurostat LFS condensa la información de distintos países. En nuestra base se encuentran todos los países con información para 2018: Grecia, Polonia, Italia, Portugal, España, Austria, Reino Unido, Países Bajos, Noruega, Francia, Dinamarca, Suecia y Alemania.",
            general_title = "Nota:")
 
 ```
