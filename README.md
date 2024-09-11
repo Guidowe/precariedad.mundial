@@ -28,7 +28,6 @@ El repositorio está organizado de la siguiente manera:
 | Argentina      | Encuesta Permanente de Hogares                                                             | 2019          |
 | Bolivia        | Encuesta Continua de Empleo                                                                | 2019          |
 | Brasil         | Pesquisa Nacional por Amostra de Domicílios Contínua - PNAD Contínua                       | 2019          |
-| Canada         | Labour Force Survey                                                                        | 2019          |
 | Chile          | Encuesta Nacional de Empleo (ENE) – módulo Encuesta Suplementaria de Ingresos (ESI)        | 2019          |
 | China          | Chinese Household Income Project (CHIP)                                                    | 2018          |
 | Colombia       | Gran Encuesta Integrada de Hogares - GEIH                                                  | 2019          |
