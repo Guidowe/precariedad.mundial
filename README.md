@@ -18,6 +18,8 @@ El repositorio está organizado de la siguiente manera:
 - **\scripts**: scripts utilizados para transformar los datos por país de \bases en dataframes con datos homogéneos que se guardan en \bases_homog
 - **\bases_homog**: carpeta para almacenar bases homogéneas por país
 - **\genera_base_homogenea.R**: unifica toda la información procesada por país en un único dataframe
+- **\Fuentes Complementarias**: archivos complementarios para procesar la información por país (clasificadores de ocupaciones, coeficientes de paridad de poder adquisitivo, entre otros)
+
 
 ## Encuestas procesadas
 
@@ -57,7 +59,6 @@ Las encuestas de cada país son filtradas para obtener información para el tota
 - **PRECAPT**: Precariedad por trabajo part-time involuntario.
 - **PRECAREG**: Precariedad por no registro de la relación laboral.
 - **PRECATEMP**: Precariedad por trabajo temporario.
-- **PRECASALUD**: Precariedad por falta de cobertura de salud.
 - **PRECASEG**: Precariedad por falta de aportes a la seguridad social.
 - **TAMA**: Tamaño del establecimiento.
 - **CALIF**: Calificación del puesto.
@@ -66,6 +67,8 @@ Las encuestas de cada país son filtradas para obtener información para el tota
 - **ING_PPA**: Ingreso de la ocupación principal en moneda de paridad de poder adquisitivo del año correspondiente (USA = 1).
 - **ANO**: Año de referencia de la encuesta.
 - **PERIODO**: Período de referencia de la encuesta.
+- **WEIGHT_W**: Ponderador de los ingresos de la ocupación principal (Sólo para Argentina).
+
 
 ¡Gracias por utilizar nuestro repositorio! Si tienes alguna pregunta o sugerencia, no dudes en contactarnos. También podés proponer modificaciones al código mediante un issue al repositorio. 
 
@@ -83,6 +86,8 @@ The repository is organized as follows:
 - **\scripts**: Includes country-specific scripts used to transform the data from each country into a homogeneous dataframe.
 - **\bases_homog**: Folder to save homogeneous databases by country.
 - **genera_base_homogenea.R**: unifies data from each country to generate the main dataset
+- **\Fuentes Complementarias**: complementary files (Classifications of Occupations, purchasing power parity coefficients and others)
+
 
 ## Description of the Dataframe
 
@@ -99,7 +104,6 @@ Surveys from each country are filtered to obtain information for total urban emp
 - **PRECAPT**: Precariousness due to involuntary part-time work.
 - **PRECAREG**: Precariousness due to lack of registration of the employment relationship.
 - **PRECATEMP**: Precariousness due to temporary work.
-- **PRECASALUD**: Precariousness due to lack of health coverage.
 - **PRECASEG**: Precariousness due to lack of social security contributions.
 - **TAMA**: Establishment size.
 - **CALIF**: Job qualification.
@@ -107,6 +111,8 @@ Surveys from each country are filtered to obtain information for total urban emp
 - **ING_PPA**: Principal occupation income in purchasing power parity units of corresponding year (USA = 1).
 - **ANO**: Survey reference year.
 - **PERIODO**: Survey reference period.
+- **WEIGHT_W**: Weights related to main job income (Only for Argentina).
+
 
 Thank you for using our repository! If you have any questions or suggestions, please feel free to contact us. If you use information from this project, we appreciate citing this repository or one of our publications:
 
